@@ -179,6 +179,41 @@ corporate academy, or online education platform end-to-end — without code.
   button and the original file size.
 - 15/15 Phase 7 backend tests pass (`/app/backend/tests/test_phase7.py`);
   100% on frontend flows tested.
+
+### Phase 8 — May 2026 (Workflow Template Editor + Production Hardening)
+- **Workflow Template Editor (P2)**: Institution Admins can now author,
+  edit and delete workflow templates directly inside the `/workflows`
+  Workflow Builder tab. Drag-and-drop step reordering using
+  `@dnd-kit/sortable` (mouse + accessible keyboard via Space + ArrowDown).
+  Per-step controls for kind (auto / llm / hitl), tool, HITL role and
+  undoable flag. Backend `POST/PATCH/DELETE /api/workflows/...templates`
+  with audit logging, version-bump on every edit, RBAC (admin-only),
+  cross-tenant 403.
+- **Emergent Google SSO**: existing email/password login remains the
+  primary; added “Continue with Google” on `/login` and a top-level
+  `AuthCallback` that consumes the `#session_id=` fragment, exchanges it
+  via `POST /api/auth/session`, mints our existing JWT and sets the
+  session cookie. New emails not yet provisioned for any tenant are
+  rejected (multi-tenant safety).
+- **Per-tenant email integration (Resend)**: new Settings →
+  Integrations tab where Institution Admins paste their own Resend API
+  key + From address. `GET /api/integrations/{id}` masks stored keys,
+  `PATCH` preserves the stored key if the input is left blank, `POST
+  /email/test` sends a smoke email. Workflow runs that pause for HITL
+  approval now email the tenant’s admins via the configured provider
+  (graceful no-op when not enabled).
+- **Mobile responsiveness**: shell now collapses to a single column at
+  ≤900px with a slide-in sidebar drawer + dimming overlay. Topbar
+  trims to fit on 414px viewports (notifications bell hidden below sm,
+  AI compliance badge hidden below lg, tenant selector capped at
+  200px, user pill remains tappable). Verified by automated viewport
+  tests: `scrollWidth === clientWidth` at 414×800.
+- **Deployment readiness**: `/app/DEPLOYMENT.md` checklist covering
+  env vars, integrations, multi-tenant data, mobile QA, observability,
+  security and roll-back plan.
+- 19/19 Phase 8 backend tests pass (`/app/backend/tests/test_phase8.py`);
+  frontend re-test 100% (2/2 regression checks green in
+  `/app/test_reports/iteration_8.json`).
   Emergent Universal Key. Per-institution provider/model override resolved
   from `ai_use_cases` collection.
 - Seeded **8 AI use cases per tenant** (4.1–4.8) with bilingual EN/AR names,

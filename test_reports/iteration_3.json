@@ -1,0 +1,25 @@
+{
+  "summary": "Phase 4 (Advanced Assessment Engine + Psychometric & Behaviour Intelligence) — comprehensive backend (pytest) and frontend (Playwright) testing. 18/18 Phase 4 backend tests pass; 18/18 Phase 1+2 regression pass. All 4 frontend pages (Assessments list/detail/take-attempt + Psychometrics 4 tabs) render correctly and integrate end-to-end with backend.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_phase4.py",
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_phase4.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Institution IDs in seed data are UUID format (e.g. 11111111-1111-1111-1111-111111111111), NOT slug-style 'isb-india' as agent_to_agent_context_note implied. Tests use UUIDs and pass. Future testing agents should refer to /app/memory/test_credentials.md or hit /api/institutions to discover IDs.",
+    "Assessment attempt option buttons do not have data-testid (e.g. answer-option-{n}). Adding data-testid='answer-option-0..3' on the MCQ choice buttons and 'submit-answer' on Submit would improve test stability. The flow itself works (8 options, correct highlighting, hint counter, progress).",
+    "Adaptive engine correctly hides correct_index from /start and /answer payloads (verified in test_start_and_first_item_no_correct_index).",
+    "wrong_streak rule fires correctly after 3 consecutive wrong answers (verified end-to-end via attempt → psychometric_events lookup)."
+  ],
+  "updated_files": ["/app/backend/tests/test_phase4.py"],
+  "success_rate": {"backend": "100% (18/18 Phase 4 + 18/18 P1+P2 regression)", "frontend": "100% (all listed flows verified)"},
+  "test_credentials": "Used as provided: rajiv.admin@isb.edu, fatima.admin@eaic.gov.ae, saif.cadet@eaic.gov.ae (Demo@2026); admin@academiaos.ai (Admin@2026).",
+  "seed_data_creation": "Created TEST_phase4_quiz draft assessment (ISB) and TEST_new_rule (EAIC). Both prefixed with TEST_ for easy cleanup. No production data mutated beyond approving one already-pending event for the approve test.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Phase 4 endpoints all live: /api/assessments/* and /api/psychometrics/*. Use UUID institution IDs: ISB=11111111-1111-1111-1111-111111111111, EAIC=22222222-2222-2222-2222-222222222222, UoB=33333333-3333-3333-3333-333333333333. Seeded assessment IDs are slug-style: asm-isb-strategy-w1, asm-eaic-border-w1, asm-uob-ml-w1. First item of asm-eaic-border-w1 (item-eaic-border-1) correct_index=1. Phase 4 backend file: /app/backend/tests/test_phase4.py. LLM item-generation route (/items/generate) not exercised to save budget; structure verified via code review.",
+  "rca_of_the_issue": "N/A — no bugs found."
+}

@@ -23,6 +23,8 @@ import ContentStudio from "./pages/ContentStudio";
 import AIInstructor from "./pages/AIInstructor";
 import AIAdvisor from "./pages/AIAdvisor";
 import StudentAssistant from "./pages/StudentAssistant";
+import Assessments from "./pages/Assessments";
+import Psychometrics from "./pages/Psychometrics";
 
 function LoginRoute() {
   const { user, loading } = useAuth();
@@ -45,38 +47,8 @@ function ShellRoutes() {
         <Route path="/ai-instructor" element={<AIInstructor />} />
         <Route path="/ai-advisor" element={<AIAdvisor />} />
         <Route path="/student-assistant" element={<StudentAssistant />} />
-        <Route
-          path="/assessments"
-          element={
-            <ComingSoon
-              eyebrow="Module 5"
-              title="Assessments"
-              phase="Phase 4"
-              description="AI-generated item banks, adaptive testing engine and rubric-based scoring."
-              features={[
-                "MCQ / scenario / case generation",
-                "Adaptive difficulty sequencing",
-                "Faculty review queue + competency reports",
-              ]}
-            />
-          }
-        />
-        <Route
-          path="/psychometrics"
-          element={
-            <ComingSoon
-              eyebrow="Module 6 · Highest-risk"
-              title="Psychometrics"
-              phase="Phase 4"
-              description="Behaviour signal capture + intervention rules with mandatory bias and fairness audit."
-              features={[
-                "Signal classes & thresholds editor",
-                "Intervention rule engine",
-                "Fairness audit dashboard + model drift monitor",
-              ]}
-            />
-          }
-        />
+        <Route path="/assessments" element={<Assessments />} />
+        <Route path="/psychometrics" element={<Psychometrics />} />
         <Route
           path="/analytics"
           element={

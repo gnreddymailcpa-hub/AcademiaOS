@@ -433,7 +433,10 @@ async def root():
 # ---------------------------------------------------------------------------
 from seed_data import SEED_INSTITUTIONS, SEED_USERS, SEED_ROLES, SEED_ACADEMIC
 from seed_ai import SEED_USE_CASES, SEED_DOCUMENTS, SEED_SKILL_FRAMEWORK, SEED_LEARNER_PROFILES
+from seed_phase4 import SEED_ASSESSMENTS, SEED_PSYCH_RULES, SEED_PSYCH_EVENTS
 import routes_ai
+import routes_assessments
+import routes_psychometrics
 from collections import Counter
 from ai_service import chunk_text, _tokens
 
@@ -563,6 +566,22 @@ async def seed_database():
         )
     logger.info("Seeded skill frameworks + %d learner profiles", len(SEED_LEARNER_PROFILES))
 
+    # Assessments + item bank
+    for a in SEED_ASSESSMENTS:
+        items = a.pop("_items", [])
+        await db.assessments.update_one({"id": a["id"]}, {"$setOnInsert": a}, upsert=True)
+        for it in items:
+            doc = {**it, "assessment_id": a["id"], "institution_id": a["institution_id"]}
+            await db.assessment_items.update_one({"id": it["id"]}, {"$setOnInsert": doc}, upsert=True)
+    logger.info("Seeded %d assessments with item bank", len(SEED_ASSESSMENTS))
+
+    # Psychometric rules + sample events
+    for r in SEED_PSYCH_RULES:
+        await db.psychometric_rules.update_one({"id": r["id"]}, {"$setOnInsert": r}, upsert=True)
+    for e in SEED_PSYCH_EVENTS:
+        await db.psychometric_events.update_one({"id": e["id"]}, {"$setOnInsert": e}, upsert=True)
+    logger.info("Seeded %d psychometric rules + %d events", len(SEED_PSYCH_RULES), len(SEED_PSYCH_EVENTS))
+
 
 @app.on_event("startup")
 async def startup():
@@ -586,6 +605,8 @@ async def shutdown():
 # ---------------------------------------------------------------------------
 app.include_router(api)
 app.include_router(routes_ai.build_router(lambda: db, get_current_user))
+app.include_router(routes_assessments.build_assessments_router(lambda: db, get_current_user))
+app.include_router(routes_psychometrics.build_psychometrics_router(lambda: db, get_current_user))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

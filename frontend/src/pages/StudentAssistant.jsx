@@ -3,10 +3,27 @@ import { PageHeader } from "../components/layout/Shell";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
+import { Textarea } from "../components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "../components/ui/dialog";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "../components/ui/select";
 import { useInstitution } from "../context/InstitutionContext";
 import { useLang } from "../context/LanguageContext";
 import { api } from "../lib/api";
-import { MessageSquareText, Send, Loader2, LifeBuoy, Clock } from "lucide-react";
+import { toast } from "sonner";
+import { MessageSquareText, Send, Loader2, LifeBuoy, Clock, CheckCircle2 } from "lucide-react";
 
 const SUGGESTED = {
   en: [
@@ -29,11 +46,49 @@ export default function StudentAssistant() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [tickets, setTickets] = useState([]);
+  const [openTicketDialog, setOpenTicketDialog] = useState(false);
+  const [draft, setDraft] = useState({ subject: "", body: "", category: "general", severity: "normal" });
   const scrollRef = useRef(null);
 
   useEffect(() => {
     setMessages([]);
+    loadTickets();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current?.id]);
+
+  const loadTickets = async () => {
+    if (!current) return;
+    try {
+      const { data } = await api.get(`/tickets/${current.id}`);
+      setTickets(data);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const submitTicket = async () => {
+    if (!draft.subject.trim() || !draft.body.trim()) {
+      toast.error("Subject and details are required");
+      return;
+    }
+    try {
+      await api.post("/tickets", {
+        institution_id: current.id,
+        subject: draft.subject,
+        body: draft.body,
+        category: draft.category,
+        severity: draft.severity,
+        source: "student_assistant",
+      });
+      toast.success("Ticket opened · the programme office will reply within SLA");
+      setOpenTicketDialog(false);
+      setDraft({ subject: "", body: "", category: "general", severity: "normal" });
+      loadTickets();
+    } catch (e) {
+      toast.error("Could not open ticket");
+    }
+  };
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -147,19 +202,121 @@ export default function StudentAssistant() {
               ))}
             </ul>
           </div>
-          <div className="rounded-lg border border-border bg-card p-5">
-            <div className="label-eyebrow mb-3">Need a human?</div>
-            <p className="text-xs text-muted-foreground">
-              If the assistant cannot resolve your query, it will open a ticket with the programme
-              office and you'll receive an answer within 24 hours.
-            </p>
-            <Button variant="outline" size="sm" className="mt-3">
-              <LifeBuoy className="h-3.5 w-3.5 me-1.5" />
-              Open ticket
-            </Button>
+          <div className="rounded-lg border border-border bg-card p-5" id="tickets">
+            <div className="flex items-center justify-between mb-3">
+              <div className="label-eyebrow">Your tickets</div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setOpenTicketDialog(true)}
+                data-testid="open-ticket-btn"
+              >
+                <LifeBuoy className="h-3.5 w-3.5 me-1.5" />
+                Open ticket
+              </Button>
+            </div>
+            {tickets.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                If the assistant cannot resolve your query, open a ticket and the programme office
+                will reply within 24 hours.
+              </p>
+            ) : (
+              <ul className="space-y-2" data-testid="tickets-list">
+                {tickets.slice(0, 6).map((t) => (
+                  <li
+                    key={t.id}
+                    className="rounded-md border border-border bg-background/60 px-3 py-2 text-xs"
+                    data-testid={`ticket-${t.id}`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium text-foreground truncate">{t.subject}</span>
+                      <Badge
+                        variant="outline"
+                        className={
+                          t.status === "open"
+                            ? "border-amber-300 bg-amber-50 text-amber-700"
+                            : "border-emerald-300 bg-emerald-50 text-emerald-700"
+                        }
+                      >
+                        {t.status}
+                      </Badge>
+                    </div>
+                    <div className="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                      {t.category} · {new Date(t.ts).toLocaleDateString()}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </aside>
       </div>
+
+      <Dialog open={openTicketDialog} onOpenChange={setOpenTicketDialog}>
+        <DialogContent data-testid="open-ticket-dialog">
+          <DialogHeader>
+            <DialogTitle>Open a support ticket</DialogTitle>
+            <DialogDescription>
+              The programme office is notified instantly and will reply within the SLA window.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs uppercase tracking-wide text-muted-foreground">Subject</label>
+              <Input
+                value={draft.subject}
+                onChange={(e) => setDraft({ ...draft, subject: e.target.value })}
+                placeholder="One-line summary"
+                data-testid="ticket-subject"
+              />
+            </div>
+            <div>
+              <label className="text-xs uppercase tracking-wide text-muted-foreground">Details</label>
+              <Textarea
+                value={draft.body}
+                onChange={(e) => setDraft({ ...draft, body: e.target.value })}
+                placeholder="What do you need help with?"
+                className="min-h-[120px]"
+                data-testid="ticket-body"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs uppercase tracking-wide text-muted-foreground">Category</label>
+                <Select value={draft.category} onValueChange={(v) => setDraft({ ...draft, category: v })}>
+                  <SelectTrigger data-testid="ticket-category">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {["enrolment", "timetable", "attendance", "assessment", "certificate", "general"].map((c) => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs uppercase tracking-wide text-muted-foreground">Severity</label>
+                <Select value={draft.severity} onValueChange={(v) => setDraft({ ...draft, severity: v })}>
+                  <SelectTrigger data-testid="ticket-severity">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {["low", "normal", "high"].map((s) => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenTicketDialog(false)}>Cancel</Button>
+            <Button onClick={submitTicket} data-testid="ticket-submit">
+              <CheckCircle2 className="me-2 h-4 w-4" /> Open ticket
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

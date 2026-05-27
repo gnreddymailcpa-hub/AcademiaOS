@@ -760,6 +760,7 @@ import routes_assessments
 import routes_psychometrics
 import routes_analytics
 import routes_workflows
+import routes_messaging
 from collections import Counter
 from ai_service import chunk_text, _tokens
 
@@ -946,6 +947,8 @@ app.include_router(routes_psychometrics.build_psychometrics_router(lambda: db, g
 app.include_router(routes_analytics.build_analytics_router(lambda: db, get_current_user))
 app.include_router(routes_workflows.build_workflows_router(lambda: db, get_current_user))
 app.include_router(routes_workflows.build_audit_router(lambda: db, get_current_user))
+app.include_router(routes_messaging.build_notifications_router(lambda: db, get_current_user))
+app.include_router(routes_messaging.build_tickets_router(lambda: db, get_current_user))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

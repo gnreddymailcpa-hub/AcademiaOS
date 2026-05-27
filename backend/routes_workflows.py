@@ -99,11 +99,39 @@ async def _audit(db, *, institution_id: str, action: str, target: str, actor: st
 
 
 async def _notify_approvers(db, run: dict, step: dict):
-    """Email institution admins when a run pauses for approval."""
+    """Email institution admins when a run pauses for approval AND
+    create an in-app notification routed to the role that owns the gate."""
+    # in-app notification — broadcast to the approver role for this tenant
+    role_map = {
+        "Programme Office": "programme_manager",
+        "Dean": "dean",
+        "Commandant": "executive_leadership",
+        "Compliance Officer": "compliance_officer",
+        "Advisor": "career_services",
+        "Approver": "institution_admin",
+    }
+    target_role = role_map.get(step.get("role") or "Approver", "institution_admin")
+    try:
+        await db.notifications.insert_one({
+            "id": str(uuid.uuid4()),
+            "institution_id": run["institution_id"],
+            "user_id": None,
+            "role": target_role,
+            "kind": "workflow.approval",
+            "title": f"Approval needed · {run['workflow_name']}",
+            "body": f"Step: {step.get('name')} · started by {run.get('started_by')}",
+            "link": "/workflows",
+            "ts": now_iso(),
+            "read": False,
+            "actor": "system",
+        })
+    except Exception:
+        logger.exception("notify (in-app) failed")
+    # email — best effort
     try:
         from email_service import send_email
         admins = await db.users.find(
-            {"institution_id": run["institution_id"], "role": {"$in": ["institution_admin", "super_admin"]}},
+            {"institution_id": run["institution_id"], "role": {"$in": [target_role, "institution_admin"]}},
             {"_id": 0, "email": 1, "name": 1},
         ).to_list(20)
         if not admins:
@@ -121,7 +149,7 @@ async def _notify_approvers(db, run: dict, step: dict):
         for a in admins:
             await send_email(db, run["institution_id"], a["email"], subject=subject, text=text)
     except Exception:
-        logger.exception("notify_approvers failed (non-fatal)")
+        logger.exception("notify_approvers (email) failed (non-fatal)")
 
 
 async def _advance(db, run: dict, user: dict) -> dict:
@@ -331,6 +359,7 @@ def build_workflows_router(get_db, get_current_user):
                 {
                     "key": s["key"], "name": s["name"], "kind": s["kind"],
                     "tool": s.get("tool", "noop"), "undoable": s.get("undoable", False),
+                    "role": s.get("role"),
                     "status": "pending", "output": None, "error": None,
                 }
                 for s in t["steps"]

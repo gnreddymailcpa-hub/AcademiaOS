@@ -450,6 +450,13 @@ def build_router(get_db, get_current_user):
         hits = await retrieve(
             db, institution_id=req.institution_id, query=req.text, top_k=4, course_id=req.course_id
         )
+        # Fallback: if no course-scoped chunks match, retry tenant-wide so
+        # obvious questions still surface an approved source instead of
+        # showing an empty citations rail.
+        if not hits and req.course_id:
+            hits = await retrieve(
+                db, institution_id=req.institution_id, query=req.text, top_k=4, course_id=None
+            )
         context_block = "\n\n".join(
             f"[{i+1}] ({h['title']}) {h['text']}" for i, h in enumerate(hits)
         )
@@ -549,13 +556,22 @@ def build_router(get_db, get_current_user):
                     "ما الفرق بين النهج النظري والتطبيقي في هذا المجال؟",
                 ]
             }
-        # English defaults — slightly tailored by institution country if available
-        country = (institution.get("country") or "").lower()
+        # English defaults — slightly tailored by institution country if available.
+        # We retrieve the top approved source titles for this course/tenant so the
+        # suggested prompts share vocabulary with the indexed text (better RAG hit-rate).
+        src_filter = {"institution_id": institution_id, "approved": True}
+        if course_id:
+            src_filter["$or"] = [{"course_id": course_id}, {"course_id": None}]
+        top_sources = await db.content_sources.find(
+            src_filter, {"_id": 0, "title": 1}
+        ).sort("uploaded_at", -1).limit(3).to_list(3)
+        anchor = (top_sources[0]["title"] if top_sources else title)
         examples = [
-            f"Give me a 90-second elevator pitch on {title}.",
-            f"List the top 3 misconceptions students have about {title} and the correct framing.",
-            "Quiz me with one short retrieval question grounded in approved sources.",
+            f"Give me a 90-second elevator pitch on {anchor}.",
+            f"What are the core concepts in {anchor}? Quiz me on one.",
+            "Walk me through the main idea with one concrete example, cited.",
         ]
+        country = (institution.get("country") or "").lower()
         if "emirates" in country or "uae" in country:
             examples.append("Frame this concept with a UAE federal-sector example.")
         elif "india" in country:

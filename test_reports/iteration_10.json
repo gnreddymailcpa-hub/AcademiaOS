@@ -1,0 +1,22 @@
+{
+  "summary": "Phase 9 regression retest — both iteration_9 issues are FIXED. Backend pytest 3/3 passing: suggestions endpoint now anchors first English item to top approved source title ('Give me a 90-second elevator pitch on Competitive Strategy: Porter's Five Forces revisited.') and POST /api/ai/instructor/message returns >=1 citation for that exact prompt thanks to the new tenant-wide retrieve() fallback. Frontend e2e (real ISB admin login + real LLM round-trip): language switcher exposes data-testid='language-switcher', 'lang-en', 'lang-ar'; clicking lang-ar flips html.dir to 'rtl', lang-en restores 'ltr'. On /ai-instructor, clicking the first instructor-suggested pill renders citation-1 in the Live Citations rail in ~20s and the assistant message footer shows '1 citations'.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_phase9_regression.py",
+    "/app/test_reports/pytest/pytest_phase9_regression.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "routes_ai.py instructor_message tenant-wide fallback is a clean 4-line addition guarded by `if not hits and req.course_id`; safe and backward compatible.",
+    "instructor_suggestions now reads top approved source titles to anchor English prompts — note the $or filter `[{course_id: X}, {course_id: None}]` reasonably matches tenant-wide sources too.",
+    "LanguageSwitcher: testids placed correctly on container + both buttons. Consider also adding aria-pressed on the active button for a11y, but not blocking."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (3/3)", "frontend": "100% (both targeted regressions pass)"},
+  "test_credentials": "rajiv.admin@isb.edu / Demo@2026",
+  "seed_data_creation": "None.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Both iteration_9 regressions are closed. Backend regression file lives at /app/backend/tests/test_phase9_regression.py and runs in ~19s. First suggestion observed: \"Give me a 90-second elevator pitch on Competitive Strategy: Porter's Five Forces revisited.\" Citation rendered: \"Competitive Strategy: Porter's Five Forces revisited (17%)\". Language switcher RTL flip verified deterministically."
+}

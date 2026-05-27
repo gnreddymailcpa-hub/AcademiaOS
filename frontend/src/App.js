@@ -28,6 +28,7 @@ import Psychometrics from "./pages/Psychometrics";
 import Analytics from "./pages/Analytics";
 import Workflows from "./pages/Workflows";
 import Compliance from "./pages/Compliance";
+import AuthCallback from "./pages/AuthCallback";
 
 function LoginRoute() {
   const { user, loading } = useAuth();
@@ -62,6 +63,22 @@ function ShellRoutes() {
 }
 
 export default function App() {
+  // Synchronously detect OAuth callback BEFORE ProtectedRoute runs.
+  // Emergent OAuth returns the user to {redirect}#session_id=...
+  if (typeof window !== "undefined" && window.location.hash?.includes("session_id=")) {
+    return (
+      <BrowserRouter>
+        <AuthProvider>
+          <LanguageProvider>
+            <InstitutionProvider>
+              <AuthCallback />
+              <Toaster position="top-right" richColors />
+            </InstitutionProvider>
+          </LanguageProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    );
+  }
   return (
     <BrowserRouter>
       <AuthProvider>

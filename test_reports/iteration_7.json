@@ -1,0 +1,41 @@
+{
+  "summary": "Phase 8 testing complete. Backend: 19/19 pytest pass covering workflow template CRUD (admin only, tenant scoped, audit), per-tenant email integration (masked key, preserve-on-blank, test send), Google session 400/401 paths, and email/password login. Frontend: Google login button present and source-verified to redirect to auth.emergentagent.com; Settings Integrations tab persists Resend config with masked key hint on reload; Workflow template create dialog creates a 3-step template that appears in the Workflow Builder with edit/delete actions and version-bumping PATCH on resave; mobile sidebar drawer + overlay + close work. Two issues found: (1) mobile horizontal-scroll overflow ~39px at 414px viewport (page content exceeds clientWidth), (2) dnd-kit keyboard drag activator in the Template Editor did not actually reorder steps (UI saved with same order). Mouse-drag and the underlying PATCH steps-array endpoint both work.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Workflows / TemplateEditor (dnd-kit)", "issue": "Keyboard drag activator on tpl-step-handle-* does not actually swap steps (Space->ArrowDown*2->Space leaves steps in original order, version still bumps because save fires). Mouse-based drag was not exercised by automation; verify the keyboard activator config or document that only mouse drag is supported.", "selector": "[data-testid=\"tpl-step-handle-0\"]", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Mobile /workflows at 414x800", "issues": ["Body has ~39px horizontal scroll (scrollWidth=453 vs clientWidth=414). Header row (tenant pill, language switch, notifications, user avatar pill) overflows the viewport; user-avatar pill is clipped off-screen on the right. The PageHeader/topbar needs min-w-0/flex-wrap or to hide some elements behind the mobile menu on <480px viewports."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_phase8.py",
+    "/app/test_reports/pytest/pytest_phase8.xml"
+  ],
+  "action_items": [
+    "Fix mobile topbar horizontal overflow at <=480px: shrink/collapse tenant selector or user-pill into a menu, or add flex-wrap/min-w-0 on the header flex container so total width stays <= 100vw.",
+    "Either enable @dnd-kit KeyboardSensor with sortableKeyboardCoordinates so screen-reader users can reorder steps, or document that only mouse drag is supported (a11y improvement)."
+  ],
+  "critical_code_review_comments": [
+    "server.py crossed 700 lines (~956) – consider splitting auth/session, integrations, institutions into separate routers (currently only routes_workflows.py is extracted).",
+    "GET /api/integrations/{id} returns api_key:null + api_key_masked suffix – good. PATCH preserves existing key when blank – good and explicitly tested.",
+    "POST /api/auth/session correctly returns 400 (missing sid) and 401 (bogus sid), never 500 – good error mapping via httpx try/except + raise_for_status().",
+    "Workflow template _validate_steps enforces kind enum, duplicate keys and non-empty steps via 422 – good Pydantic-style validation."
+  ],
+  "updated_files": ["/app/backend/tests/test_phase8.py"],
+  "success_rate": {"backend": "100% (19/19)", "frontend": "~92% (12/13 sub-checks; mobile horizontal-scroll fails)"},
+  "test_credentials": "rajiv.admin@isb.edu / Demo@2026 (ISB admin), shankar.dean@isb.edu / Demo@2026 (ISB dean), fatima.admin@eaic.gov.ae / Demo@2026 (EAIC admin) — all verified working via /api/auth/login.",
+  "seed_data_creation": "Created and then cleaned up TEST_UI Phase8 Template (wf-075fbe58da33) via UI; pytest creates and deletes TEST_phase8_* templates per run; tenant_integrations for ISB has a bogus key (re_TEST_PHASE8_FULLKEY_ABCDEF) left in place – main agent may want to reset for ISB if going to a real Resend key.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend Phase 8 endpoints all green – no need to retest unless implementation changes. Focus retest on (a) mobile header overflow fix (verify at 414x800 scrollWidth==clientWidth) and (b) dnd-kit keyboard reorder if a11y is requested. ISB tenant_integrations.email has TEST key – clean with PATCH {api_key:null, enabled:false} via admin if needed (note: PATCH with blank api_key preserves the existing key, you must explicitly delete the doc or store a real key).",
+  "rca of the issue": {
+    "mobile_horizontal_scroll": "Likely cause: the top header (Shell.jsx topbar) renders Tenant selector, search, language, notifications and user-pill in a single flex row without min-w-0/flex-wrap or responsive hiding rules. Total intrinsic width > 414px. Fix: at sm:hidden viewports, hide search and/or compress user-pill to avatar-only; ensure header container is flex flex-wrap or has overflow-x-auto. Verify by measuring document.documentElement.scrollWidth at 414px after fix – should be <=414.",
+    "dnd_keyboard_reorder": "Likely cause: TemplateEditor.jsx uses @dnd-kit useSortable but the DndContext may only register PointerSensor (mouse/touch), not KeyboardSensor. Without KeyboardSensor + sortableKeyboardCoordinates, pressing Space on the handle does not initiate a sortable pick-up. Confirm by checking sensors=[useSensor(PointerSensor), useSensor(KeyboardSensor, {coordinateGetter: sortableKeyboardCoordinates})]."
+  }
+}

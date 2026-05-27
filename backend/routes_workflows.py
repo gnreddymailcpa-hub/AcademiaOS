@@ -98,6 +98,32 @@ async def _audit(db, *, institution_id: str, action: str, target: str, actor: st
     })
 
 
+async def _notify_approvers(db, run: dict, step: dict):
+    """Email institution admins when a run pauses for approval."""
+    try:
+        from email_service import send_email
+        admins = await db.users.find(
+            {"institution_id": run["institution_id"], "role": {"$in": ["institution_admin", "super_admin"]}},
+            {"_id": 0, "email": 1, "name": 1},
+        ).to_list(20)
+        if not admins:
+            return
+        subject = f"AcademiaOS · Approval needed: {run['workflow_name']}"
+        text = (
+            f"A workflow run is paused at '{step.get('name')}' "
+            f"and is awaiting {step.get('role') or 'human'} approval.\n\n"
+            f"Workflow: {run['workflow_name']}\n"
+            f"Started by: {run.get('started_by')}\n"
+            f"Tenant: {run['institution_id']}\n"
+            f"Run id: {run['id']}\n\n"
+            f"Review it in the Approval Queue at /workflows."
+        )
+        for a in admins:
+            await send_email(db, run["institution_id"], a["email"], subject=subject, text=text)
+    except Exception:
+        logger.exception("notify_approvers failed (non-fatal)")
+
+
 async def _advance(db, run: dict, user: dict) -> dict:
     """Advance a run past auto / llm steps until completion or a hitl gate."""
     while run["status"] in ("running",):
@@ -114,6 +140,7 @@ async def _advance(db, run: dict, user: dict) -> dict:
             run["status"] = "awaiting_approval"
             await _audit(db, institution_id=run["institution_id"], action="workflow.pause_for_approval",
                          target=run["id"], actor=user["email"], step=step["key"])
+            await _notify_approvers(db, run, step)
             break
         # Execute auto / llm step
         step["status"] = "running"
@@ -160,6 +187,106 @@ def build_workflows_router(get_db, get_current_user):
             raise HTTPException(404, "Not found")
         await _scope(user, t["institution_id"])
         return t
+
+    def _validate_steps(steps):
+        if not steps:
+            raise HTTPException(422, "At least one step is required")
+        clean = []
+        seen_keys = set()
+        for i, s in enumerate(steps):
+            kind = s.get("kind", "auto")
+            if kind not in ("auto", "llm", "hitl"):
+                raise HTTPException(422, f"Step {i}: invalid kind '{kind}'")
+            key = s.get("key") or f"step_{i + 1}"
+            if key in seen_keys:
+                raise HTTPException(422, f"Step {i}: duplicate key '{key}'")
+            seen_keys.add(key)
+            clean.append({
+                "key": key,
+                "name": s.get("name") or f"Step {i + 1}",
+                "kind": kind,
+                "tool": s.get("tool") or ("noop" if kind == "hitl" else "aggregate_data"),
+                "undoable": bool(s.get("undoable", False)),
+                "role": s.get("role") or ("Approver" if kind == "hitl" else "Auto"),
+            })
+        return clean
+
+    @router.post("/{institution_id}/templates")
+    async def create_template(
+        institution_id: str,
+        payload: TemplateCreate = Body(...),
+        user: dict = Depends(get_current_user),
+    ):
+        await _scope(user, institution_id)
+        if user["role"] not in ("super_admin", "institution_admin"):
+            raise HTTPException(403, "Only admins can author workflow templates")
+        if payload.institution_id != institution_id:
+            raise HTTPException(400, "institution_id mismatch")
+        db = get_db()
+        steps = _validate_steps(payload.steps)
+        doc = {
+            "id": f"wf-{uuid.uuid4().hex[:12]}",
+            "institution_id": institution_id,
+            "key": payload.key,
+            "name": payload.name,
+            "description": payload.description,
+            "category": payload.category or "operations",
+            "version": 1,
+            "created_at": now_iso(),
+            "created_by": user["email"],
+            "steps": steps,
+        }
+        await db.workflow_templates.insert_one(dict(doc))
+        await _audit(
+            db, institution_id=institution_id, action="workflow.template.create",
+            target=doc["id"], actor=user["email"], name=doc["name"], steps=len(steps),
+        )
+        return doc
+
+    @router.patch("/templates/{template_id}")
+    async def update_template(
+        template_id: str,
+        payload: Dict[str, Any] = Body(...),
+        user: dict = Depends(get_current_user),
+    ):
+        db = get_db()
+        t = await db.workflow_templates.find_one({"id": template_id}, {"_id": 0})
+        if not t:
+            raise HTTPException(404, "Not found")
+        await _scope(user, t["institution_id"])
+        if user["role"] not in ("super_admin", "institution_admin"):
+            raise HTTPException(403, "Only admins can edit workflow templates")
+        update = {}
+        for k in ("name", "description", "category", "key"):
+            if k in payload:
+                update[k] = payload[k]
+        if "steps" in payload:
+            update["steps"] = _validate_steps(payload["steps"])
+        update["version"] = (t.get("version", 1) or 1) + 1
+        update["updated_at"] = now_iso()
+        update["updated_by"] = user["email"]
+        await db.workflow_templates.update_one({"id": template_id}, {"$set": update})
+        await _audit(
+            db, institution_id=t["institution_id"], action="workflow.template.update",
+            target=template_id, actor=user["email"], fields=list(update.keys()),
+        )
+        return await db.workflow_templates.find_one({"id": template_id}, {"_id": 0})
+
+    @router.delete("/templates/{template_id}")
+    async def delete_template(template_id: str, user: dict = Depends(get_current_user)):
+        db = get_db()
+        t = await db.workflow_templates.find_one({"id": template_id}, {"_id": 0})
+        if not t:
+            raise HTTPException(404, "Not found")
+        await _scope(user, t["institution_id"])
+        if user["role"] not in ("super_admin", "institution_admin"):
+            raise HTTPException(403, "Only admins can delete workflow templates")
+        await db.workflow_templates.delete_one({"id": template_id})
+        await _audit(
+            db, institution_id=t["institution_id"], action="workflow.template.delete",
+            target=template_id, actor=user["email"], name=t.get("name"),
+        )
+        return {"ok": True}
 
     # ---------- Runs ----------
     @router.get("/{institution_id}/runs")

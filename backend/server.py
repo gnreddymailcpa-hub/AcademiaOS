@@ -262,6 +262,178 @@ async def logout(user: dict = Depends(get_current_user)):
 
 
 # ---------------------------------------------------------------------------
+# Emergent-managed Google Auth (SSO)
+# ---------------------------------------------------------------------------
+# REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
+import httpx
+
+
+class GoogleSessionRequest(BaseModel):
+    session_id: Optional[str] = None
+
+
+@api.post("/auth/session", response_model=TokenResponse)
+async def google_session(
+    request: Request,
+    body: Optional[GoogleSessionRequest] = None,
+):
+    """Exchange an Emergent OAuth session_id for our app JWT.
+
+    Accepts the session_id either as request body `{session_id}` or as
+    `X-Session-ID` header. Looks up the Google account, maps it to an
+    existing demo user by email (multi-tenant SaaS — Google login only
+    works for emails pre-provisioned by an Institution Admin).
+    """
+    sid = (body.session_id if body else None) or request.headers.get("X-Session-ID")
+    if not sid:
+        raise HTTPException(400, "Missing session_id")
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            r = await client.get(
+                "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
+                headers={"X-Session-ID": sid},
+            )
+            r.raise_for_status()
+            data = r.json()
+    except Exception as e:
+        logger.exception("Emergent OAuth exchange failed: %s", e)
+        raise HTTPException(401, "Google authentication failed")
+
+    email = (data.get("email") or "").lower().strip()
+    if not email:
+        raise HTTPException(401, "Google account has no email")
+    name = data.get("name") or email.split("@")[0].title()
+    picture = data.get("picture")
+    emergent_token = data.get("session_token")
+
+    # Only allow pre-provisioned users; do NOT auto-create tenants from random Google accounts.
+    user = await db.users.find_one({"email": email})
+    if not user:
+        raise HTTPException(
+            403,
+            "This Google account is not provisioned for any tenant. "
+            "Ask an Institution Admin to invite this email first.",
+        )
+    # update picture / name on first Google login
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"picture": picture, "auth_provider": "google", "google_id": data.get("id")}},
+    )
+    await db.user_sessions.insert_one({
+        "id": str(uuid.uuid4()),
+        "user_id": user["id"],
+        "emergent_session_token": emergent_token,
+        "issued_at": datetime.now(timezone.utc).isoformat(),
+        "expires_at": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
+    })
+
+    token = create_token(user["id"], user["email"], user["role"], user.get("institution_id"))
+    user_pub = {k: v for k, v in user.items() if k not in ("password_hash", "_id")}
+    user_pub["picture"] = picture
+
+    await db.audit_logs.insert_one({
+        "id": str(uuid.uuid4()),
+        "institution_id": user.get("institution_id"),
+        "action": "auth.google_login",
+        "target": user["id"],
+        "actor": email,
+        "ts": datetime.now(timezone.utc).isoformat(),
+    })
+
+    from fastapi.responses import JSONResponse
+    resp = JSONResponse(content={"access_token": token, "user": user_pub})
+    resp.set_cookie(
+        "access_token", token, max_age=7 * 24 * 3600, httponly=True,
+        secure=True, samesite="none", path="/",
+    )
+    return resp
+
+
+# ---------------------------------------------------------------------------
+# Admin → Integrations (per-tenant email/webhook config)
+# ---------------------------------------------------------------------------
+@api.get("/integrations/{institution_id}")
+async def get_integrations(institution_id: str, user: dict = Depends(get_current_user)):
+    if user["role"] not in ("super_admin", "institution_admin"):
+        raise HTTPException(403, "Forbidden")
+    if user["role"] != "super_admin" and user.get("institution_id") != institution_id:
+        raise HTTPException(403, "Forbidden")
+    doc = await db.tenant_integrations.find_one({"institution_id": institution_id}, {"_id": 0}) or {
+        "institution_id": institution_id, "email": None, "webhook": None,
+    }
+    # Mask API keys in the response
+    email_cfg = doc.get("email") or {}
+    if email_cfg.get("api_key"):
+        k = email_cfg["api_key"]
+        email_cfg["api_key_masked"] = f"…{k[-6:]}" if len(k) > 6 else "set"
+        email_cfg["api_key"] = None
+        doc["email"] = email_cfg
+    return doc
+
+
+class EmailConfig(BaseModel):
+    provider: Literal["resend", "smtp", "none"] = "resend"
+    api_key: Optional[str] = None
+    from_email: Optional[str] = None
+    from_name: Optional[str] = None
+    enabled: bool = False
+
+
+@api.patch("/integrations/{institution_id}/email")
+async def update_email_integration(
+    institution_id: str,
+    payload: EmailConfig,
+    user: dict = Depends(get_current_user),
+):
+    if user["role"] not in ("super_admin", "institution_admin"):
+        raise HTTPException(403, "Forbidden")
+    if user["role"] != "super_admin" and user.get("institution_id") != institution_id:
+        raise HTTPException(403, "Forbidden")
+    update = {"email": payload.model_dump(exclude_none=False)}
+    # never overwrite stored key with a blank/null
+    existing = await db.tenant_integrations.find_one({"institution_id": institution_id}) or {}
+    existing_key = (existing.get("email") or {}).get("api_key")
+    if not payload.api_key and existing_key:
+        update["email"]["api_key"] = existing_key
+    await db.tenant_integrations.update_one(
+        {"institution_id": institution_id},
+        {"$set": {**update, "institution_id": institution_id}},
+        upsert=True,
+    )
+    await db.audit_logs.insert_one({
+        "id": str(uuid.uuid4()),
+        "institution_id": institution_id,
+        "action": "integrations.email.update",
+        "target": institution_id,
+        "actor": user["email"],
+        "enabled": payload.enabled,
+        "provider": payload.provider,
+        "ts": datetime.now(timezone.utc).isoformat(),
+    })
+    return {"ok": True}
+
+
+@api.post("/integrations/{institution_id}/email/test")
+async def test_email(
+    institution_id: str,
+    payload: dict = None,
+    user: dict = Depends(get_current_user),
+):
+    if user["role"] not in ("super_admin", "institution_admin"):
+        raise HTTPException(403, "Forbidden")
+    if user["role"] != "super_admin" and user.get("institution_id") != institution_id:
+        raise HTTPException(403, "Forbidden")
+    to = (payload or {}).get("to") or user["email"]
+    from email_service import send_email
+    ok, err = await send_email(
+        db, institution_id, to,
+        subject="AcademiaOS · Email integration test",
+        text="If you see this, your tenant email integration is configured correctly.",
+    )
+    return {"ok": ok, "error": err}
+
+
+# ---------------------------------------------------------------------------
 # Institution routes
 # ---------------------------------------------------------------------------
 @api.get("/institutions")

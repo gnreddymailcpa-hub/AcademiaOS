@@ -115,14 +115,14 @@ export default function Compliance() {
         }
       />
 
-      <div className="grid gap-3 px-8 md:grid-cols-4">
+      <div className="grid gap-3 px-4 md:px-8 md:grid-cols-4">
         <SummaryCard icon={Activity} label="Events (latest)" value={data.count} />
         <SummaryCard icon={Filter} label="Distinct actions" value={data.actions.length} />
         <SummaryCard icon={Users2} label="Distinct actors" value={data.actors.length} />
         <SummaryCard icon={ShieldCheck} label="Retention" value="13 months" />
       </div>
 
-      <div className="grid gap-4 px-8 lg:grid-cols-2">
+      <div className="grid gap-4 px-4 md:px-8 lg:grid-cols-2">
         <div className="rounded-xl border border-border/70 bg-card/40 p-5">
           <div className="text-xs uppercase tracking-wide text-muted-foreground">
             Audit volume by action
@@ -157,7 +157,7 @@ export default function Compliance() {
         </div>
       </div>
 
-      <div className="px-8">
+      <div className="px-4 md:px-8">
         <div className="rounded-xl border border-border/70 bg-card/40 p-5">
           <div className="flex flex-wrap items-end gap-3">
             <div className="min-w-[200px] flex-1">

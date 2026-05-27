@@ -32,10 +32,22 @@ import {
   Bot,
   Hand,
   Cog,
+  Plus,
+  Pencil,
+  Trash2,
+  MoreHorizontal,
 } from "lucide-react";
 import { useInstitution } from "../context/InstitutionContext";
+import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
 import { toast } from "sonner";
+import TemplateEditor from "./TemplateEditor";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "../components/ui/dropdown-menu";
 
 const STATUS_STYLE = {
   running: "border-sky-300 bg-sky-50 text-sky-700",
@@ -136,6 +148,8 @@ function SummaryCard({ icon: Icon, label, value, tone }) {
 
 export default function Workflows() {
   const { current } = useInstitution();
+  const { user } = useAuth();
+  const canEditTemplates = user && ["super_admin", "institution_admin"].includes(user.role);
   const [tab, setTab] = useState("templates");
   const [templates, setTemplates] = useState([]);
   const [runs, setRuns] = useState([]);
@@ -147,6 +161,8 @@ export default function Workflows() {
   const [programme, setProgramme] = useState("");
   const [selected, setSelected] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editorTemplate, setEditorTemplate] = useState(null);
 
   const load = async () => {
     if (!current) return;
@@ -231,27 +247,86 @@ export default function Workflows() {
     }
   };
 
+  const openNewTemplate = () => {
+    setEditorTemplate(null);
+    setEditorOpen(true);
+  };
+  const openEditTemplate = (t) => {
+    setEditorTemplate(t);
+    setEditorOpen(true);
+  };
+  const saveTemplate = async (payload) => {
+    try {
+      if (payload.id) {
+        await api.patch(`/workflows/templates/${payload.id}`, {
+          key: payload.key,
+          name: payload.name,
+          description: payload.description,
+          category: payload.category,
+          steps: payload.steps,
+        });
+        toast.success("Template saved");
+      } else {
+        await api.post(`/workflows/${current.id}/templates`, {
+          institution_id: current.id,
+          key: payload.key,
+          name: payload.name,
+          description: payload.description,
+          category: payload.category,
+          steps: payload.steps,
+        });
+        toast.success("Template created");
+      }
+      setEditorOpen(false);
+      setEditorTemplate(null);
+      await load();
+    } catch (e) {
+      toast.error("Save failed", { description: e?.response?.data?.detail || e.message });
+    }
+  };
+  const deleteTemplate = async (t) => {
+    if (!window.confirm(`Delete workflow template "${t.name}"?`)) return;
+    try {
+      await api.delete(`/workflows/templates/${t.id}`);
+      toast.success("Template deleted");
+      await load();
+    } catch (e) {
+      toast.error("Delete failed");
+    }
+  };
+
   return (
-    <div className="space-y-8 pb-12" data-testid="workflows-page">
+    <div className="space-y-6 pb-12 md:space-y-8" data-testid="workflows-page">
       <PageHeader
         eyebrow="Module 4.8"
         title="Agentic Workflows"
         description="Governed multi-step AI agents with explicit human approval gates, audit trail and rollback console."
         actions={
-          <Button
-            onClick={() => {
-              setStartTemplate(templates[0] || null);
-              setStartOpen(true);
-            }}
-            disabled={!templates.length}
-            data-testid="workflows-start-run-btn"
-          >
-            <Play className="mr-2 h-4 w-4" /> Start a run
-          </Button>
+          <div className="flex items-center gap-2">
+            {canEditTemplates && (
+              <Button
+                variant="outline"
+                onClick={openNewTemplate}
+                data-testid="workflows-new-template-btn"
+              >
+                <Plus className="mr-2 h-4 w-4" /> New template
+              </Button>
+            )}
+            <Button
+              onClick={() => {
+                setStartTemplate(templates[0] || null);
+                setStartOpen(true);
+              }}
+              disabled={!templates.length}
+              data-testid="workflows-start-run-btn"
+            >
+              <Play className="mr-2 h-4 w-4" /> Start a run
+            </Button>
+          </div>
         }
       />
 
-      <div className="px-8">
+      <div className="px-4 md:px-8">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
           <SummaryCard icon={ClipboardList} label="Templates" value={summary?.templates ?? "—"} />
           <SummaryCard icon={Play} label="Running" value={summary?.running ?? "—"} tone="text-sky-600" />
@@ -262,7 +337,7 @@ export default function Workflows() {
         </div>
       </div>
 
-      <div className="px-8">
+      <div className="px-4 md:px-8">
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList data-testid="workflows-tabs">
             <TabsTrigger value="templates" data-testid="tab-templates">
@@ -301,16 +376,47 @@ export default function Workflows() {
                       <h3 className="mt-1 text-lg font-semibold text-foreground">{t.name}</h3>
                       <p className="mt-1 text-sm text-muted-foreground">{t.description}</p>
                     </div>
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        setStartTemplate(t);
-                        setStartOpen(true);
-                      }}
-                      data-testid={`template-start-${t.key}`}
-                    >
-                      <Play className="mr-1.5 h-3.5 w-3.5" /> Start
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setStartTemplate(t);
+                          setStartOpen(true);
+                        }}
+                        data-testid={`template-start-${t.key}`}
+                      >
+                        <Play className="mr-1.5 h-3.5 w-3.5" /> Start
+                      </Button>
+                      {canEditTemplates && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              data-testid={`template-actions-${t.key}`}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-32">
+                            <DropdownMenuItem
+                              onClick={() => openEditTemplate(t)}
+                              data-testid={`template-edit-${t.key}`}
+                            >
+                              <Pencil className="mr-2 h-3.5 w-3.5" /> Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => deleteTemplate(t)}
+                              className="text-rose-600 focus:text-rose-700"
+                              data-testid={`template-delete-${t.key}`}
+                            >
+                              <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
                   </div>
                   <div className="mt-4 space-y-2">
                     {t.steps.map((s, i) => {
@@ -513,6 +619,13 @@ export default function Workflows() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <TemplateEditor
+        open={editorOpen}
+        onClose={() => { setEditorOpen(false); setEditorTemplate(null); }}
+        template={editorTemplate}
+        onSave={saveTemplate}
+      />
     </div>
   );
 }

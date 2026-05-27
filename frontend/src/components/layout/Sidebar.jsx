@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useLang } from "../../context/LanguageContext";
 import { useInstitution } from "../../context/InstitutionContext";
+import { X } from "lucide-react";
 
 const NAV = [
   { to: "/", icon: LayoutDashboard, key: "nav.dashboard", testid: "sidebar-nav-dashboard", end: true },
@@ -38,12 +39,15 @@ const NAV = [
   { to: "/settings", icon: SettingsIcon, key: "nav.settings", testid: "sidebar-nav-settings" },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen = false, onClose = () => {} }) {
   const { t } = useLang();
   const { current } = useInstitution();
 
   return (
-    <aside className="sidebar-rail flex flex-col" data-testid="sidebar">
+    <aside
+      className={`sidebar-rail flex flex-col ${isOpen ? "is-open" : ""}`}
+      data-testid="sidebar"
+    >
       <div className="flex h-16 items-center gap-3 px-5 border-b border-border">
         <div
           className="flex h-9 w-9 items-center justify-center rounded-md font-semibold"
@@ -56,12 +60,20 @@ export default function Sidebar() {
         >
           A
         </div>
-        <div className="leading-tight">
+        <div className="leading-tight flex-1 min-w-0">
           <div className="text-sm font-semibold tracking-tight text-foreground">AcademiaOS</div>
           <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
             {current?.short_name || "Platform"} · Tenant
           </div>
         </div>
+        <button
+          onClick={onClose}
+          className="md:hidden rounded-md p-1.5 hover:bg-muted"
+          aria-label="Close menu"
+          data-testid="mobile-menu-close"
+        >
+          <X className="h-4 w-4" />
+        </button>
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4">

@@ -142,6 +142,36 @@ h1, h2, h3, h4, h5, h6 {
   grid-template-columns: 16rem 1fr;
   min-height: 100vh;
 }
+@media (max-width: 900px) {
+  .shell-grid {
+    grid-template-columns: 1fr;
+  }
+  .sidebar-rail {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 16rem;
+    z-index: 60;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease-out;
+    box-shadow: 0 10px 40px rgba(15, 23, 42, 0.12);
+  }
+  html[dir="rtl"] .sidebar-rail {
+    left: auto;
+    right: 0;
+    transform: translateX(100%);
+  }
+  .sidebar-rail.is-open {
+    transform: translateX(0);
+  }
+  .mobile-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    z-index: 55;
+  }
+}
 
 .sidebar-rail {
   border-right: 1px solid hsl(var(--border));

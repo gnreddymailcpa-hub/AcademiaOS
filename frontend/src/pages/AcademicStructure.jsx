@@ -22,6 +22,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogDescription,
 } from "../components/ui/dialog";
 import { useInstitution } from "../context/InstitutionContext";
 import { api } from "../lib/api";
@@ -146,6 +147,9 @@ export default function AcademicStructure() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Add programme</DialogTitle>
+                <DialogDescription className="text-xs">
+                  Create a new programme under this tenant. Audit log captures the change.
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-3">
                 <div className="space-y-1.5">

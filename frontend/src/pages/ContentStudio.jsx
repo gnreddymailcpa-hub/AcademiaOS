@@ -20,6 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogDescription,
 } from "../components/ui/dialog";
 import { useInstitution } from "../context/InstitutionContext";
 import { useAuth } from "../context/AuthContext";
@@ -171,6 +172,9 @@ export default function ContentStudio() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Upload source material</DialogTitle>
+                <DialogDescription className="text-xs">
+                  Source becomes citable in AI Instructor after approval and chunking.
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-3">
                 <div className="space-y-1.5">
@@ -322,6 +326,9 @@ export default function ContentStudio() {
               <Sparkles className="h-4 w-4 inline me-1.5 text-primary" />
               Generate from "{genOpen?.title}"
             </DialogTitle>
+            <DialogDescription className="text-xs">
+              The output will land in the Pending review queue for SME approval.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
@@ -403,6 +410,9 @@ export default function ContentStudio() {
                   {KIND_META[selected.kind]?.label} · {selected.source_title}
                   <Badge variant="secondary" className="text-[10px] font-mono">{selected.model}</Badge>
                 </DialogTitle>
+                <DialogDescription className="text-xs">
+                  AI-generated payload — approve to publish to the course module.
+                </DialogDescription>
               </DialogHeader>
               <PayloadView kind={selected.kind} payload={selected.payload} />
             </>

@@ -17,6 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogDescription,
 } from "../components/ui/dialog";
 import { useInstitution } from "../context/InstitutionContext";
 import { useLang } from "../context/LanguageContext";
@@ -107,6 +108,9 @@ export default function AIUseCases() {
               {edit?.name_en}
               <Badge variant="outline" className="text-[10px] font-mono">{edit?.code}</Badge>
             </DialogTitle>
+            <DialogDescription className="text-xs">
+              Configure provider, model and governance policy for this AI use case.
+            </DialogDescription>
           </DialogHeader>
           {edit && (
             <div className="space-y-4">

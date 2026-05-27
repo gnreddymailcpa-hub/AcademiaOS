@@ -37,7 +37,7 @@ corporate academy, or online education platform end-to-end — without code.
 |-------|-------|--------|
 | 1 | Foundation: shell, RBAC, i18n/RTL, design system, multi-tenant model | ✅ |
 | 2 | Institution config console, academic structure, 3 seed institutions | ✅ |
-| 3 | AI modules M1–M4 (Content Generator, Instructor, Advisor, Student Assistant) | ⏳ |
+| 3 | AI modules M1–M4 (Content Generator, Instructor, Advisor, Student Assistant) | ✅ |
 | 4 | AI modules M5–M6 (Assessments, Psychometrics) | ⏳ |
 | 5 | M7 Executive Analytics + NL console | ⏳ |
 | 6 | M8 Agentic Workflows + AI Governance & Compliance | ⏳ |
@@ -54,8 +54,28 @@ corporate academy, or online education platform end-to-end — without code.
   language switcher with RTL, user menu
 - Pages: Dashboard, Institution Setup (4-step wizard), Academic Structure
   (tree builder + add programme dialog), Users & Roles (roles + users tabs),
-  Settings, ComingSoon placeholders for the 10 future modules
+  Settings, ComingSoon placeholders for the remaining future modules
 - Theming: per-tenant CSS variables applied on `<html>` class
+
+### Phase 3 — May 2026
+- AI provider abstraction via `emergentintegrations.llm.chat.LlmChat` with
+  Emergent Universal Key. Per-institution provider/model override resolved
+  from `ai_use_cases` collection.
+- Seeded **8 AI use cases per tenant** (4.1–4.8) with bilingual EN/AR names,
+  status flags (active / coming_soon), risk score, HITL + citations toggles.
+- **Module 4.4 Content Studio**: text/file upload → SME approval → chunk + index
+  for RAG → AI-generated `lesson_plan | flashcards | mcqs | case_guide` with
+  structured JSON output and approval queue.
+- **Module 4.1 AI Instructor**: course-grounded chat with term-frequency
+  retrieval over `content_chunks`, citation cards with relevance scores,
+  bilingual EN/AR, multi-turn session persistence in `ai_sessions`.
+- **Module 4.2 AI Advisor**: deterministic skill-gap computation against
+  institution skill framework + LLM-generated learning path, career pathway
+  and proactive alerts (structured JSON).
+- **Module 4.3 Student Assistant**: FAQ-grounded Claude chat with service
+  category sidebar and ticket escalation.
+- Full audit trail in `audit_logs` collection: every AI generation, approval,
+  use-case mutation captured with actor + model + target.
 
 ## Backlog
 **P0 — Phase 3 (AI modules core)**

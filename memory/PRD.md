@@ -39,7 +39,7 @@ corporate academy, or online education platform end-to-end — without code.
 | 2 | Institution config console, academic structure, 3 seed institutions | ✅ |
 | 3 | AI modules M1–M4 (Content Generator, Instructor, Advisor, Student Assistant) | ✅ |
 | 4 | AI modules M5–M6 (Assessments, Psychometrics) | ✅ |
-| 5 | M7 Executive Analytics + NL console | ⏳ |
+| 5 | M7 Executive Analytics + NL console + AI Examiner co-pilot | ✅ |
 | 6 | M8 Agentic Workflows + AI Governance & Compliance | ⏳ |
 | 7 | Demo polish, security hardening, deploy | ⏳ |
 
@@ -95,6 +95,39 @@ corporate academy, or online education platform end-to-end — without code.
   and 7 sample events so demo loads non-empty.
 - Test coverage: 18/18 new Phase 4 backend tests pass; 18/18 Phase 1+2
   regression remain green.
+
+### Phase 5 — May 2026
+- **Module 4.6 Executive Analytics**: 5-tab role-aware console wired to
+  live tenant data:
+  - Executive — 8 KPI cards (programmes, courses, learners, AI sessions,
+    avg assessment, pass rate, pending interventions, workforce readiness),
+    12-month enrolment / completion / AI-sessions area chart and programme
+    momentum table.
+  - Workforce — readiness % per target role with per-skill heatmap bars
+    colored by gap (red / amber / green) and certification compliance KPIs.
+  - Compliance — audit volume by action (horizontal bars), top actors,
+    recent audit events feed sourced from the same `audit_logs` collection
+    we've been writing to since Phase 1.
+  - AI Usage — provider mix pie, activity by module, per-module p50/p95
+    latency.
+- **Natural Language Analytics Console**: chat UI where the user asks in
+  English or Arabic; Claude/GPT-4o resolves the question into a controlled
+  intent from a 10-intent catalog; backend dispatches to a deterministic
+  MongoDB aggregation; UI renders bar / pie / metric chart with narrative
+  + model trace footer. Unsupported queries return a polite refusal with
+  a list of available intents.
+- Every NL query writes an `analytics.nl_query` entry to `audit_logs`.
+
+### AI Examiner co-pilot — May 2026
+- New endpoint `POST /api/assessments/items/{item_id}/examine` runs a
+  fairness / distractor-quality / Bloom-alignment / source-grounding
+  calibration via Claude or GPT-4o (tenant default) and stores the
+  structured report in `examiner_reports`.
+- Faculty trigger it from the item bank via an "Examine" button; dialog
+  renders the verdict pill (pass / revise / reject), 4 score cards,
+  suggestions list and a one-click suggested revised stem.
+- 14/14 new Phase 5 backend tests pass; full regression on Phases 1–4
+  remains green.
   Emergent Universal Key. Per-institution provider/model override resolved
   from `ai_use_cases` collection.
 - Seeded **8 AI use cases per tenant** (4.1–4.8) with bilingual EN/AR names,

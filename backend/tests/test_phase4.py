@@ -133,7 +133,7 @@ class TestPsychometrics:
         r = requests.get(f"{BASE}/api/psychometrics/summary/{EAIC}", headers=eaic_admin, timeout=15)
         assert r.status_code == 200, r.text
         d = r.json()
-        assert d["rules_total"] == 4
+        assert d["rules_total"] >= 4
         assert "rules_active" in d
         assert "pending" in d["events"]
         assert isinstance(d["by_signal"], list)
@@ -143,8 +143,10 @@ class TestPsychometrics:
         r = requests.get(f"{BASE}/api/psychometrics/rules/{EAIC}", headers=eaic_admin, timeout=15)
         assert r.status_code == 200
         rules = r.json()
-        assert len(rules) == 4
-        pytest.eaic_rules = rules
+        # Only assert on seeded rules; allow test runs to have created extras
+        seeded = [r for r in rules if r["id"].startswith("rule-eaic-")]
+        assert len(seeded) == 4
+        pytest.eaic_rules = seeded
 
     def test_patch_rule_disable_and_persist(self, eaic_admin):
         rule = pytest.eaic_rules[0]

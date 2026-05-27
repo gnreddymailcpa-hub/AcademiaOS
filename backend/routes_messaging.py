@@ -196,7 +196,6 @@ def build_tickets_router(get_db, get_current_user):
         await _scope(user, t["institution_id"])
         update = {k: v for k, v in payload.items() if k in ("status", "severity", "assignee", "category")}
         if "reply" in payload and payload["reply"]:
-            update.setdefault("$push", {})
             await db.support_tickets.update_one(
                 {"id": ticket_id},
                 {

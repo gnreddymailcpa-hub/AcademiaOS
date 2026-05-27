@@ -1,0 +1,39 @@
+{
+  "summary": "Phase 10 — Notifications + Support Tickets + 20-user seed + dashboard metrics. Backend pytest 31/31 green after fixing one MongoDB bug in PATCH /api/tickets/{ticket_id}. Frontend verified end-to-end: ISB dashboard renders 920/6/87%/34/2,480; EAIC renders 1450 active learners + 4,800 AI sessions badge via institution switcher; registrar bell shows unread badge=2 after a student POSTs /api/tickets, popover lists ticket.new items, mark-all-read clears the badge; Student Assistant page loads tickets-list with previously-created tickets and exposes per-ticket testids.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_phase10_messaging.py",
+    "/app/test_reports/pytest/pytest_phase10.xml"
+  ],
+  "action_items": [
+    "(spec-vs-code naming mismatch — non-blocking) The review request refers to data-testid 'tenant-switcher' but the actual component exposes 'institution-switcher' and options 'institution-option-isb|eaic|uob'. Either rename the testid in TopBar/InstitutionSwitcher to 'tenant-switcher' or update the spec/PRD wording. All flows work; this is a contract-only note.",
+    "(spec-vs-code naming mismatch — non-blocking) StudentAssistant page does not expose 'ticket-subject' / 'ticket-body' / 'ticket-submit' inline testids; ticket creation lives behind 'open-ticket-btn' which opens a modal. If automated UI ticket creation tests are desired, add stable testids inside that modal (e.g. ticket-modal-subject, ticket-modal-body, ticket-modal-submit) — backend POST /api/tickets path is fully verified via API."
+  ],
+  "critical_code_review_comments": [
+    "FIXED by testing agent in /app/backend/routes_messaging.py: PATCH /api/tickets/{ticket_id} had `update.setdefault('$push', {})` which polluted the dict that was later passed to `{'$set': update}`. MongoDB correctly rejected with 'The dollar ($) prefixed field $push in $push is not allowed' (code 52). Removed the stray setdefault line — separate update_one calls now do (a) $push to thread, then (b) $set on plain fields. Verified by test_ticket_creation_and_notifications_flow.",
+    "notifications query uses $or with [{user_id}, {role}, {role:'*'}] + institution_id scope — correct multi-recipient model. Note: for super_admin the institution_id filter will only return notifications where institution_id matches super_admin's own institution_id (null), so super_admin currently cannot see cross-tenant notifications via this endpoint. Not blocking; flag if cross-tenant inbox is desired.",
+    "Role-broadcast notification creation in tickets POST writes user_id=None + role='registrar'/'institution_admin'. mark_read endpoint filter uses `$or:[{user_id:user.id},{role:user.role},{role:'*'}]` without institution_id — a registrar in tenant A could in theory mark-read a registrar-broadcast notification belonging to tenant B (since role matches). Low-risk because list endpoint already scopes by institution_id, but for defense-in-depth add institution_id to the mark_read filter too."
+  ],
+  "updated_files": [
+    "/app/backend/routes_messaging.py (removed buggy setdefault('$push', {}) line)",
+    "/app/backend/tests/test_phase10_messaging.py (created)"
+  ],
+  "success_rate": {
+    "backend": "100% (31/31)",
+    "frontend": "100% on all targeted flows (dashboard KPIs ISB+EAIC, institution switcher, notifications bell badge+popover+mark-all, tickets-list rendering)"
+  },
+  "test_credentials": "admin@academiaos.ai / Admin@2026 (super_admin); all 20 demo users use Demo@2026 per /app/memory/test_credentials.md.",
+  "seed_data_creation": "Tests created ~3 'TEST_phase10*' tickets in ISB tenant; left in DB intentionally so registrar/admin can inspect them. No teardown needed (seed is idempotent, dashboards use static metrics).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend test file is /app/backend/tests/test_phase10_messaging.py (~17s, 31 tests). Bug in routes_messaging.py:198 has been removed — do not re-introduce. Audit endpoint returns {items:[...]}, not bare list. Tenant switcher testid is 'institution-switcher' with options 'institution-option-{isb|eaic|uob}'. Notifications testids: notifications-button, notifications-badge, notifications-popover, notifications-mark-all. Tickets testids: tickets-list, open-ticket-btn, ticket-{id}. Auth payload uses access_token (not token). EAIC dashboard renders 'Active Learners 1450' (no comma) — both 1450 and 1,450 are acceptable per spec.",
+  "rca of the issue": "PATCH /api/tickets/{ticket_id} 500 — pymongo.errors.WriteError code 52. Root cause: line 199 in routes_messaging.py had `update.setdefault('$push', {})` immediately before doing a separate $push update; this mutation left a literal '$push' key inside `update`, which was then sent as `db.support_tickets.update_one({'id': ticket_id}, {'$set': update})`. MongoDB forbids $-prefixed field names inside a $set replacement document. Reproduction: POST /api/tickets as student → PATCH that ticket as registrar with `{'status':'resolved','reply':'Handled'}`. Mitigation applied: removed the stray setdefault line so the function performs (a) $push on thread when reply is given, then (b) $set on the remaining whitelisted fields. Verified green via test_ticket_creation_and_notifications_flow."
+}

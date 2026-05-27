@@ -423,6 +423,21 @@ def build_router(get_db, get_current_user):
         course_id: Optional[str] = None
         text: str
         language: str = "en"
+        persona: Optional[str] = "lecturer"  # lecturer | tutor | coach | examiner
+        depth: Optional[str] = "standard"    # concise | standard | deep
+        show_reasoning: Optional[bool] = False
+
+    PERSONAS = {
+        "lecturer": "You are a structured university lecturer. Open with a one-sentence definition, then explain the core idea with one concrete example, and close with a callback to the source.",
+        "tutor": "You are a one-on-one tutor. Ask one clarifying question if intent is ambiguous, otherwise teach with a worked micro-example and 1-2 follow-up prompts.",
+        "coach": "You are an executive coach. Be direct, action-oriented and end with a specific next action the learner should take this week.",
+        "examiner": "You are an examiner preparing the learner for an assessment. Give the answer, then quiz the learner with one short retrieval question.",
+    }
+    DEPTHS = {
+        "concise": "Keep the answer under 90 words.",
+        "standard": "Aim for 140-220 words with 1 example.",
+        "deep": "Provide a 280-420 word response with 2 examples and an edge case.",
+    }
 
     @router.post("/instructor/message")
     async def instructor_message(req: InstructorMsg = Body(...), user: dict = Depends(get_current_user)):
@@ -431,6 +446,7 @@ def build_router(get_db, get_current_user):
         provider, model = await resolve_model(db, req.institution_id, "ai_instructor")
 
         # Retrieve context
+        t0 = datetime.now(timezone.utc)
         hits = await retrieve(
             db, institution_id=req.institution_id, query=req.text, top_k=4, course_id=req.course_id
         )
@@ -445,8 +461,16 @@ def build_router(get_db, get_current_user):
                 course_label = f" for the course '{course['title']}'"
 
         lang = "Arabic (formal modern)" if req.language == "ar" else "English"
+        persona_directive = PERSONAS.get(req.persona or "lecturer", PERSONAS["lecturer"])
+        depth_directive = DEPTHS.get(req.depth or "standard", DEPTHS["standard"])
+        reasoning_directive = (
+            "Begin with a <reasoning>…</reasoning> block summarising in ≤40 words which sources you'll use and why. "
+            "Then answer normally."
+            if req.show_reasoning else ""
+        )
         sys = (
             f"You are the AcademiaOS Virtual AI Instructor{course_label}. Respond in {lang}. "
+            f"{persona_directive} {depth_directive} {reasoning_directive} "
             "Use ONLY the approved course material between <SOURCE> tags below. "
             "If the answer is not in the source, say so and offer to escalate to faculty. "
             "After your answer, list citations as [1], [2] mapped to the bracketed source numbers."
@@ -470,10 +494,75 @@ def build_router(get_db, get_current_user):
                 system_message=sys, provider=provider, model=model,
                 citations=citations,
             )
-            return {"reply": assistant["text"], "citations": citations, "model": assistant["model"], "session_id": sess["id"]}
+            latency_ms = int((datetime.now(timezone.utc) - t0).total_seconds() * 1000)
+            # Extract reasoning block if requested
+            reply_text = assistant["text"]
+            reasoning = None
+            if req.show_reasoning and "<reasoning>" in reply_text:
+                try:
+                    start = reply_text.index("<reasoning>") + len("<reasoning>")
+                    end = reply_text.index("</reasoning>")
+                    reasoning = reply_text[start:end].strip()
+                    reply_text = (reply_text[:reply_text.index("<reasoning>")] + reply_text[end + len("</reasoning>"):]).strip()
+                except ValueError:
+                    pass
+            return {
+                "reply": reply_text,
+                "citations": citations,
+                "model": assistant["model"],
+                "session_id": sess["id"],
+                "latency_ms": latency_ms,
+                "persona": req.persona,
+                "depth": req.depth,
+                "reasoning": reasoning,
+                "tokens_in": assistant.get("tokens_in"),
+                "tokens_out": assistant.get("tokens_out"),
+            }
         except Exception as e:
             logger.exception("Instructor chat failed")
             raise HTTPException(502, f"AI error: {e}")
+
+    @router.get("/instructor/suggestions/{institution_id}")
+    async def instructor_suggestions(
+        institution_id: str,
+        course_id: Optional[str] = None,
+        language: str = "en",
+        user: dict = Depends(get_current_user),
+    ):
+        """Returns 4 tenant- and course-aware starter prompts.
+
+        Static — fast, deterministic and avoids spending LLM budget on UI hints.
+        """
+        await _scope(user, institution_id)
+        db = get_db()
+        institution = await db.institutions.find_one({"id": institution_id}, {"_id": 0}) or {}
+        course = None
+        if course_id:
+            course = await db.courses.find_one({"id": course_id}, {"_id": 0})
+        title = (course or {}).get("title") or institution.get("name") or "this course"
+        if language == "ar":
+            return {
+                "items": [
+                    f"اشرح الفكرة الأساسية في {title} بأسلوب موجز.",
+                    "ما هي أهم المخرجات التعليمية لهذه الوحدة؟",
+                    "أعطني سؤال مراجعة لاختبار فهمي.",
+                    "ما الفرق بين النهج النظري والتطبيقي في هذا المجال؟",
+                ]
+            }
+        # English defaults — slightly tailored by institution country if available
+        country = (institution.get("country") or "").lower()
+        examples = [
+            f"Give me a 90-second elevator pitch on {title}.",
+            f"List the top 3 misconceptions students have about {title} and the correct framing.",
+            "Quiz me with one short retrieval question grounded in approved sources.",
+        ]
+        if "emirates" in country or "uae" in country:
+            examples.append("Frame this concept with a UAE federal-sector example.")
+        elif "india" in country:
+            examples.append("Apply this to an Indian business context — give one mini case.")
+        else:
+            examples.append("Show me how this idea applies in industry today, with one example.")
+        return {"items": examples}
 
     @router.get("/instructor/sessions/{institution_id}")
     async def list_instructor_sessions(institution_id: str, user: dict = Depends(get_current_user)):

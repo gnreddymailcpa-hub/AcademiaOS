@@ -1,0 +1,45 @@
+{
+  "summary": "Phase 9 — tested AI Virtual Instructor (Module 4.1) editorial redesign. Backend: 6/6 pytest passing (suggestions EN+AR with 4 items, cross-tenant 403, instructor message with persona/depth/show_reasoning round-trip, defaults to lecturer+standard). Frontend: editorial dark layout renders correctly — eyebrow, dual-language hero (Arabic المعلم الذكي + serif italic English with gold divider), 4-stat metrics strip, persona/depth/reasoning controls all interactive, 4 suggestion pills, voice toggle, msg-user gold bubble + msg-assistant with model/latency/persona badges, Knowledge Base panel showing 3 approved sources, Reasoning Trail panel renders when show_reasoning=true.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Live Citations rail",
+        "issue": "When user clicks the FIRST default English suggestion ('Give me a 90-second elevator pitch on Competitive Strategy.') with course_id=isb-course-1 selected, the backend retrieve() returns 0 hits — so citation-1 never renders even though an approved Porter's Five Forces source IS attached to that course. Verified via direct API call: same course_id with prompt 'What are Porter's Five Forces?' returns 1 citation; the elevator-pitch prompt returns 0. Token-overlap retrieval is too weak — 'elevator/pitch' dominate while the source body indexes Porter-specific vocabulary. Right rail correctly degrades to 'Awaiting answer' UI, but the spec asks 'citation-1 element appears with a score bar' on first ISB admin login + first suggestion. Recommend either (a) seed suggestions that better match approved source vocabulary, or (b) drop course_id from the retrieve call when 0 hits are found and fall back to tenant-wide, or (c) use the LLM to query-expand before token scoring.",
+        "affected_selectors": ["citation-1", "instructor-rail"]
+      },
+      {
+        "flow": "Global EN/AR language switch",
+        "issue": "Could not reliably trigger AR switch from the top bar in automation. The LanguageSwitcher does not expose a top-level data-testid='language-switcher' (Phase 8 testing also noted this). HTML dir stayed 'ltr' after clicking the visible 'EN' control. Not a regression of AIInstructor itself, but blocks the bilingual smoke test scenario described in the review request. Recommend adding data-testid='language-switcher' to the trigger + data-testid='lang-ar' / 'lang-en' on the options.",
+        "affected_selectors": ["language-switcher", "lang-ar"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_phase9_instructor.py",
+    "/app/test_reports/pytest/pytest_phase9.xml"
+  ],
+  "action_items": [
+    "Fix Live Citations not surfacing on the first default suggestion. Simplest fix: in routes_ai.py instructor_message, if retrieve(course_id=...) returns [], retry retrieve() without course_id (tenant-wide) so an obviously-relevant approved source still surfaces. Alternatively rewrite the first English suggestion so its tokens overlap better with the indexed Porter's body (e.g. 'Give me a 90-second pitch on Porter's Five Forces.').",
+    "Add data-testid='language-switcher' on the LanguageSwitcher trigger and 'lang-en'/'lang-ar' on options so the bilingual RTL flip can be tested deterministically.",
+    "Optional: in AIInstructor.jsx EmptyState, when sources.length>0 but lastAssistant?.citations is empty, surface a small 'no matching chunks — try Porter's Five Forces' nudge so the UX explains the empty rail."
+  ],
+  "critical_code_review_comments": [
+    "routes_ai.py InstructorMsg cleanly extends with persona/depth/show_reasoning as optional with defaults — fully backward compatible. PERSONAS/DEPTHS dicts use .get(..., default) so unknown values fall back safely.",
+    "AIInstructor.jsx (650 lines) is at the upper edge of the recommended file size; consider splitting Stat / PersonaPicker / DepthPicker / ComposerIcon / Panel / EmptyState / Message into /pages/AIInstructor/ subfiles for readability and easier testing.",
+    "Reasoning extraction logic in routes_ai.py handles the <reasoning>…</reasoning> block but assumes a single block — fine for now. Will need to escape gracefully if the model emits multiple or malformed tags.",
+    "Suggestions endpoint is static + deterministic which is great for budget — but the English templates should be vocab-aligned with approved sources or paired with synonym expansion in retrieve()."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (6/6)", "frontend": "90% (1 integration miss on citation surfacing for default suggestion; 1 minor language-switch testability gap)"},
+  "test_credentials": "rajiv.admin@isb.edu / Demo@2026 (ISB) and fatima.admin@eaic.gov.ae / Demo@2026 (EAIC) both verified.",
+  "seed_data_creation": "None. Real LLM calls were short (concise depth) to conserve budget.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend suggestions + instructor/message contracts are stable (persona/depth/latency_ms/reasoning fields all reflect input). Frontend new editorial AIInstructor renders all required testids: ai-instructor-page, instructor-eyebrow, instructor-metrics (4 stat cards), instructor-course-select, instructor-persona, instructor-depth + instructor-depth-(concise|standard|deep), instructor-reasoning-toggle, instructor-core, instructor-input, instructor-send, instructor-voice, instructor-suggested (4), msg-user, msg-assistant, instructor-rail. Only gap: citation-1 only renders when retrieve() returns hits — default first English suggestion currently returns 0 hits against the seeded ISB approved sources.",
+  "rca of the issue": {
+    "live_citations_empty_on_first_suggestion": "Tenant ISB has 3 approved sources: Porter's Five Forces (course_id=isb-course-1), Generative AI Use Cases (isb-course-8), Foundations of AI for Business Leaders (isb-course-8). Default UI selects PGP-101 (isb-course-1). First suggestion = 'Give me a 90-second elevator pitch on Competitive Strategy.' The retrieve() in ai_service is a TF-style token-overlap scorer scoped to course_id; the dominant tokens 'elevator' and 'pitch' have ~0 overlap with the indexed Porter chunks, and 'competitive'+'strategy' alone do not clear the threshold. Result: hits=[], so the chat_send receives empty citations and the right rail shows 'Awaiting answer'. Direct call with 'What are Porter\\'s Five Forces?' under the same course returns 1 citation, confirming the indexing works. Fix candidates: (a) fallback to tenant-wide retrieve when course-scoped returns empty, (b) tweak first suggestion text, (c) add light query expansion / synonym list."
+  }
+}

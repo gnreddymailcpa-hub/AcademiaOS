@@ -26,6 +26,8 @@ import StudentAssistant from "./pages/StudentAssistant";
 import Assessments from "./pages/Assessments";
 import Psychometrics from "./pages/Psychometrics";
 import Analytics from "./pages/Analytics";
+import Workflows from "./pages/Workflows";
+import Compliance from "./pages/Compliance";
 
 function LoginRoute() {
   const { user, loading } = useAuth();
@@ -51,38 +53,8 @@ function ShellRoutes() {
         <Route path="/assessments" element={<Assessments />} />
         <Route path="/psychometrics" element={<Psychometrics />} />
         <Route path="/analytics" element={<Analytics />} />
-        <Route
-          path="/workflows"
-          element={
-            <ComingSoon
-              eyebrow="Module 8"
-              title="Agentic Workflows"
-              phase="Phase 6"
-              description="Governed AI agents that automate multi-step academic workflows with explicit approval gates."
-              features={[
-                "Workflow builder + agent configuration",
-                "Approval queue + rollback console",
-                "Full audit trail with reasoning chain",
-              ]}
-            />
-          }
-        />
-        <Route
-          path="/compliance"
-          element={
-            <ComingSoon
-              eyebrow="Governance"
-              title="Compliance & Audit"
-              phase="Phase 6"
-              description="Audit log explorer, policy management and prompt guardrail console."
-              features={[
-                "Filterable audit log + export",
-                "Compliance policy editor (versioned)",
-                "Prompt injection guardrails",
-              ]}
-            />
-          }
-        />
+        <Route path="/workflows" element={<Workflows />} />
+        <Route path="/compliance" element={<Compliance />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Shell>

@@ -434,10 +434,12 @@ async def root():
 from seed_data import SEED_INSTITUTIONS, SEED_USERS, SEED_ROLES, SEED_ACADEMIC
 from seed_ai import SEED_USE_CASES, SEED_DOCUMENTS, SEED_SKILL_FRAMEWORK, SEED_LEARNER_PROFILES
 from seed_phase4 import SEED_ASSESSMENTS, SEED_PSYCH_RULES, SEED_PSYCH_EVENTS
+from seed_phase6 import SEED_WORKFLOW_TEMPLATES, SEED_WORKFLOW_RUNS
 import routes_ai
 import routes_assessments
 import routes_psychometrics
 import routes_analytics
+import routes_workflows
 from collections import Counter
 from ai_service import chunk_text, _tokens
 
@@ -583,6 +585,19 @@ async def seed_database():
         await db.psychometric_events.update_one({"id": e["id"]}, {"$setOnInsert": e}, upsert=True)
     logger.info("Seeded %d psychometric rules + %d events", len(SEED_PSYCH_RULES), len(SEED_PSYCH_EVENTS))
 
+    # Workflow templates (Phase 6) — idempotent on id
+    for t in SEED_WORKFLOW_TEMPLATES:
+        await db.workflow_templates.update_one(
+            {"id": t["id"]}, {"$set": t}, upsert=True,
+        )
+    # Workflow runs (Phase 6) — only on first seed (preserve user state)
+    for r in SEED_WORKFLOW_RUNS:
+        await db.workflow_runs.update_one(
+            {"id": r["id"]}, {"$setOnInsert": r}, upsert=True,
+        )
+    logger.info("Seeded %d workflow templates + %d sample runs",
+                len(SEED_WORKFLOW_TEMPLATES), len(SEED_WORKFLOW_RUNS))
+
 
 @app.on_event("startup")
 async def startup():
@@ -609,6 +624,8 @@ app.include_router(routes_ai.build_router(lambda: db, get_current_user))
 app.include_router(routes_assessments.build_assessments_router(lambda: db, get_current_user))
 app.include_router(routes_psychometrics.build_psychometrics_router(lambda: db, get_current_user))
 app.include_router(routes_analytics.build_analytics_router(lambda: db, get_current_user))
+app.include_router(routes_workflows.build_workflows_router(lambda: db, get_current_user))
+app.include_router(routes_workflows.build_audit_router(lambda: db, get_current_user))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

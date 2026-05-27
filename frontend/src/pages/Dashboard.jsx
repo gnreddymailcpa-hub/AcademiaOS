@@ -126,8 +126,8 @@ export default function Dashboard() {
               </div>
               <Badge variant="secondary" className="text-[10px]">YoY +12%</Badge>
             </div>
-            <div className="mt-4 h-64">
-              <ResponsiveContainer>
+            <div className="mt-4 h-64 min-h-[16rem]">
+              <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={series}>
                   <defs>
                     <linearGradient id="enrol" x1="0" y1="0" x2="0" y2="1">
@@ -153,8 +153,8 @@ export default function Dashboard() {
           <div className="rounded-lg border border-border bg-card p-5">
             <div className="label-eyebrow">AI sessions · last 12 mo</div>
             <h3 className="text-base font-semibold mt-1">AI module activity</h3>
-            <div className="mt-4 h-64">
-              <ResponsiveContainer>
+            <div className="mt-4 h-64 min-h-[16rem]">
+              <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={series}>
                   <CartesianGrid stroke="hsl(var(--border))" strokeOpacity={0.6} vertical={false} />
                   <XAxis dataKey="m" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />

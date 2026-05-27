@@ -201,7 +201,7 @@ export default function AcademicStructure() {
               defaultOpen
             >
               {campuses.map((c) => (
-                <Node key={c.id} icon={School} title={c.name} meta={`${c.city}, ${c.country}`}>
+                <Node key={c.id} icon={School} title={c.name} meta={`${c.city}, ${c.country}`} defaultOpen>
                   {departments.length > 0 ? (
                     departments.map((d) => (
                       <Node
@@ -210,6 +210,7 @@ export default function AcademicStructure() {
                         title={d.name}
                         meta={d.head ? `Head · ${d.head}` : "—"}
                         badge={`${programmes.filter((p) => p.department_id === d.id).length} prog`}
+                        defaultOpen
                       >
                         {programmes
                           .filter((p) => p.department_id === d.id)

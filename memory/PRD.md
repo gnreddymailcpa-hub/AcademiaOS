@@ -40,7 +40,7 @@ corporate academy, or online education platform end-to-end — without code.
 | 3 | AI modules M1–M4 (Content Generator, Instructor, Advisor, Student Assistant) | ✅ |
 | 4 | AI modules M5–M6 (Assessments, Psychometrics) | ✅ |
 | 5 | M7 Executive Analytics + NL console + AI Examiner co-pilot | ✅ |
-| 6 | M8 Agentic Workflows + AI Governance & Compliance | ⏳ |
+| 6 | M8 Agentic Workflows + Compliance & Audit explorer | ✅ |
 | 7 | Demo polish, security hardening, deploy | ⏳ |
 
 ## Implemented (May 2026)
@@ -128,6 +128,31 @@ corporate academy, or online education platform end-to-end — without code.
   suggestions list and a one-click suggested revised stem.
 - 14/14 new Phase 5 backend tests pass; full regression on Phases 1–4
   remains green.
+
+### Phase 6 — May 2026
+- **Module 4.8 Agentic Workflows**: backend `routes_workflows.py` exposes
+  `/api/workflows/{tenant}/templates|runs|approvals|summary` plus per-run
+  `approve|reject|rollback` endpoints. Step kinds: `auto` (deterministic
+  tool), `llm` (tenant-resolved Claude/GPT) and `hitl` (pauses for human
+  approval). Runs auto-advance through auto/llm steps and pause on HITL
+  gates. Every transition writes to `audit_logs`.
+- **Workflow templates** seeded per tenant (4 each = 12 total): learner
+  enrolment, certificate issuance, compliance report, at-risk escalation.
+  15 sample runs seeded across completed / awaiting_approval / rejected /
+  rolled_back so dashboards load non-empty.
+- **Frontend `/workflows`** — 4-tab console: Workflow Builder (template
+  cards with step previews + Start dialog), Run Monitor (run list +
+  step-by-step trace with reasoning timeline), Approval Queue (badge
+  count, inline Approve/Reject), Audit Trail (consolidated reasoning
+  trail across all runs). Summary strip shows 6 KPI counters.
+- **Rollback Console**: finished runs expose a Rollback button that flips
+  undoable steps to `rolled_back` and irreversible steps to
+  `completed_irreversible`, writing `workflow.rollback` to audit.
+- **Compliance & Audit explorer** at `/compliance`: filterable audit log
+  table with action / actor / free-text filters, audit-volume bar chart,
+  top-actor list, CSV export, full-event JSON inspector.
+- 20/20 Phase 6 backend tests pass; all 17 requested e2e flows green;
+  full regression on Phases 1–5 remains green.
   Emergent Universal Key. Per-institution provider/model override resolved
   from `ai_use_cases` collection.
 - Seeded **8 AI use cases per tenant** (4.1–4.8) with bilingual EN/AR names,

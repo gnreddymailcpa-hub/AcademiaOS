@@ -432,6 +432,10 @@ async def root():
 # Seed data
 # ---------------------------------------------------------------------------
 from seed_data import SEED_INSTITUTIONS, SEED_USERS, SEED_ROLES, SEED_ACADEMIC
+from seed_ai import SEED_USE_CASES, SEED_DOCUMENTS, SEED_SKILL_FRAMEWORK, SEED_LEARNER_PROFILES
+import routes_ai
+from collections import Counter
+from ai_service import chunk_text, _tokens
 
 
 async def seed_database():
@@ -507,6 +511,58 @@ async def seed_database():
             await db.cohorts.update_one({"id": co["id"]}, {"$set": co}, upsert=True)
     logger.info("Seeded academic structure for %d institutions", len(SEED_ACADEMIC))
 
+    # AI Use Cases
+    for inst_id, ucs in SEED_USE_CASES.items():
+        for uc in ucs:
+            await db.ai_use_cases.update_one(
+                {"institution_id": inst_id, "key": uc["key"]},
+                {"$setOnInsert": {**uc, "institution_id": inst_id}},
+                upsert=True,
+            )
+    logger.info("Seeded AI use cases for %d institutions", len(SEED_USE_CASES))
+
+    # Approved knowledge docs + chunked for RAG
+    for doc in SEED_DOCUMENTS:
+        existing = await db.content_sources.find_one({"id": doc["id"]})
+        d = {**doc, "uploaded_at": datetime.now(timezone.utc).isoformat()}
+        if not existing:
+            await db.content_sources.insert_one(d)
+            # chunk + index
+            chunks = chunk_text(doc["text"])
+            if chunks:
+                await db.content_chunks.delete_many({"source_id": doc["id"]})
+                await db.content_chunks.insert_many([
+                    {
+                        "id": str(uuid.uuid4()),
+                        "source_id": doc["id"],
+                        "institution_id": doc["institution_id"],
+                        "course_id": doc.get("course_id"),
+                        "title": doc["title"],
+                        "ordinal": i,
+                        "text": c,
+                        "tokens": dict(Counter(_tokens(c))),
+                        "approved": True,
+                    }
+                    for i, c in enumerate(chunks)
+                ])
+    logger.info("Seeded %d knowledge documents", len(SEED_DOCUMENTS))
+
+    # Skill frameworks
+    for inst_id, fw in SEED_SKILL_FRAMEWORK.items():
+        await db.skill_frameworks.update_one(
+            {"institution_id": inst_id},
+            {"$set": {"institution_id": inst_id, "target_roles": fw["target_roles"]}},
+            upsert=True,
+        )
+
+    # Learner profiles
+    for p in SEED_LEARNER_PROFILES:
+        await db.learner_profiles.update_one(
+            {"institution_id": p["institution_id"], "user_id": p["user_id"]},
+            {"$set": p}, upsert=True,
+        )
+    logger.info("Seeded skill frameworks + %d learner profiles", len(SEED_LEARNER_PROFILES))
+
 
 @app.on_event("startup")
 async def startup():
@@ -529,6 +585,7 @@ async def shutdown():
 # Mount + CORS
 # ---------------------------------------------------------------------------
 app.include_router(api)
+app.include_router(routes_ai.build_router(lambda: db, get_current_user))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

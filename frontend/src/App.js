@@ -18,6 +18,11 @@ import AcademicStructure from "./pages/AcademicStructure";
 import UsersRoles from "./pages/UsersRoles";
 import Settings from "./pages/Settings";
 import ComingSoon from "./pages/ComingSoon";
+import AIUseCases from "./pages/AIUseCases";
+import ContentStudio from "./pages/ContentStudio";
+import AIInstructor from "./pages/AIInstructor";
+import AIAdvisor from "./pages/AIAdvisor";
+import StudentAssistant from "./pages/StudentAssistant";
 
 function LoginRoute() {
   const { user, loading } = useAuth();
@@ -35,90 +40,11 @@ function ShellRoutes() {
         <Route path="/academic-structure" element={<AcademicStructure />} />
         <Route path="/users-roles" element={<UsersRoles />} />
         <Route path="/settings" element={<Settings />} />
-        <Route
-          path="/ai-use-cases"
-          element={
-            <ComingSoon
-              eyebrow="AI Layer · Governance"
-              title="AI Use Cases"
-              phase="Phase 3"
-              description="Catalog of activated AI use cases per institution with prompt templates, source grounding and approval rules."
-              features={[
-                "Use-case catalog with risk score & enablement toggle",
-                "Prompt template versioning + diff viewer",
-                "Per-use-case provider override (OpenAI / Claude / Jais / on-prem)",
-                "Human-in-the-loop policy bindings",
-              ]}
-            />
-          }
-        />
-        <Route
-          path="/content-studio"
-          element={
-            <ComingSoon
-              eyebrow="Module 1"
-              title="Content Studio"
-              phase="Phase 3"
-              description="Upload course material and generate Bloom's-aligned lesson plans, flashcards, quizzes and case guides."
-              features={[
-                "Upload PDF / PPTX / DOCX / transcripts to Supabase-equivalent storage",
-                "Bloom's taxonomy mapping & learning outcome extraction",
-                "SME review and approval queue",
-                "Versioned publish to course modules",
-              ]}
-            />
-          }
-        />
-        <Route
-          path="/ai-instructor"
-          element={
-            <ComingSoon
-              eyebrow="Module 2"
-              title="AI Instructor"
-              phase="Phase 3"
-              description="Course-grounded teaching assistant with RAG citations, bilingual EN/AR responses and faculty escalation."
-              features={[
-                "Course-scoped chat (only approved sources)",
-                "Bilingual EN / AR responses",
-                "Confidence scoring + faculty escalation queue",
-                "Session transcripts retained for audit",
-              ]}
-            />
-          }
-        />
-        <Route
-          path="/ai-advisor"
-          element={
-            <ComingSoon
-              eyebrow="Module 3"
-              title="AI Advisor"
-              phase="Phase 3"
-              description="Skill-gap analysis, personalised learning paths and career pathway mapping."
-              features={[
-                "Skill framework + target role mapping",
-                "Gap analysis with proactive alerts",
-                "Recommended learning paths (approval-gated)",
-                "Career mentor notes",
-              ]}
-            />
-          }
-        />
-        <Route
-          path="/student-assistant"
-          element={
-            <ComingSoon
-              eyebrow="Module 4"
-              title="Student Assistant"
-              phase="Phase 3"
-              description="Self-service academic queries: enrolment, timetable, attendance, deadlines, certificates."
-              features={[
-                "Configurable service categories",
-                "SLA dashboard + escalation routing",
-                "Multi-channel: web, mobile, WhatsApp-ready",
-              ]}
-            />
-          }
-        />
+        <Route path="/ai-use-cases" element={<AIUseCases />} />
+        <Route path="/content-studio" element={<ContentStudio />} />
+        <Route path="/ai-instructor" element={<AIInstructor />} />
+        <Route path="/ai-advisor" element={<AIAdvisor />} />
+        <Route path="/student-assistant" element={<StudentAssistant />} />
         <Route
           path="/assessments"
           element={

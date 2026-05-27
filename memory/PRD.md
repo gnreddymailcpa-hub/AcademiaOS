@@ -258,7 +258,45 @@ corporate academy, or online education platform end-to-end — without code.
 - Full audit trail in `audit_logs` collection: every AI generation, approval,
   use-case mutation captured with actor + model + target.
 
-## Backlog
+### Phase 10 — Feb 2026 (Notifications + Tickets + 15-role coverage)
+- **Real Notifications system**: new `routes_messaging.py` exposes
+  `GET /api/notifications` (tenant + (user_id ∨ role ∨ '*')-scoped),
+  `POST /api/notifications/{id}/read`, `POST /api/notifications/read-all`
+  and admin `POST /api/notifications` to publish role-broadcast events.
+  Tenant scope enforced at list AND mark-read level (defense in depth).
+- **Real Support Tickets system**: `POST /api/tickets` (any
+  authenticated tenant member), `GET /api/tickets/{institution_id}`
+  (students see own only, staff see all), `PATCH /api/tickets/{id}`
+  (status / severity / assignee / threaded reply). Ticket creation
+  auto-emits two notifications (role=registrar, role=institution_admin)
+  and writes `ticket.create` to `audit_logs`. Cross-tenant reads → 403.
+- **TopBar bell** wired to `/api/notifications` with 30s polling, badge
+  count, popover with per-item deep links, and Mark-all-read. Replaces
+  the previous static notifications mock.
+- **Student Assistant ticket modal** wired to `POST /api/tickets`; per-
+  tenant ticket list (`tickets-list` testid) hydrates from
+  `GET /api/tickets/{institution_id}` and reflects new submissions
+  instantly.
+- **20-user seed across all 15 roles**: ISB (+programme_manager,
+  registrar, career_services, compliance_officer, ai_governance_admin),
+  EAIC (+training_manager, hr_workforce_planner, line_manager,
+  compliance_officer, instructor), UoB (admin + faculty). All `Demo@2026`.
+  See `/app/memory/test_credentials.md`.
+- **Dashboard KPI alignment** verified against the executive PRD:
+  ISB → 920 / 6 / 42 / 85 / 87% / 34 / 2,480 ai sessions / 89%
+  EAIC → 1,450 / 8 / 56 / 64 / 91% cert / 84% readiness / 4,800 sessions
+  UoB → 12,400 / 14 / 187 / 612 / 82% / 38% international / 9,420 sessions
+- **Critical bug fixed during testing** in `routes_messaging.py`: PATCH
+  /api/tickets was leaking a literal `$push` key into `$set` (MongoDB
+  WriteError code 52). Rewritten to perform thread-push and field-set
+  in two separate `update_one` calls.
+- 31/31 Phase 10 backend tests green
+  (`/app/backend/tests/test_phase10_messaging.py`); frontend 100% on all
+  targeted flows (KPI render, institution switcher, bell badge +
+  popover + mark-all-read, tickets-list). Full report at
+  `/app/test_reports/iteration_11.json`.
+
+
 **P0 — Phase 3 (AI modules core)**
 - Pluggable AI provider abstraction (OpenAI / Claude / Jais / on-prem)
 - Object storage integration for content uploads
@@ -279,6 +317,20 @@ corporate academy, or online education platform end-to-end — without code.
 - Onboarding tour
 - Mobile responsiveness QA
 - Production deploy pipeline
+
+**P3 — Remaining gaps**
+- Role-specific landing dashboards for the 9 newly-seeded roles
+  (programme_manager, registrar, career_services, compliance_officer,
+  ai_governance_admin, training_manager, hr_workforce_planner,
+  line_manager, executive_leadership) — today they share the
+  University/Government KPI grid
+- Compliance Officer audit-inbox + AI Governance Admin prompt-policy
+  approval queue as first-class top-level pages
+- Cross-tenant inbox for super_admin (notifications endpoint currently
+  filters by `institution_id == user.institution_id` — null for super
+  admin yields empty)
+- Optional: rename `institution-switcher` testids to `tenant-switcher`
+  to align with PRD wording
 
 ## Test credentials
 See `/app/memory/test_credentials.md`.

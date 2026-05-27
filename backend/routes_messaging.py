@@ -68,7 +68,11 @@ def build_notifications_router(get_db, get_current_user):
     async def mark_read(notification_id: str, user: dict = Depends(get_current_user)):
         db = get_db()
         await db.notifications.update_one(
-            {"id": notification_id, "$or": [{"user_id": user["id"]}, {"role": user["role"]}, {"role": "*"}]},
+            {
+                "id": notification_id,
+                "institution_id": user.get("institution_id"),
+                "$or": [{"user_id": user["id"]}, {"role": user["role"]}, {"role": "*"}],
+            },
             {"$set": {"read": True, "read_at": _now()}},
         )
         return {"ok": True}

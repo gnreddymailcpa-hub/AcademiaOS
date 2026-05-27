@@ -153,6 +153,32 @@ corporate academy, or online education platform end-to-end — without code.
   top-actor list, CSV export, full-event JSON inspector.
 - 20/20 Phase 6 backend tests pass; all 17 requested e2e flows green;
   full regression on Phases 1–5 remains green.
+
+### Phase 7 (P1 follow-ups) — May 2026
+- **Academic Structure full CRUD**: backend now exposes POST / GET /
+  PATCH / DELETE on every entity (`campuses`, `departments`, `programmes`,
+  `courses`, `cohorts`) at `/api/academic/{institution_id}/...`. Each
+  mutation writes `audit_logs` (`academic.<entity>.<verb>`). Tenant
+  isolation enforced — cross-tenant returns 403.
+- **Institution Setup persistence**: `PATCH /api/institutions/{id}` now
+  audit-logs every field change, and the Institution Setup Wizard
+  persists the AI sub-document (`ai_config.provider / tone / embedding_model /
+  max_tokens / citations_required / hitl_irreversible`) and Governance
+  sub-document (`governance.audit_level / bias_audit / consent_required`).
+  Values are re-hydrated from the institution on reload.
+- **Academic Structure Builder UI**: hierarchy tree (Campus → Department
+  → Programme → Course → Cohort) with hover-revealed Row Actions menu
+  (Edit / Delete) on every node and a `+ New` dropdown to add any of the
+  five entity types via a single `EntityDialog`. Stats sidebar live-updates.
+- **Content Studio object storage**: PDF / DOCX / PPTX / TXT / MD uploads
+  with MIME validation, 25 MB size cap, streamed disk persistence under
+  `/app/uploads`, and type-aware text extraction (`pypdf`, `python-docx`,
+  `python-pptx`). Unsupported types return 415. New `GET
+  /api/ai/content/sources/{source_id}/download` streams the original
+  binary with `Content-Type` set. Source cards now show a Download
+  button and the original file size.
+- 15/15 Phase 7 backend tests pass (`/app/backend/tests/test_phase7.py`);
+  100% on frontend flows tested.
   Emergent Universal Key. Per-institution provider/model override resolved
   from `ai_use_cases` collection.
 - Seeded **8 AI use cases per tenant** (4.1–4.8) with bilingual EN/AR names,

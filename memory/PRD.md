@@ -214,6 +214,32 @@ corporate academy, or online education platform end-to-end — without code.
 - 19/19 Phase 8 backend tests pass (`/app/backend/tests/test_phase8.py`);
   frontend re-test 100% (2/2 regression checks green in
   `/app/test_reports/iteration_8.json`).
+
+### Phase 9 — May 2026 (AI Instructor editorial redesign)
+- **AI Virtual Instructor (Module 4.1) — AI-authentic-first**: rebuilt as
+  an editorial dark surface with dual-language hero (المعلم الذكي · *Virtual
+  AI Instructor*), gold geometric eyebrow (◈ Module 4.1), 4-stat live metric
+  strip (median latency / cited answers / bilingual / approved sources),
+  trust pill row (Tenant-isolated · Source-grounded · Audit-logged · HITL).
+- **AI Core canvas** as protagonist: live status dot + model badge, gold
+  user bubbles, AI bubbles with model/latency/persona footer + collapsible
+  citations grid, sticky right rail with “Live citations” (score-bar per
+  source) + “Reasoning trail” + “Knowledge base” panels.
+- **Authentic AI controls**: Persona picker (Lecturer / Tutor / Coach /
+  Examiner) maps to a system-prompt directive; Depth segmented toggle
+  (Concise / Standard / Deep dive) caps response length; Show reasoning
+  toggle injects a `<reasoning>` block that surfaces in the side rail.
+- **Backend additions**: `POST /api/ai/instructor/message` now accepts
+  `persona`, `depth`, `show_reasoning` and returns `latency_ms`, `reasoning`;
+  retrieval has a tenant-wide fallback when a course-scoped lookup returns
+  no hits. New `GET /api/ai/instructor/suggestions/{tenant}` returns 4
+  starter prompts anchored to the top approved source title (better
+  RAG-hit-rate) with EN + AR variants.
+- **a11y / testability**: LanguageSwitcher exposes data-testids
+  `language-switcher` / `lang-en` / `lang-ar` for deterministic RTL flow
+  tests.
+- 6/6 + 3/3 Phase 9 backend tests pass; frontend e2e 100% in
+  `/app/test_reports/iteration_10.json`.
   Emergent Universal Key. Per-institution provider/model override resolved
   from `ai_use_cases` collection.
 - Seeded **8 AI use cases per tenant** (4.1–4.8) with bilingual EN/AR names,

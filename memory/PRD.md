@@ -38,7 +38,7 @@ corporate academy, or online education platform end-to-end — without code.
 | 1 | Foundation: shell, RBAC, i18n/RTL, design system, multi-tenant model | ✅ |
 | 2 | Institution config console, academic structure, 3 seed institutions | ✅ |
 | 3 | AI modules M1–M4 (Content Generator, Instructor, Advisor, Student Assistant) | ✅ |
-| 4 | AI modules M5–M6 (Assessments, Psychometrics) | ⏳ |
+| 4 | AI modules M5–M6 (Assessments, Psychometrics) | ✅ |
 | 5 | M7 Executive Analytics + NL console | ⏳ |
 | 6 | M8 Agentic Workflows + AI Governance & Compliance | ⏳ |
 | 7 | Demo polish, security hardening, deploy | ⏳ |
@@ -59,6 +59,42 @@ corporate academy, or online education platform end-to-end — without code.
 
 ### Phase 3 — May 2026
 - AI provider abstraction via `emergentintegrations.llm.chat.LlmChat` with
+  Emergent Universal Key. Per-institution provider/model override resolved
+  from `ai_use_cases` collection.
+- Seeded **8 AI use cases per tenant** (4.1–4.8) with bilingual EN/AR names,
+  status flags (active / coming_soon), risk score, HITL + citations toggles.
+- **Module 4.4 Content Studio**: text/file upload → SME approval → chunk + index
+  for RAG → AI-generated `lesson_plan | flashcards | mcqs | case_guide` with
+  structured JSON output and approval queue.
+- **Module 4.1 AI Instructor**: course-grounded chat with term-frequency
+  retrieval over `content_chunks`, citation cards with relevance scores,
+  bilingual EN/AR, multi-turn session persistence in `ai_sessions`.
+- **Module 4.2 AI Advisor**: deterministic skill-gap computation against
+  institution skill framework + LLM-generated learning path, career pathway
+  and proactive alerts (structured JSON).
+- **Module 4.3 Student Assistant**: FAQ-grounded Claude chat with service
+  category sidebar and ticket escalation.
+- Full audit trail in `audit_logs` collection: every AI generation, approval,
+  use-case mutation captured with actor + model + target.
+
+### Phase 4 — May 2026
+- **Module 4.7 Advanced Assessment Engine**: assessment CRUD, item bank,
+  AI item generation from approved sources, adaptive sequencing (easy →
+  intermediate → hard based on correctness), auto-scoring for MCQ, signal
+  capture during attempts (response_time, hint_count, wrong_streak,
+  inactivity), competency report by Bloom's level + difficulty.
+- **Module 4.5 Psychometric & Behaviour Intelligence**: signal-rule engine
+  evaluated on every answer submission; triggered events queued for human
+  review (HITL); approve/reject with audit log; per-institution thresholds.
+- **Fairness audit**: runs disparity computation across 3 dimensions
+  (Cohort / Gender / Region) with OK / Watch / Review status; overall
+  disparity = max(dimension disparities); thresholds 0.08 (warn) / 0.14 (fail).
+- **Model drift dashboard**: 14-week accuracy + calibration_error line chart
+  with reference threshold and alert flags.
+- 3 seeded assessments (20 total items), 12 psychometric rules (4/institution)
+  and 7 sample events so demo loads non-empty.
+- Test coverage: 18/18 new Phase 4 backend tests pass; 18/18 Phase 1+2
+  regression remain green.
   Emergent Universal Key. Per-institution provider/model override resolved
   from `ai_use_cases` collection.
 - Seeded **8 AI use cases per tenant** (4.1–4.8) with bilingual EN/AR names,

@@ -656,8 +656,8 @@ function TakeAttempt({ attempt, assessment, onExit }) {
                 <button
                   key={i}
                   disabled={!!feedback}
+                  data-testid={`answer-option-${i}`}
                   onClick={() => setSelection(i)}
-                  data-testid={`option-${i}`}
                   className={[
                     "flex w-full items-center gap-3 rounded-md border px-4 py-3 text-start text-sm transition",
                     feedback

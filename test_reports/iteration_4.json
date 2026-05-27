@@ -1,0 +1,42 @@
+{
+  "summary": "Phase 5 (Module 4.6 Executive Analytics + NL Analytics Console + AI Examiner co-pilot) — full backend + frontend testing. 14/14 Phase 5 backend tests pass. Phase 1+2 regression: 18/18 pass. All 5 Analytics tabs + NL Console + AI Examiner dialog + institution switch all verified end-to-end against real LLM calls (Claude / OpenAI gpt-4o).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Analytics charts (initial mount)", "issues": ["Recharts logs width(-1)/height(-1) warnings on first paint before container measures. Cosmetic console warning only — charts render correctly after layout. Optionally wrap ResponsiveContainer with explicit minHeight to silence."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_phase5.py",
+    "/app/test_reports/pytest/pytest_phase5.xml",
+    "/app/backend/tests/backend_test.py"
+  ],
+  "action_items": [
+    "Pre-existing Phase 4 test brittleness (NOT a Phase 5 regression): /app/backend/tests/test_phase4.py::TestPsychometrics::test_summary, test_rules_list_4, test_patch_rule_disable_and_persist fail because previous Phase 4 testing run created TEST_new_rule, so EAIC rules count is now 5 (test asserts ==4). Tests should be updated to assert >=4 and filter by id, or seed cleanup needs to run. Phase 1+2 + Phase 5 are 100% green."
+  ],
+  "critical_code_review_comments": [
+    "INTENT_CATALOG dispatcher in routes_analytics.py is clean and well-bounded. The 'unsupported' branch with available_intents list is a great UX touch.",
+    "AI Examiner endpoint correctly enforces tenant scope BEFORE invoking the LLM (line 494 _scope check on item.institution_id) — cross-tenant test confirms 403 without burning an LLM call.",
+    "Audit logging is consistent: both analytics.nl_query and ai.examiner.run write to audit_logs with model + actor + ts. Verified via /compliance recent[].",
+    "Workforce heatmap correctly falls back to (target-2) when no learner profiles exist for a role — sensible default that keeps the UI populated.",
+    "Minor: Recharts ResponsiveContainer prints width(-1)/height(-1) warnings on initial mount in Analytics.jsx. Cosmetic only; charts render correctly after layout settles."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_phase5.py (new)"
+  ],
+  "success_rate": {
+    "backend": "100% (14/14 Phase 5 + 18/18 Phase 1+2 regression)",
+    "frontend": "100% (5 tabs + NL Console + Examiner dialog + institution switch all verified)"
+  },
+  "test_credentials": "Used as supplied: rajiv.admin@isb.edu / Demo@2026, fatima.admin@eaic.gov.ae / Demo@2026, admin@academiaos.ai / Admin@2026.",
+  "seed_data_creation": "None. Phase 5 tests are read-only against seeded data + real LLM calls. Each examiner test inserts one examiner_reports doc + audit_log entry (expected behaviour, no cleanup needed).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Phase 5 endpoints live: /api/analytics/{id}/{executive|workforce|compliance|ai-usage|programmes} (GET), /api/analytics/ask (POST), /api/assessments/items/{item_id}/examine (POST). Phase 5 test file: /app/backend/tests/test_phase5.py. Real LLM calls: each /analytics/ask takes ~1-3s; /examine takes ~12-18s. Sample seeded item ids: item-isb-strategy-1 (ISB / gpt-4o), item-eaic-border-1 (EAIC / claude). Institution UUIDs: ISB=11111111-1111-1111-1111-111111111111, EAIC=22222222-2222-2222-2222-222222222222, UoB=33333333-3333-3333-3333-333333333333. Frontend /analytics tabs: tab-exec, tab-workforce, tab-compliance, tab-ai-usage, tab-nl. NL Console: nl-input, nl-send, nl-suggested, nl-answer. Examiner button per item: examine-{item_id}. Institution switch: institution-switcher + institution-option-{short_name_lower}. NOTE for Phase 4 test_phase4.py: TestPsychometrics asserts exactly 4 EAIC rules, but prior runs created TEST_new_rule so 5 exist. Treat as test brittleness, not a regression.",
+  "rca_of_the_issue": "N/A — Phase 5 has no bugs. Phase 4 test brittleness is documented in action_items."
+}

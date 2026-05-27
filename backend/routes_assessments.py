@@ -484,4 +484,65 @@ def build_assessments_router(get_db, get_current_user):
         ).sort("started_at", -1).limit(100).to_list(100)
         return items
 
+    # ---------- AI Examiner co-pilot ----------
+    @router.post("/items/{item_id}/examine")
+    async def examine_item(item_id: str, user: dict = Depends(get_current_user)):
+        db = get_db()
+        item = await db.assessment_items.find_one({"id": item_id}, {"_id": 0})
+        if not item:
+            raise HTTPException(404, "Item not found")
+        await _scope(user, item["institution_id"])
+        # Pull source text if linked
+        source_text = ""
+        if item.get("source_id"):
+            src = await db.content_sources.find_one({"id": item["source_id"]}, {"_id": 0})
+            if src:
+                source_text = (src.get("text") or "")[:4000]
+
+        provider, model = await resolve_model(db, item["institution_id"], "assessments")
+        sys = (
+            "You are AcademiaOS AI Examiner — a senior assessment QA reviewer. "
+            "Calibrate an MCQ item for fairness, distractor quality, Bloom alignment "
+            "and source grounding. Be honest and concise."
+        )
+        opts = "\n".join(f"  {chr(65+i)}. {o}{' (KEY)' if i == item.get('correct_index') else ''}" for i, o in enumerate(item.get("options", [])))
+        user_text = (
+            f"### ITEM\nStem: {item['stem']}\nOptions:\n{opts}\n"
+            f"Stated difficulty: {item.get('difficulty')}\nStated Bloom: {item.get('bloom')}\n\n"
+            f"### SOURCE (if any)\n{source_text or '(no source linked)'}\n\n"
+            "Return JSON with schema: {"
+            "overall_score:int(0-100), verdict:'pass'|'revise'|'reject', "
+            "fairness:{score:int(0-100), notes:string}, "
+            "distractor_quality:{score:int(0-100), weakest_letter:string, notes:string}, "
+            "bloom_alignment:{stated:string, suggested:string, notes:string}, "
+            "source_grounding:{score:int(0-100), notes:string}, "
+            "suggestions:[string], "
+            "revised_stem:string|null}"
+        )
+        try:
+            data = await generate_json(
+                system_message=sys, user_text=user_text, provider=provider, model=model, max_tokens=900
+            )
+        except Exception as e:
+            raise HTTPException(502, f"AI provider error: {e}")
+
+        out = {
+            "id": str(uuid.uuid4()),
+            "item_id": item_id,
+            "assessment_id": item.get("assessment_id"),
+            "institution_id": item["institution_id"],
+            "model": f"{provider}/{model}",
+            "examined_by": user["name"],
+            "examined_at": now_iso(),
+            "report": data,
+        }
+        await db.examiner_reports.insert_one(dict(out))
+        await db.audit_logs.insert_one({
+            "id": str(uuid.uuid4()), "institution_id": item["institution_id"],
+            "action": "ai.examiner.run", "target": item_id,
+            "actor": user["email"], "model": out["model"], "ts": now_iso(),
+        })
+        out.pop("_id", None)
+        return out
+
     return router

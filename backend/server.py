@@ -437,6 +437,7 @@ from seed_phase4 import SEED_ASSESSMENTS, SEED_PSYCH_RULES, SEED_PSYCH_EVENTS
 import routes_ai
 import routes_assessments
 import routes_psychometrics
+import routes_analytics
 from collections import Counter
 from ai_service import chunk_text, _tokens
 
@@ -607,6 +608,7 @@ app.include_router(api)
 app.include_router(routes_ai.build_router(lambda: db, get_current_user))
 app.include_router(routes_assessments.build_assessments_router(lambda: db, get_current_user))
 app.include_router(routes_psychometrics.build_psychometrics_router(lambda: db, get_current_user))
+app.include_router(routes_analytics.build_analytics_router(lambda: db, get_current_user))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

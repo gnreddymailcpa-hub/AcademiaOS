@@ -46,6 +46,7 @@ import {
   Target,
   ChevronRight,
   ChevronLeft,
+  ScanSearch,
 } from "lucide-react";
 import { useInstitution } from "../context/InstitutionContext";
 import { useLang } from "../context/LanguageContext";
@@ -267,6 +268,7 @@ function AssessmentDetail({ assessment, sources, onBack, onStart, onChanged }) {
   const [genOpen, setGenOpen] = useState(false);
   const [gen, setGen] = useState({ source_id: "", count: 6, difficulty: "intermediate", bloom: "Apply", language: "en" });
   const [busy, setBusy] = useState(false);
+  const [examining, setExamining] = useState(null); // {item_id, loading, report}
 
   const load = async () => {
     const [it, at] = await Promise.all([
@@ -304,6 +306,17 @@ function AssessmentDetail({ assessment, sources, onBack, onStart, onChanged }) {
       toast.error("Generation failed", { description: e?.response?.data?.detail });
     } finally {
       setBusy(false);
+    }
+  };
+
+  const examine = async (item) => {
+    setExamining({ item_id: item.id, item, loading: true, report: null });
+    try {
+      const { data } = await api.post(`/assessments/items/${item.id}/examine`);
+      setExamining({ item_id: item.id, item, loading: false, report: data });
+    } catch (e) {
+      toast.error("Examiner failed");
+      setExamining(null);
     }
   };
 
@@ -432,6 +445,15 @@ function AssessmentDetail({ assessment, sources, onBack, onStart, onChanged }) {
                             {it.difficulty}
                           </Badge>
                           <Badge variant="secondary" className="text-[10px]">{it.bloom}</Badge>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 mt-1"
+                            onClick={() => examine(it)}
+                            data-testid={`examine-${it.id}`}
+                          >
+                            <ScanSearch className="h-3.5 w-3.5 me-1" /> Examine
+                          </Button>
                         </div>
                       </div>
                     </li>
@@ -502,6 +524,93 @@ function AssessmentDetail({ assessment, sources, onBack, onStart, onChanged }) {
           <AssessmentAnalytics attempts={attempts} />
         </TabsContent>
       </Tabs>
+
+      <ExaminerDialog state={examining} onClose={() => setExamining(null)} />
+    </div>
+  );
+}
+
+function ExaminerDialog({ state, onClose }) {
+  if (!state) return null;
+  const r = state.report?.report;
+  const verdictStyle = {
+    pass: "border-emerald-300 bg-emerald-50 text-emerald-700",
+    revise: "border-amber-300 bg-amber-50 text-amber-700",
+    reject: "border-rose-300 bg-rose-50 text-rose-700",
+  }[r?.verdict] || "";
+  return (
+    <Dialog open={!!state} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <ScanSearch className="h-4 w-4 text-primary" />
+            AI Examiner · item calibration
+            {state.report?.model && (
+              <Badge variant="secondary" className="text-[10px] font-mono">{state.report.model}</Badge>
+            )}
+          </DialogTitle>
+          <DialogDescription className="text-xs">
+            Fairness · distractor quality · Bloom alignment · source grounding. Audit-logged.
+          </DialogDescription>
+        </DialogHeader>
+        {state.loading && (
+          <div className="py-10 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Calibrating against approved source…
+          </div>
+        )}
+        {r && (
+          <div className="space-y-4 text-sm">
+            <div className="rounded-md border border-border bg-card p-4 flex items-center justify-between">
+              <div>
+                <div className="label-eyebrow">Overall score</div>
+                <div className="mt-1 text-4xl font-semibold tabular-nums">{r.overall_score}</div>
+              </div>
+              {r.verdict && (
+                <Badge variant="outline" className={`text-xs uppercase ${verdictStyle}`}>{r.verdict}</Badge>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <ExamCard label="Fairness" score={r.fairness?.score} notes={r.fairness?.notes} />
+              <ExamCard label="Distractor quality" score={r.distractor_quality?.score} notes={r.distractor_quality?.notes} hint={r.distractor_quality?.weakest_letter ? `Weakest: ${r.distractor_quality.weakest_letter}` : null} />
+              <ExamCard label="Bloom alignment" score={null} notes={r.bloom_alignment?.notes} hint={r.bloom_alignment ? `${r.bloom_alignment.stated} → ${r.bloom_alignment.suggested}` : null} />
+              <ExamCard label="Source grounding" score={r.source_grounding?.score} notes={r.source_grounding?.notes} />
+            </div>
+
+            {r.suggestions?.length > 0 && (
+              <div className="rounded-md border border-border bg-muted/30 p-3">
+                <div className="label-eyebrow mb-2">Suggestions</div>
+                <ul className="list-disc ps-5 space-y-1 text-xs">
+                  {r.suggestions.map((s, i) => <li key={i}>{s}</li>)}
+                </ul>
+              </div>
+            )}
+
+            {r.revised_stem && (
+              <div className="rounded-md border border-primary/30 bg-primary/5 p-3">
+                <div className="label-eyebrow mb-1">Suggested revised stem</div>
+                <div className="text-sm">{r.revised_stem}</div>
+              </div>
+            )}
+          </div>
+        )}
+        <DialogFooter>
+          <Button onClick={onClose}>Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ExamCard({ label, score, notes, hint }) {
+  return (
+    <div className="rounded-md border border-border p-3">
+      <div className="flex items-center justify-between">
+        <div className="label-eyebrow">{label}</div>
+        {score != null && <div className="text-2xl font-semibold tabular-nums">{score}</div>}
+      </div>
+      {hint && <div className="text-[11px] text-muted-foreground mt-1">{hint}</div>}
+      {notes && <div className="text-xs mt-2 leading-relaxed text-foreground/80">{notes}</div>}
     </div>
   );
 }

@@ -25,6 +25,7 @@ import AIAdvisor from "./pages/AIAdvisor";
 import StudentAssistant from "./pages/StudentAssistant";
 import Assessments from "./pages/Assessments";
 import Psychometrics from "./pages/Psychometrics";
+import Analytics from "./pages/Analytics";
 
 function LoginRoute() {
   const { user, loading } = useAuth();
@@ -49,22 +50,7 @@ function ShellRoutes() {
         <Route path="/student-assistant" element={<StudentAssistant />} />
         <Route path="/assessments" element={<Assessments />} />
         <Route path="/psychometrics" element={<Psychometrics />} />
-        <Route
-          path="/analytics"
-          element={
-            <ComingSoon
-              eyebrow="Module 7"
-              title="Executive Analytics"
-              phase="Phase 5"
-              description="Role-based dashboards and natural-language analytics console for leadership."
-              features={[
-                "Dean / Faculty / HR / Compliance dashboards",
-                "Natural language analytics console (EN / AR)",
-                "Workforce readiness & training ROI",
-              ]}
-            />
-          }
-        />
+        <Route path="/analytics" element={<Analytics />} />
         <Route
           path="/workflows"
           element={

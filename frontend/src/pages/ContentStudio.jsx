@@ -38,6 +38,7 @@ import {
   Lightbulb,
   Loader2,
   Plus,
+  Download,
 } from "lucide-react";
 
 const KIND_META = {
@@ -118,6 +119,20 @@ export default function ContentStudio() {
     await api.post(`/ai/content/${id}/approve`);
     toast.success("Source approved · indexed for RAG");
     load();
+  };
+
+  const downloadSource = async (s) => {
+    try {
+      const r = await api.get(`/ai/content/sources/${s.id}/download`, { responseType: "blob" });
+      const url = URL.createObjectURL(r.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = s.original_filename || s.filename || `source-${s.id}`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      toast.error("Download failed");
+    }
   };
 
   const generate = async () => {
@@ -273,11 +288,22 @@ export default function ContentStudio() {
                   </div>
                   <div className="mt-1 text-[11px] text-muted-foreground">
                     {s.kind.replace("_", " ")} · {s.uploaded_by || "—"}
+                    {s.filename && s.size_bytes ? ` · ${(s.size_bytes / 1024).toFixed(1)} KB` : ""}
                   </div>
                   <p className="mt-3 text-xs text-muted-foreground line-clamp-3 leading-relaxed">
                     {s.text?.slice(0, 200) || "No text extracted"}
                   </p>
-                  <div className="mt-3 flex gap-2">
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {s.filename && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => downloadSource(s)}
+                        data-testid={`download-source-${s.id}`}
+                      >
+                        <Download className="h-3.5 w-3.5 me-1" /> Download
+                      </Button>
+                    )}
                     {!s.approved && (
                       <Button
                         size="sm"

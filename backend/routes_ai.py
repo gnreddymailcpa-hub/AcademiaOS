@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request, Body
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 import ai_service
@@ -26,6 +27,51 @@ logger = logging.getLogger("academiaos.ai_routes")
 
 UPLOAD_DIR = os.environ.get("UPLOAD_DIR", "/app/uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# File-type constraints
+ALLOWED_MIME = {
+    "application/pdf": ".pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
+    "text/plain": ".txt",
+    "text/markdown": ".md",
+}
+MAX_BYTES = 25 * 1024 * 1024  # 25 MB
+
+
+def _extract_text(path: str, ext: str) -> str:
+    """Best-effort text extraction by file extension. Returns first 60k chars."""
+    ext = (ext or "").lower()
+    try:
+        if ext == ".pdf":
+            from pypdf import PdfReader
+            reader = PdfReader(path)
+            parts = []
+            for page in reader.pages[:120]:
+                try:
+                    parts.append(page.extract_text() or "")
+                except Exception:
+                    continue
+            return "\n\n".join(parts)[:60000]
+        if ext == ".docx":
+            from docx import Document
+            doc = Document(path)
+            return "\n".join(p.text for p in doc.paragraphs if p.text)[:60000]
+        if ext == ".pptx":
+            from pptx import Presentation
+            prs = Presentation(path)
+            chunks = []
+            for slide in prs.slides:
+                for shape in slide.shapes:
+                    if hasattr(shape, "text") and shape.text:
+                        chunks.append(shape.text)
+            return "\n".join(chunks)[:60000]
+        # txt / md / fallback
+        with open(path, "rb") as f:
+            return f.read().decode("utf-8", errors="ignore")[:60000]
+    except Exception as e:
+        logger.exception("Text extraction failed for %s: %s", path, e)
+        return ""
 
 
 def build_router(get_db, get_current_user):
@@ -112,21 +158,43 @@ def build_router(get_db, get_current_user):
 
         source_id = str(uuid.uuid4())
         filename = None
+        stored_ext = None
+        size_bytes = 0
+        mime = None
         body_text = text or ""
         if file is not None:
-            filename = f"{source_id}-{file.filename}"
+            # MIME / extension validation
+            mime = (file.content_type or "").lower()
+            raw_name = file.filename or "upload.bin"
+            ext = os.path.splitext(raw_name)[1].lower()
+            if mime in ALLOWED_MIME:
+                stored_ext = ALLOWED_MIME[mime]
+            elif ext in {".pdf", ".docx", ".pptx", ".txt", ".md"}:
+                stored_ext = ext
+            else:
+                raise HTTPException(415, f"Unsupported file type: {mime or ext or 'unknown'}. Allowed: PDF, DOCX, PPTX, TXT, MD.")
+
+            filename = f"{source_id}{stored_ext}"
             target = os.path.join(UPLOAD_DIR, filename)
-            with open(target, "wb") as f:
-                shutil.copyfileobj(file.file, f)
-            # very simple text extraction: read as text if utf8-decodable
-            try:
-                with open(target, "rb") as f:
-                    raw = f.read()
-                body_text = raw.decode("utf-8", errors="ignore")
-                # keep first 30k chars for demo
-                body_text = body_text[:30000]
-            except Exception:
-                body_text = body_text or ""
+            # streamed write with size cap
+            with open(target, "wb") as out:
+                while True:
+                    chunk = await file.read(1024 * 64)
+                    if not chunk:
+                        break
+                    size_bytes += len(chunk)
+                    if size_bytes > MAX_BYTES:
+                        out.close()
+                        try:
+                            os.remove(target)
+                        except OSError:
+                            pass
+                        raise HTTPException(413, f"File too large (max {MAX_BYTES // (1024*1024)} MB)")
+                    out.write(chunk)
+            # type-aware extraction
+            body_text = _extract_text(target, stored_ext)
+            if not body_text and not (text or "").strip():
+                logger.warning("No text extracted from %s — proceeding with empty body", filename)
 
         doc = {
             "id": source_id,
@@ -135,6 +203,9 @@ def build_router(get_db, get_current_user):
             "title": title,
             "kind": kind,
             "filename": filename,
+            "original_filename": (file.filename if file else None),
+            "mime": mime,
+            "size_bytes": size_bytes,
             "text": body_text,
             "uploaded_by": user.get("name"),
             "uploaded_at": now_iso(),
@@ -147,10 +218,30 @@ def build_router(get_db, get_current_user):
             "action": "content.upload",
             "target": source_id,
             "actor": user["email"],
+            "size_bytes": size_bytes,
+            "mime": mime,
             "ts": now_iso(),
         })
         doc.pop("_id", None)
         return doc
+
+    @router.get("/content/sources/{source_id}/download")
+    async def download_source(source_id: str, user: dict = Depends(get_current_user)):
+        db = get_db()
+        src = await db.content_sources.find_one({"id": source_id}, {"_id": 0})
+        if not src:
+            raise HTTPException(404, "Source not found")
+        await _scope(user, src["institution_id"])
+        if not src.get("filename"):
+            raise HTTPException(404, "This source has no uploaded file")
+        path = os.path.join(UPLOAD_DIR, src["filename"])
+        if not os.path.isfile(path):
+            raise HTTPException(404, "Stored file missing on disk")
+        return FileResponse(
+            path,
+            media_type=src.get("mime") or "application/octet-stream",
+            filename=src.get("original_filename") or src["filename"],
+        )
 
     @router.post("/content/{source_id}/approve")
     async def approve_source(source_id: str, user: dict = Depends(get_current_user)):

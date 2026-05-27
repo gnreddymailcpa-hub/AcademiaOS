@@ -1,0 +1,38 @@
+{
+  "summary": "Phase 7 P1 follow-ups verified end-to-end. Backend pytest (15/15 passed) covers full academic CRUD (campuses/departments/programmes/courses/cohorts) with audit-log writes, tenant-isolation 403s, institution PATCH persistence of ai_config + governance (with institution.update audit changes), real PDF upload with pypdf text extraction + on-disk persistence under /app/uploads, 415 on unsupported MIME, binary download with proper Content-Type, cross-tenant 403, missing-source 404. Frontend Playwright run validated: Institution Setup wizard (4 panes) saves provider=claude_sonnet + tone=academic + max_tokens=1024 + audit_level=Forensic and these values are restored after reload; Academic Structure 'New' dropdown reveals all five entity options; Campus/Department/Programme/Course/Cohort created end-to-end via dialogs and toast 'Audit log updated' confirmed; hover Row Actions menu with edit pre-fill works (edited Post Graduate Programme); Content Studio PDF upload via dialog yields a card with extracted text snippet ('TEST_UI_UPLOAD content studio Second line for extraction.'), size '1.4 KB', and a Download button that triggers a 1413-byte binary download.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Dashboard (post-login)", "issues": ["Recharts ResponsiveContainer logs width(-1)/height(-1) warnings on first render. Cosmetic only, no broken charts after layout settles."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_phase7.py",
+    "/app/test_reports/pytest/pytest_phase7.xml"
+  ],
+  "action_items": [
+    "OPTIONAL: investigate the chart container width(-1)/height(-1) warnings on the Dashboard right after login.",
+    "OPTIONAL: cleanup TEST_UI prefixed academic entries (campus/dept/programme/course/cohort) and TEST_UI PDF source created during UI testing."
+  ],
+  "critical_code_review_comments": [
+    "/app/backend/server.py is 784 lines and contains models + auth + tenants + academic CRUD + audit emitters. Should be split (e.g., routers/academic.py, routers/institutions.py, models.py) before it grows further.",
+    "Academic POST endpoints require the client to send institution_id in the body even though the path already scopes the tenant; the path value is then forced onto the payload. Cleaner: make institution_id optional in the Pydantic models for create payloads, or accept entity-specific Create schemas without institution_id.",
+    "Content Studio download exposes uploaded filenames directly under /app/uploads. Consider Content-Disposition with sanitised filename plus an ETag/Cache-Control header to play nicer with CDN-style ingress.",
+    "Frontend ContentStudio shows Download for any source that has filename in DB; the three seed lecture-notes sources (no filename) correctly suppress it. Add a tooltip clarifying why some sources are non-downloadable if a non-trivial number of seed items remain."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_phase7.py"
+  ],
+  "success_rate": {"backend": "100% (15/15)", "frontend": "100% on tested flows"},
+  "test_credentials": "rajiv.admin@isb.edu / Demo@2026 (ISB); fatima.admin@eaic.gov.ae / Demo@2026 (EAIC); admin@academiaos.ai / Admin@2026 (super)",
+  "seed_data_creation": "Created and left behind during UI testing (manual cleanup optional): 1 ISB campus, 1 ISB department, 1 ISB programme, 1 ISB course, 1 ISB cohort all prefixed TEST_UI, and one ISB content source 'TEST_UI PDF Source' with a 1.4KB PDF stored under /app/uploads. Pytest tests are self-cleaning (delete after assert).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All Phase 7 P1 items pass. Tenant IDs used: ISB=11111111-1111-1111-1111-111111111111, EAIC=22222222-2222-2222-2222-222222222222. Academic CRUD requires institution_id in body even when path scopes the tenant — this is a known model quirk, not a bug. Reuse /app/backend/tests/test_phase7.py as a regression harness.",
+  "rca of the issue": "N/A — no failing scenarios."
+}

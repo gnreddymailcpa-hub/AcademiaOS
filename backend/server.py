@@ -297,9 +297,22 @@ async def create_institution(payload: Institution, user: dict = Depends(get_curr
 async def update_institution(institution_id: str, payload: dict, user: dict = Depends(get_current_user)):
     if user["role"] not in ("super_admin", "institution_admin"):
         raise HTTPException(403, "Forbidden")
+    if user["role"] != "super_admin" and user.get("institution_id") != institution_id:
+        raise HTTPException(403, "Forbidden")
     payload.pop("id", None)
     payload.pop("_id", None)
-    await db.institutions.update_one({"id": institution_id}, {"$set": payload})
+    res = await db.institutions.update_one({"id": institution_id}, {"$set": payload})
+    if res.matched_count == 0:
+        raise HTTPException(404, "Institution not found")
+    await db.audit_logs.insert_one({
+        "id": str(uuid.uuid4()),
+        "institution_id": institution_id,
+        "action": "institution.update",
+        "target": institution_id,
+        "actor": user["email"],
+        "changes": list(payload.keys()),
+        "ts": datetime.now(timezone.utc).isoformat(),
+    })
     inst = await db.institutions.find_one({"id": institution_id}, {"_id": 0})
     return inst
 
@@ -313,6 +326,21 @@ async def _scoped_query(user: dict, institution_id: str) -> dict:
     return {"institution_id": institution_id}
 
 
+async def _audit_academic(
+    institution_id: str, action: str, target: str, actor: str, **extra
+):
+    await db.audit_logs.insert_one({
+        "id": str(uuid.uuid4()),
+        "institution_id": institution_id,
+        "action": action,
+        "target": target,
+        "actor": actor,
+        "ts": datetime.now(timezone.utc).isoformat(),
+        **extra,
+    })
+
+
+# ---- Campuses ----
 @api.get("/academic/{institution_id}/campuses")
 async def list_campuses(institution_id: str, user: dict = Depends(get_current_user)):
     q = await _scoped_query(user, institution_id)
@@ -323,10 +351,34 @@ async def list_campuses(institution_id: str, user: dict = Depends(get_current_us
 async def create_campus(institution_id: str, payload: Campus, user: dict = Depends(get_current_user)):
     await _scoped_query(user, institution_id)
     payload.institution_id = institution_id
-    await db.campuses.insert_one(payload.model_dump())
-    return payload.model_dump()
+    doc = payload.model_dump()
+    await db.campuses.insert_one(doc)
+    await _audit_academic(institution_id, "academic.campus.create", doc["id"], user["email"], name=doc["name"])
+    return doc_clean(doc)
 
 
+@api.patch("/academic/{institution_id}/campuses/{campus_id}")
+async def update_campus(institution_id: str, campus_id: str, payload: dict, user: dict = Depends(get_current_user)):
+    await _scoped_query(user, institution_id)
+    payload.pop("id", None); payload.pop("_id", None); payload.pop("institution_id", None)
+    res = await db.campuses.update_one({"id": campus_id, "institution_id": institution_id}, {"$set": payload})
+    if res.matched_count == 0:
+        raise HTTPException(404, "Campus not found")
+    await _audit_academic(institution_id, "academic.campus.update", campus_id, user["email"], changes=payload)
+    return await db.campuses.find_one({"id": campus_id}, {"_id": 0})
+
+
+@api.delete("/academic/{institution_id}/campuses/{campus_id}")
+async def delete_campus(institution_id: str, campus_id: str, user: dict = Depends(get_current_user)):
+    await _scoped_query(user, institution_id)
+    res = await db.campuses.delete_one({"id": campus_id, "institution_id": institution_id})
+    if res.deleted_count == 0:
+        raise HTTPException(404, "Campus not found")
+    await _audit_academic(institution_id, "academic.campus.delete", campus_id, user["email"])
+    return {"ok": True}
+
+
+# ---- Departments ----
 @api.get("/academic/{institution_id}/departments")
 async def list_departments(institution_id: str, user: dict = Depends(get_current_user)):
     q = await _scoped_query(user, institution_id)
@@ -337,10 +389,34 @@ async def list_departments(institution_id: str, user: dict = Depends(get_current
 async def create_department(institution_id: str, payload: Department, user: dict = Depends(get_current_user)):
     await _scoped_query(user, institution_id)
     payload.institution_id = institution_id
-    await db.departments.insert_one(payload.model_dump())
-    return payload.model_dump()
+    doc = payload.model_dump()
+    await db.departments.insert_one(doc)
+    await _audit_academic(institution_id, "academic.department.create", doc["id"], user["email"], name=doc["name"])
+    return doc_clean(doc)
 
 
+@api.patch("/academic/{institution_id}/departments/{department_id}")
+async def update_department(institution_id: str, department_id: str, payload: dict, user: dict = Depends(get_current_user)):
+    await _scoped_query(user, institution_id)
+    payload.pop("id", None); payload.pop("_id", None); payload.pop("institution_id", None)
+    res = await db.departments.update_one({"id": department_id, "institution_id": institution_id}, {"$set": payload})
+    if res.matched_count == 0:
+        raise HTTPException(404, "Department not found")
+    await _audit_academic(institution_id, "academic.department.update", department_id, user["email"], changes=payload)
+    return await db.departments.find_one({"id": department_id}, {"_id": 0})
+
+
+@api.delete("/academic/{institution_id}/departments/{department_id}")
+async def delete_department(institution_id: str, department_id: str, user: dict = Depends(get_current_user)):
+    await _scoped_query(user, institution_id)
+    res = await db.departments.delete_one({"id": department_id, "institution_id": institution_id})
+    if res.deleted_count == 0:
+        raise HTTPException(404, "Department not found")
+    await _audit_academic(institution_id, "academic.department.delete", department_id, user["email"])
+    return {"ok": True}
+
+
+# ---- Programmes ----
 @api.get("/academic/{institution_id}/programmes")
 async def list_programmes(institution_id: str, user: dict = Depends(get_current_user)):
     q = await _scoped_query(user, institution_id)
@@ -351,17 +427,34 @@ async def list_programmes(institution_id: str, user: dict = Depends(get_current_
 async def create_programme(institution_id: str, payload: Programme, user: dict = Depends(get_current_user)):
     await _scoped_query(user, institution_id)
     payload.institution_id = institution_id
-    await db.programmes.insert_one(payload.model_dump())
-    return payload.model_dump()
+    doc = payload.model_dump()
+    await db.programmes.insert_one(doc)
+    await _audit_academic(institution_id, "academic.programme.create", doc["id"], user["email"], name=doc["name"])
+    return doc_clean(doc)
+
+
+@api.patch("/academic/{institution_id}/programmes/{programme_id}")
+async def update_programme(institution_id: str, programme_id: str, payload: dict, user: dict = Depends(get_current_user)):
+    await _scoped_query(user, institution_id)
+    payload.pop("id", None); payload.pop("_id", None); payload.pop("institution_id", None)
+    res = await db.programmes.update_one({"id": programme_id, "institution_id": institution_id}, {"$set": payload})
+    if res.matched_count == 0:
+        raise HTTPException(404, "Programme not found")
+    await _audit_academic(institution_id, "academic.programme.update", programme_id, user["email"], changes=payload)
+    return await db.programmes.find_one({"id": programme_id}, {"_id": 0})
 
 
 @api.delete("/academic/{institution_id}/programmes/{programme_id}")
 async def delete_programme(institution_id: str, programme_id: str, user: dict = Depends(get_current_user)):
     await _scoped_query(user, institution_id)
-    await db.programmes.delete_one({"id": programme_id, "institution_id": institution_id})
+    res = await db.programmes.delete_one({"id": programme_id, "institution_id": institution_id})
+    if res.deleted_count == 0:
+        raise HTTPException(404, "Programme not found")
+    await _audit_academic(institution_id, "academic.programme.delete", programme_id, user["email"])
     return {"ok": True}
 
 
+# ---- Courses ----
 @api.get("/academic/{institution_id}/courses")
 async def list_courses(institution_id: str, user: dict = Depends(get_current_user)):
     q = await _scoped_query(user, institution_id)
@@ -372,14 +465,69 @@ async def list_courses(institution_id: str, user: dict = Depends(get_current_use
 async def create_course(institution_id: str, payload: Course, user: dict = Depends(get_current_user)):
     await _scoped_query(user, institution_id)
     payload.institution_id = institution_id
-    await db.courses.insert_one(payload.model_dump())
-    return payload.model_dump()
+    doc = payload.model_dump()
+    await db.courses.insert_one(doc)
+    await _audit_academic(institution_id, "academic.course.create", doc["id"], user["email"], title=doc["title"])
+    return doc_clean(doc)
 
 
+@api.patch("/academic/{institution_id}/courses/{course_id}")
+async def update_course(institution_id: str, course_id: str, payload: dict, user: dict = Depends(get_current_user)):
+    await _scoped_query(user, institution_id)
+    payload.pop("id", None); payload.pop("_id", None); payload.pop("institution_id", None)
+    res = await db.courses.update_one({"id": course_id, "institution_id": institution_id}, {"$set": payload})
+    if res.matched_count == 0:
+        raise HTTPException(404, "Course not found")
+    await _audit_academic(institution_id, "academic.course.update", course_id, user["email"], changes=payload)
+    return await db.courses.find_one({"id": course_id}, {"_id": 0})
+
+
+@api.delete("/academic/{institution_id}/courses/{course_id}")
+async def delete_course(institution_id: str, course_id: str, user: dict = Depends(get_current_user)):
+    await _scoped_query(user, institution_id)
+    res = await db.courses.delete_one({"id": course_id, "institution_id": institution_id})
+    if res.deleted_count == 0:
+        raise HTTPException(404, "Course not found")
+    await _audit_academic(institution_id, "academic.course.delete", course_id, user["email"])
+    return {"ok": True}
+
+
+# ---- Cohorts ----
 @api.get("/academic/{institution_id}/cohorts")
 async def list_cohorts(institution_id: str, user: dict = Depends(get_current_user)):
     q = await _scoped_query(user, institution_id)
     return docs_clean(await db.cohorts.find(q, {"_id": 0}).to_list(500))
+
+
+@api.post("/academic/{institution_id}/cohorts")
+async def create_cohort(institution_id: str, payload: Cohort, user: dict = Depends(get_current_user)):
+    await _scoped_query(user, institution_id)
+    payload.institution_id = institution_id
+    doc = payload.model_dump()
+    await db.cohorts.insert_one(doc)
+    await _audit_academic(institution_id, "academic.cohort.create", doc["id"], user["email"], name=doc["name"])
+    return doc_clean(doc)
+
+
+@api.patch("/academic/{institution_id}/cohorts/{cohort_id}")
+async def update_cohort(institution_id: str, cohort_id: str, payload: dict, user: dict = Depends(get_current_user)):
+    await _scoped_query(user, institution_id)
+    payload.pop("id", None); payload.pop("_id", None); payload.pop("institution_id", None)
+    res = await db.cohorts.update_one({"id": cohort_id, "institution_id": institution_id}, {"$set": payload})
+    if res.matched_count == 0:
+        raise HTTPException(404, "Cohort not found")
+    await _audit_academic(institution_id, "academic.cohort.update", cohort_id, user["email"], changes=payload)
+    return await db.cohorts.find_one({"id": cohort_id}, {"_id": 0})
+
+
+@api.delete("/academic/{institution_id}/cohorts/{cohort_id}")
+async def delete_cohort(institution_id: str, cohort_id: str, user: dict = Depends(get_current_user)):
+    await _scoped_query(user, institution_id)
+    res = await db.cohorts.delete_one({"id": cohort_id, "institution_id": institution_id})
+    if res.deleted_count == 0:
+        raise HTTPException(404, "Cohort not found")
+    await _audit_academic(institution_id, "academic.cohort.delete", cohort_id, user["email"])
+    return {"ok": True}
 
 
 # ---------------------------------------------------------------------------

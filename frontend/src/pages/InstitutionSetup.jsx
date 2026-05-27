@@ -33,6 +33,8 @@ export default function InstitutionSetup() {
 
   useEffect(() => {
     if (!current) return;
+    const ai = current.ai_config || {};
+    const gov = current.governance || {};
     setForm({
       name: current.name || "",
       short_name: current.short_name || "",
@@ -44,15 +46,15 @@ export default function InstitutionSetup() {
       data_residency: current.data_residency || "",
       compliance_framework: current.compliance_framework || "",
       description: current.description || "",
-      ai_provider: "openai_gpt4o",
-      ai_tone: "Professional · concise",
-      embedding_model: "text-embedding-3-large",
-      response_max: 480,
-      citations_required: true,
-      hitl_irreversible: true,
-      bias_audit: true,
-      consent_required: true,
-      audit_level: "Verbose",
+      ai_provider: ai.provider || "openai_gpt4o",
+      ai_tone: ai.tone || "Professional · concise",
+      embedding_model: ai.embedding_model || "text-embedding-3-large",
+      response_max: ai.max_tokens || 480,
+      citations_required: ai.citations_required ?? true,
+      hitl_irreversible: ai.hitl_irreversible ?? true,
+      bias_audit: gov.bias_audit ?? true,
+      consent_required: gov.consent_required ?? true,
+      audit_level: gov.audit_level || "Verbose",
     });
     setStep(0);
   }, [current?.id]);
@@ -75,6 +77,19 @@ export default function InstitutionSetup() {
         data_residency: form.data_residency || null,
         compliance_framework: form.compliance_framework || null,
         description: form.description || null,
+        ai_config: {
+          provider: form.ai_provider,
+          tone: form.ai_tone,
+          embedding_model: form.embedding_model,
+          max_tokens: form.response_max,
+          citations_required: form.citations_required,
+          hitl_irreversible: form.hitl_irreversible,
+        },
+        governance: {
+          audit_level: form.audit_level,
+          bias_audit: form.bias_audit,
+          consent_required: form.consent_required,
+        },
       });
       await refresh();
       toast.success("Institution profile saved", { description: "Audit log updated" });

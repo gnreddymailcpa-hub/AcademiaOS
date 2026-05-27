@@ -17,7 +17,7 @@ export default function InstitutionSwitcher() {
     <DropdownMenu>
       <DropdownMenuTrigger
         data-testid="institution-switcher"
-        className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-muted/60 transition-colors min-w-[200px]"
+        className="flex items-center gap-2 rounded-md border border-border bg-card px-2 md:px-3 py-1.5 text-sm hover:bg-muted/60 transition-colors md:min-w-[200px] max-w-[200px]"
       >
         {current.logo_url ? (
           <img

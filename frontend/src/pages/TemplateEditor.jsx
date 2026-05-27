@@ -3,6 +3,7 @@ import {
   DndContext,
   closestCenter,
   PointerSensor,
+  KeyboardSensor,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
@@ -11,6 +12,7 @@ import {
   arrayMove,
   useSortable,
   verticalListSortingStrategy,
+  sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
@@ -226,7 +228,10 @@ export default function TemplateEditor({ open, onClose, template, onSave }) {
     if (open) setDraft(fromTemplate(template));
   }, [open, template]);
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   const onDragEnd = ({ active, over }) => {
     if (!over || active.id === over.id) return;

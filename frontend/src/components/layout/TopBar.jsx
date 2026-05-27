@@ -34,7 +34,7 @@ export default function TopBar() {
       className="sticky top-0 z-40 h-16 border-b border-border bg-card/80 backdrop-blur-xl"
       data-testid="top-bar"
     >
-      <div className="flex h-full items-center gap-4 px-6">
+      <div className="flex h-full items-center gap-2 md:gap-4 px-3 md:px-6 min-w-0">
         <InstitutionSwitcher />
 
         <div className="relative max-w-md flex-1 hidden md:block">
@@ -47,10 +47,10 @@ export default function TopBar() {
           />
         </div>
 
-        <div className="ms-auto flex items-center gap-3">
+        <div className="ms-auto flex items-center gap-2 md:gap-3 min-w-0">
           <Badge
             variant="outline"
-            className="hidden sm:flex items-center gap-1.5 border-emerald-200 bg-emerald-50 text-emerald-700"
+            className="hidden lg:flex items-center gap-1.5 border-emerald-200 bg-emerald-50 text-emerald-700"
             data-testid="ai-status-indicator"
           >
             <span className="dot-pulse" />
@@ -62,7 +62,7 @@ export default function TopBar() {
 
           <button
             data-testid="notifications-button"
-            className="relative flex h-9 w-9 items-center justify-center rounded-md border border-border bg-card hover:bg-muted/60 transition"
+            className="relative hidden sm:flex h-9 w-9 items-center justify-center rounded-md border border-border bg-card hover:bg-muted/60 transition"
             aria-label="Notifications"
           >
             <Bell className="h-4 w-4 text-foreground/70" />
@@ -74,7 +74,7 @@ export default function TopBar() {
           <DropdownMenu>
             <DropdownMenuTrigger
               data-testid="user-menu-trigger"
-              className="flex items-center gap-2 rounded-md border border-border bg-card px-2 py-1 hover:bg-muted/60 transition"
+              className="flex shrink-0 items-center gap-2 rounded-md border border-border bg-card px-2 py-1 hover:bg-muted/60 transition"
             >
               <Avatar className="h-7 w-7">
                 <AvatarFallback className="text-[11px] font-semibold bg-primary text-primary-foreground">

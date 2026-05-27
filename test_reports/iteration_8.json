@@ -1,0 +1,29 @@
+{
+  "summary": "Re-tested ONLY the two iteration_7 regressions on /workflows. Both fixes verified end-to-end. (1) Mobile topbar overflow at 414x800 is gone: body.scrollWidth == body.clientWidth == 414 (was 453). InstitutionSwitcher (max-w-[200px]) measures 120.8px, user-menu pill ends at right=402px (well within 414px). Notifications bell is correctly hidden below sm by design (offsetWidth=0, classed 'hidden sm:flex'). LanguageSwitcher trigger is rendered (test selector returned null because the component does not have a top-level data-testid='language-switcher' on the trigger, but the EN icon is visible in the screenshot to the right of the tenant pill). Mobile drawer still works: mobile-menu-toggle opens the sidebar overlay, clicking mobile-overlay closes it. (2) dnd-kit keyboard reorder in TemplateEditor now works: focused tpl-step-handle-0, pressed Space -> ArrowDown -> ArrowDown -> Space, in-editor step name inputs reordered from ['A','B','C'] to ['B','C','A']. After clicking tpl-save, GET /api/workflows/11111111-1111-1111-1111-111111111111/templates returned the new template 'TEST_KB_REORDER' with steps persisted in the exact expected order ['B','C','A']. Cleanup DELETE returned 200.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_7.json",
+    "/app/backend/tests/test_phase8.py"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "TopBar.jsx now correctly uses gap-2 md:gap-4, hidden sm:flex on notifications, hidden lg:flex on AI badge, max-w-[200px] on InstitutionSwitcher. Header container has min-w-0 — good. Considered hiding global-search on mobile (already hidden md:block). No further mobile-overflow risk observed.",
+    "TemplateEditor.jsx sensors now include KeyboardSensor with coordinateGetter: sortableKeyboardCoordinates — matches @dnd-kit best practice for a11y. PointerSensor activationConstraint distance:5 is preserved so input fields inside StepItem still receive clicks without accidentally starting a drag."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped per request)", "frontend": "100% (2/2 regression checks pass)"},
+  "test_credentials": "rajiv.admin@isb.edu / Demo@2026 verified.",
+  "seed_data_creation": "Created and cleaned up TEST_KB_REORDER (id=wf-0882aa311bb6) on ISB tenant during keyboard-reorder test. DELETE returned 200.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Phase 8 regressions are fully resolved. Mobile /workflows fits at 414px; keyboard sortable works in TemplateEditor and persists via PATCH/POST. Note: when querying workflow templates via API, the tenant URL segment is the full institution UUID (e.g. 11111111-1111-1111-1111-111111111111), not the slug 'isb'. Inside the browser, fetch() on the same origin works only if a body interceptor isn't re-reading — use Authorization: Bearer <access_token> from /api/auth/login via curl for reliable backend verification.",
+  "rca of the issue": {
+    "mobile_horizontal_scroll_fix_verified": "Topbar now uses responsive flex (gap-2 md:gap-4, hidden sm:flex bell, hidden lg:flex AI badge) + max-w-[200px] InstitutionSwitcher + min-w-0 container. At 414px: tenant pill 120.8px + language icon + user pill 66px fits with right=402 < 414. body.scrollWidth=414 (was 453).",
+    "dnd_keyboard_reorder_fix_verified": "Adding useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }) made Space pick up the active sortable and ArrowDown advance it. UI reorder ['A','B','C'] -> ['B','C','A'] and backend persisted the same order on save."
+  }
+}

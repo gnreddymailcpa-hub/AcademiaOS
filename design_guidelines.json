@@ -1,0 +1,143 @@
+{
+  "theme": {
+    "primary_archetype": "Archetype 4 (Swiss & High-Contrast) adapted for Light Mode Enterprise",
+    "description": "Gartner-grade enterprise SaaS, highly structural, functional, clean. High data density with authoritative trust signals."
+  },
+  "typography": {
+    "heading_font": "Work Sans",
+    "body_font": "IBM Plex Sans",
+    "weights": {
+      "light": "300",
+      "regular": "400",
+      "medium": "500",
+      "semibold": "600",
+      "bold": "700"
+    },
+    "scale": {
+      "h1": "text-3xl sm:text-4xl tracking-tight leading-none font-semibold",
+      "h2": "text-2xl sm:text-3xl tracking-tight font-medium",
+      "h3": "text-xl sm:text-2xl font-medium",
+      "body": "text-sm",
+      "labels": "text-xs uppercase tracking-[0.2em] font-semibold"
+    },
+    "rules": "Never center-align large blocks of text. Stick to left-aligned hierarchy. Avoid pure black text, use slate-900 or institution specific dark neutral."
+  },
+  "color_palettes": {
+    "global_rules": "No pure white backgrounds for main content areas if panels are used. Prefer a 2-3% tinted off-white or light gray for app background, with pure white cards. 1px borders everywhere (border-collapse look).",
+    "institutions": {
+      "ISB": {
+        "theme": "isb-theme",
+        "primary": "hsl(222.2, 47.4%, 11.2%)",
+        "primary_foreground": "hsl(210, 40%, 98%)",
+        "accent": "hsl(43, 74%, 49%)",
+        "accent_foreground": "hsl(222.2, 47.4%, 11.2%)",
+        "background": "hsl(220, 14%, 96%)",
+        "surface": "hsl(0, 0%, 100%)",
+        "border": "hsl(214.3, 31.8%, 91.4%)",
+        "ring": "hsl(222.2, 47.4%, 11.2%)"
+      },
+      "EAIC": {
+        "theme": "eaic-theme",
+        "primary": "hsl(220, 60%, 20%)",
+        "primary_foreground": "hsl(0, 0%, 100%)",
+        "accent": "hsl(39, 85%, 55%)",
+        "accent_secondary": "hsl(183, 72%, 37%)",
+        "background": "hsl(210, 20%, 98%)",
+        "surface": "hsl(0, 0%, 100%)",
+        "border": "hsl(220, 13%, 91%)",
+        "ring": "hsl(183, 72%, 37%)"
+      },
+      "Bradford": {
+        "theme": "bradford-theme",
+        "primary": "hsl(270, 50%, 40%)",
+        "primary_foreground": "hsl(0, 0%, 100%)",
+        "accent": "hsl(45, 93%, 47%)",
+        "background": "hsl(270, 20%, 98%)",
+        "surface": "hsl(0, 0%, 100%)",
+        "border": "hsl(270, 10%, 90%)",
+        "ring": "hsl(270, 50%, 40%)"
+      }
+    }
+  },
+  "layout": {
+    "shell": {
+      "sidebar_width": "w-64",
+      "sidebar_collapsed_width": "w-16",
+      "topbar_height": "h-16"
+    },
+    "sidebar": {
+      "style": "Solid border-r (border-border), crisp, flat background. No floating shadows.",
+      "items": [
+        "Dashboard", "Institution Setup", "Academic Structure", "Users & Roles",
+        "AI Use Cases", "Content Studio", "AI Instructor", "AI Advisor",
+        "Student Assistant", "Assessments", "Psychometrics", "Analytics",
+        "Agentic Workflows", "Compliance & Audit", "Settings"
+      ],
+      "active_state": "bg-primary/10 text-primary border-r-2 border-primary"
+    },
+    "topbar": {
+      "style": "Sticky z-40, bg-surface/80 backdrop-blur-xl border-b border-border. Items aligned center with gap-4."
+    }
+  },
+  "components_and_ux": {
+    "institution_switcher": {
+      "ux": "Located top-left next to logo or top-right. Uses Shadcn DropdownMenu or Select. Triggers global CSS class change on <html> (e.g., .isb-theme). Must swap logos, colors, and data context instantaneously.",
+      "visual": "Crisp icon-based trigger. Dropdown shows institution name + 'Enterprise Tenant' sub-label."
+    },
+    "language_switcher_rtl": {
+      "ux": "Toggle EN / AR. When AR is selected, add dir='rtl' to HTML root. Sidebar flips to right, topbar items flip. Ensure Lucide icons use RTL flip where directional.",
+      "visual": "Simple EN / ع toggle in topnav."
+    },
+    "login_screen": {
+      "layout": "Split screen or Floating glass card on a high-end abstract enterprise background. JWT Auth forms with Role Selection dropdown for demo purposes.",
+      "styling": "Card uses heavy blur (backdrop-blur-2xl) if over image, or crisp white if split screen. 1px border. No generic gradients."
+    },
+    "dashboard": {
+      "composition": "Control Room Grid. grid-cols-1 md:grid-cols-4 lg:grid-cols-4. Tight gap (gap-4 or gap-6).",
+      "kpi_cards": "col-span-1. Minimalist. Label in uppercase tracking-wider, large metric, small sparkline (Recharts) or trend indicator. 1px border, shadow-sm on hover.",
+      "charts": "Recharts. Use structural axes (stroke-opacity 0.2). Chart colors must pull from CSS variables (e.g., var(--primary), var(--accent)). Include Enrolment, At-risk, AI Sessions."
+    },
+    "wizard_step_layout": {
+      "ux": "Multi-step form for Institution Setup. Vertical stepper on the left (col-span-1), form content on the right (col-span-3).",
+      "visual": "Active step highlighted with primary color. Completed steps have a check icon (Lucide). Shadcn Form components used strictly."
+    },
+    "tree_builder": {
+      "visual_language": "Campuses -> Schools -> Departments -> Programmes -> Courses -> Modules -> Cohorts. Left-aligned indented list or bento-style nested cards. Use vertical connecting lines (border-l) to show hierarchy. Hover state reveals quick-actions (Add child, edit, delete)."
+    },
+    "role_management": {
+      "ui": "Dense data table (Shadcn Table). 15 roles. Columns: Role Name, Tenant Scope, Permissions count, Last Modified, Actions. Use badge pills for scopes."
+    }
+  },
+  "trust_signals_and_compliance": {
+    "ai_governance_badge": "Top bar indicator. Green dot (pulse) + 'AI: Compliant' or 'Policy: Active'. Standardized badge variant.",
+    "audit_trails": "Subtle text below major actions 'Last synced by System Admin 2 mins ago'. Uses small text (text-xs text-muted-foreground)."
+  },
+  "micro_animations": {
+    "engine": "Framer Motion",
+    "page_transitions": "initial={opacity: 0, y: 10} animate={opacity: 1, y: 0} transition={{ duration: 0.3, ease: 'easeOut' }}",
+    "list_stagger": "staggerChildren: 0.05 for sidebar items and dashboard cards.",
+    "hover_states": "-translate-y-[2px] shadow-md transition-all duration-200 for KPI cards."
+  },
+  "image_urls": {
+    "logos": {
+      "ISB": "https://static.prod-images.emergentagent.com/jobs/3df0a28a-599b-41d8-ba79-c6c0851c9972/images/3889659f819e3f109dfa63f668810352e589b0135b1dd36a854afc887d487ef1.png",
+      "EAIC": "https://static.prod-images.emergentagent.com/jobs/3df0a28a-599b-41d8-ba79-c6c0851c9972/images/10ab27e1588fccb49a7c2e7bd1cd22dec4b242f3dd15331498131da570e89540.png",
+      "Bradford": "https://static.prod-images.emergentagent.com/jobs/3df0a28a-599b-41d8-ba79-c6c0851c9972/images/eaa7ea1a1a1ff1413a9abc40ff7f617d574da20e871cd2d02d3653a259834672.png"
+    },
+    "backgrounds": {
+      "login_abstract_enterprise": "https://static.prod-images.emergentagent.com/jobs/3df0a28a-599b-41d8-ba79-c6c0851c9972/images/98907276cec4c68a2a3b20264a553bb8a85d020955b70f60875664c47420cdbc.png",
+      "modern_campus_1": "https://images.unsplash.com/photo-1779453322004-2771689a0dbe?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODF8MHwxfHNlYXJjaHwyfHxtb2Rlcm4lMjB1bml2ZXJzaXR5JTIwY2FtcHVzJTIwYXJjaGl0ZWN0dXJlJTIwZXh0ZXJpb3J8ZW58MHx8fHwxNzc5ODU4OTkyfDA&ixlib=rb-4.1.0&q=85",
+      "modern_campus_2": "https://images.pexels.com/photos/19193975/pexels-photo-19193975.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "dashboard_people": "https://images.unsplash.com/photo-1556761175-4b46a572b786?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODh8MHwxfHNlYXJjaHwyfHxtb2Rlcm4lMjBvZmZpY2UlMjBkYXNoYm9hcmQlMjBwZW9wbGUlMjB3b3JraW5nfGVufDB8fHx8MTc3OTg1ODk5M3ww&ixlib=rb-4.1.0&q=85"
+    }
+  },
+  "testing_attributes": {
+    "rules": "All interactive and key informational elements MUST include a data-testid attribute in kebab-case format.",
+    "examples": [
+      "data-testid='institution-switcher'",
+      "data-testid='language-toggle'",
+      "data-testid='sidebar-nav-dashboard'",
+      "data-testid='login-submit-button'"
+    ]
+  }
+}

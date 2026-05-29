@@ -28,6 +28,7 @@ import Psychometrics from "./pages/Psychometrics";
 import Analytics from "./pages/Analytics";
 import Workflows from "./pages/Workflows";
 import Compliance from "./pages/Compliance";
+import Governance from "./pages/Governance";
 import AuthCallback from "./pages/AuthCallback";
 
 function LoginRoute() {
@@ -55,6 +56,7 @@ function ShellRoutes() {
         <Route path="/psychometrics" element={<Psychometrics />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/workflows" element={<Workflows />} />
+        <Route path="/governance" element={<Governance />} />
         <Route path="/compliance" element={<Compliance />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

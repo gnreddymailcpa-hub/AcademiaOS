@@ -9,7 +9,6 @@ import {
   CartesianGrid,
   BarChart,
   Bar,
-  Legend,
 } from "recharts";
 import {
   Users2,
@@ -25,8 +24,23 @@ import {
 import { PageHeader } from "../components/layout/Shell";
 import { Badge } from "../components/ui/badge";
 import { useInstitution } from "../context/InstitutionContext";
-import { useLang } from "../context/LanguageContext";
+import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
+import {
+  ProgrammeManagerDashboard,
+  RegistrarDashboard,
+  CareerServicesDashboard,
+} from "../components/dashboards/variants-ops";
+import {
+  ComplianceOfficerDashboard,
+  AIGovernanceDashboard,
+  TrainingManagerDashboard,
+  HRWorkforceDashboard,
+  LineManagerDashboard,
+  ExecutiveDashboard,
+  FacultyDashboard,
+  StudentDashboard,
+} from "../components/dashboards/variants-strategic";
 
 function Kpi({ label, value, hint, icon: Icon, trend, testid }) {
   return (
@@ -61,7 +75,7 @@ function trendSeries(seed) {
 
 export default function Dashboard() {
   const { current } = useInstitution();
-  const { lang } = useLang();
+  const { user } = useAuth();
   const [data, setData] = useState(null);
 
   useEffect(() => {
@@ -74,6 +88,33 @@ export default function Dashboard() {
 
   if (!current) return null;
   const m = data?.metrics || current.metrics || {};
+
+  // Role-specific landing screens
+  const role = user?.role;
+  if (role === "programme_manager")
+    return <ProgrammeManagerDashboard inst={current} m={m} />;
+  if (role === "registrar")
+    return <RegistrarDashboard inst={current} m={m} />;
+  if (role === "career_services")
+    return <CareerServicesDashboard inst={current} m={m} />;
+  if (role === "compliance_officer")
+    return <ComplianceOfficerDashboard inst={current} m={m} />;
+  if (role === "ai_governance_admin")
+    return <AIGovernanceDashboard inst={current} m={m} />;
+  if (role === "training_manager")
+    return <TrainingManagerDashboard inst={current} m={m} />;
+  if (role === "hr_workforce_planner")
+    return <HRWorkforceDashboard inst={current} m={m} />;
+  if (role === "line_manager")
+    return <LineManagerDashboard inst={current} m={m} />;
+  if (role === "executive_leadership")
+    return <ExecutiveDashboard inst={current} m={m} />;
+  if (role === "faculty" || role === "instructor")
+    return <FacultyDashboard inst={current} m={m} />;
+  if (role === "student")
+    return <StudentDashboard inst={current} user={user} />;
+
+  // Default admin/dean/super_admin view (existing canonical layout)
   const isGov = current.type === "Government Academy";
   const series = trendSeries(m.students || m.learners || 800);
 

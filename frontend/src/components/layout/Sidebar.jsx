@@ -15,10 +15,12 @@ import {
   BarChart3,
   Workflow,
   ShieldCheck,
+  Scale,
   Settings as SettingsIcon,
 } from "lucide-react";
 import { useLang } from "../../context/LanguageContext";
 import { useInstitution } from "../../context/InstitutionContext";
+import { useAuth } from "../../context/AuthContext";
 import { X } from "lucide-react";
 
 const NAV = [
@@ -35,6 +37,8 @@ const NAV = [
   { to: "/psychometrics", icon: Brain, key: "nav.psychometrics", testid: "sidebar-nav-psychometrics" },
   { to: "/analytics", icon: BarChart3, key: "nav.analytics", testid: "sidebar-nav-analytics" },
   { to: "/workflows", icon: Workflow, key: "nav.workflows", testid: "sidebar-nav-workflows" },
+  { to: "/governance", icon: Scale, key: "nav.governance", testid: "sidebar-nav-governance",
+    roles: ["super_admin", "institution_admin", "ai_governance_admin", "compliance_officer"], label: "AI Governance" },
   { to: "/compliance", icon: ShieldCheck, key: "nav.compliance", testid: "sidebar-nav-compliance" },
   { to: "/settings", icon: SettingsIcon, key: "nav.settings", testid: "sidebar-nav-settings" },
 ];
@@ -42,6 +46,8 @@ const NAV = [
 export default function Sidebar({ isOpen = false, onClose = () => {} }) {
   const { t } = useLang();
   const { current } = useInstitution();
+  const { user } = useAuth();
+  const visibleNav = NAV.filter((item) => !item.roles || item.roles.includes(user?.role));
 
   return (
     <aside
@@ -79,7 +85,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         <div className="label-eyebrow px-3 pb-2">Navigation</div>
         <ul className="space-y-0.5">
-          {NAV.map((item) => (
+          {visibleNav.map((item) => (
             <li key={item.to}>
               <NavLink
                 to={item.to}
@@ -100,7 +106,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
                       className="h-4 w-4 shrink-0"
                       strokeWidth={isActive ? 2.25 : 1.75}
                     />
-                    <span className="truncate">{t(item.key)}</span>
+                    <span className="truncate">{item.label || t(item.key)}</span>
                   </>
                 )}
               </NavLink>

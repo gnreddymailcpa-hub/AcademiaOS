@@ -258,6 +258,39 @@ corporate academy, or online education platform end-to-end — without code.
 - Full audit trail in `audit_logs` collection: every AI generation, approval,
   use-case mutation captured with actor + model + target.
 
+### Phase 11 — Feb 2026 (Role-specific dashboards + Governance + super_admin inbox)
+- **Role-specific landing dashboards** for 11 roles via dispatch in
+  `Dashboard.jsx` (programme_manager, registrar, career_services,
+  compliance_officer, ai_governance_admin, training_manager,
+  hr_workforce_planner, line_manager, executive_leadership, faculty,
+  student). Each variant has its own KPI grid + 2–3 focused panels
+  reading live data (tickets, audit, use-cases, notifications) and
+  exposes stable `dashboard-{role}` testids.
+- **New shared widgets** in `components/dashboards/widgets.jsx`:
+  `Kpi`, `Panel`, `ItemList`, `MiniBar`, `PageLink` — used across
+  all variants and the new Governance page.
+- **AI Governance first-class page** (`/governance`): prompt-policy
+  approval queue (8 modules) with inline risk dropdown, HITL +
+  Citations switches, status badges, Approve/Pause CTAs. HITL
+  coverage panel, bias audit feed, recent governance events log.
+  All actions PATCH `/api/ai/use-cases/{id}/{key}` and audit-log the
+  change. Editable only for super_admin / institution_admin /
+  ai_governance_admin; read-only for compliance_officer.
+- **Sidebar role-gating**: new `AI Governance` nav entry shown only
+  to super_admin / institution_admin / ai_governance_admin /
+  compliance_officer; sidebar items now support an optional `roles`
+  whitelist.
+- **Super-admin cross-tenant inbox**: `/api/notifications`,
+  `/notifications/{id}/read` and `/read-all` bypass tenant + role
+  filters for super_admin, giving a true global inbox. All other
+  roles remain strictly scoped by `institution_id` AND role
+  broadcast match (defense-in-depth — verified: registrar in ISB
+  cannot read or mark-read EAIC notifications).
+- 59/59 backend tests green (test_phase10 + new test_phase11);
+  100% frontend coverage across all 11 role variants, /governance
+  approve/pause/hitl flows, sidebar gating and cross-tenant inbox.
+  See `/app/test_reports/iteration_12.json`.
+
 ### Phase 10 — Feb 2026 (Notifications + Tickets + 15-role coverage)
 - **Real Notifications system**: new `routes_messaging.py` exposes
   `GET /api/notifications` (tenant + (user_id ∨ role ∨ '*')-scoped),

@@ -54,13 +54,12 @@ def build_notifications_router(get_db, get_current_user):
         user: dict = Depends(get_current_user),
     ):
         db = get_db()
-        # super_admin gets a cross-tenant inbox (no institution_id scope)
+        # super_admin gets a cross-tenant inbox: every notification across every tenant.
         is_super = user["role"] == "super_admin"
-        q = {
+        q = {} if is_super else {
+            "institution_id": user.get("institution_id"),
             "$or": [{"user_id": user["id"]}, {"role": user["role"]}, {"role": "*"}],
         }
-        if not is_super:
-            q["institution_id"] = user.get("institution_id")
         if unread_only:
             q["read"] = False
         items = await db.notifications.find(q, {"_id": 0}).sort("ts", -1).limit(limit).to_list(limit)
@@ -71,12 +70,11 @@ def build_notifications_router(get_db, get_current_user):
     async def mark_read(notification_id: str, user: dict = Depends(get_current_user)):
         db = get_db()
         is_super = user["role"] == "super_admin"
-        q = {
+        q = {"id": notification_id} if is_super else {
             "id": notification_id,
+            "institution_id": user.get("institution_id"),
             "$or": [{"user_id": user["id"]}, {"role": user["role"]}, {"role": "*"}],
         }
-        if not is_super:
-            q["institution_id"] = user.get("institution_id")
         await db.notifications.update_one(q, {"$set": {"read": True, "read_at": _now()}})
         return {"ok": True}
 
@@ -84,12 +82,11 @@ def build_notifications_router(get_db, get_current_user):
     async def mark_all_read(user: dict = Depends(get_current_user)):
         db = get_db()
         is_super = user["role"] == "super_admin"
-        q = {
+        q = {"read": False} if is_super else {
+            "institution_id": user.get("institution_id"),
             "$or": [{"user_id": user["id"]}, {"role": user["role"]}, {"role": "*"}],
             "read": False,
         }
-        if not is_super:
-            q["institution_id"] = user.get("institution_id")
         await db.notifications.update_many(q, {"$set": {"read": True, "read_at": _now()}})
         return {"ok": True}
 

@@ -12,6 +12,7 @@ import {
 } from "../components/ui/select";
 import { useInstitution } from "../context/InstitutionContext";
 import { useLang } from "../context/LanguageContext";
+import { useTenantLocale } from "../lib/useTenantLocale";
 import { api } from "../lib/api";
 import {
   GraduationCap,
@@ -49,6 +50,7 @@ const DEPTHS = [
 export default function AIInstructor() {
   const { current } = useInstitution();
   const { lang } = useLang();
+  const { arabicEnabled: showArabic } = useTenantLocale();
   const [courses, setCourses] = useState([]);
   const [courseId, setCourseId] = useState("");
   const [messages, setMessages] = useState([]);
@@ -141,12 +143,6 @@ export default function AIInstructor() {
   if (!current) return null;
   const currentCourse = courses.find((c) => c.id === courseId);
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
-
-  // Show Arabic only for tenants in Arabic-speaking regions
-  const country = (current.country || "").toLowerCase();
-  const isArabicTenant =
-    country.includes("arab") || country.includes("uae") || country.includes("saudi") || country.includes("emirat");
-  const showArabic = isArabicTenant;
 
   const trustBadges = [
     { icon: ShieldCheck, label: lang === "ar" ? "محمية للمستأجر" : "Tenant-isolated" },

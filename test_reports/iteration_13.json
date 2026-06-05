@@ -1,0 +1,46 @@
+{
+  "summary": "Phase 12 — Tenant-controlled Arabic locale + Admin Guide. Backend: 8/8 new tests PASS + Phase10 (24/24) + Phase11 (33/34, 1 unrelated regression) = 65/66. Frontend: 16/16 critical flows verified — locale gating (ISB/EAIC/UoB), Admin Guide page (10 steps, all testids), sidebar role-gating across 5 roles (super_admin, institution_admin, faculty, registrar, compliance, student), InstitutionSetup Switch end-to-end (toggle ON → reload persists → lang-ar appears → toggle OFF → lang-ar disappears), EAIC AI Instructor still shows Arabic title + 'AR + EN' KPI.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/ai/use-cases (Phase-11 regression)", "issue": "test_ai_usecases_isb_has_4_active_4_pending now sees 5 active modules instead of 4 (psychometrics appears active). Phase-11 test, not Phase-12 — flag for main agent to either update the asserted count to 5 or revisit if psychometrics should still be coming-soon."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Dashboard charts", "issues": ["Recharts emits warning 'width(-1) and height(-1) of chart should be greater than 0' on first paint of multiple dashboard charts. Non-blocking but should add minWidth/minHeight or aspect ratio to the ResponsiveContainer wrapper."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_phase12_locale_admin_guide.py",
+    "/app/test_reports/pytest/pytest_phase12.xml"
+  ],
+  "action_items": [
+    "(Optional) Update Phase-11 assertion test_ai_usecases_isb_has_4_active_4_pending: active count is now 5 (psychometrics promoted). Pre-existing, not caused by Phase 12.",
+    "(Optional, minor) Suppress Recharts width(-1) warning on first paint by giving ResponsiveContainer an explicit min height or aspect."
+  ],
+  "critical_code_review_comments": [
+    "useTenantLocale.js correctly resolves arabicEnabled via current.locale_arabic_enabled with sensible country-name fallback. Good single source of truth.",
+    "LanguageSwitcher useEffect auto-recovers lang to 'en' when arabicEnabled flips false — direct verification (toggle-off then page reload) confirms lang-ar disappears.",
+    "InstitutionSetup PATCH payload correctly persists locale_arabic_enabled and refresh() is awaited before toast — race-free.",
+    "PATCH /api/institutions/{id} authorization scoping is correct: 403 for student, 403 cross-tenant institution_admin, 200 for super_admin + tenant-matching institution_admin. Audit row 'institution.update' is written with actor + changes list.",
+    "AdminGuide testid scheme matches request: data-testid='admin-guide-page', 'admin-guide-steps', 'admin-guide-quickref', 'admin-guide-step-<key>', 'admin-guide-step-<key>-cta'.",
+    "Sidebar role-gating uses NAV.filter((item) => !item.roles || item.roles.includes(user?.role)) — clean and the 'admin-guide' entry restricts to ['super_admin','institution_admin']. Verified empirically for 6 roles.",
+    "Radix Accordion CTAs unmount when collapsed (default for type='multiple'); cta testids only present in DOM for currently-expanded items. If headless tests want all 10 cta testids visible at once, consider <AccordionContent forceMount> or use defaultValue with all step keys."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_phase12_locale_admin_guide.py (NEW)"
+  ],
+  "success_rate": {
+    "backend": "100% on Phase 12 (8/8). 98.5% overall (65/66 including older phases)",
+    "frontend": "100% on Phase 12 critical flows (16/16 assertions)"
+  },
+  "test_credentials": "All 20 demo accounts at /app/memory/test_credentials.md verified working. Auth response uses access_token. Login button labelled 'Continue'.",
+  "seed_data_creation": "PATCHed ISB locale_arabic_enabled ON then OFF as part of UI persistence test — final state is seed-aligned (false). EAIC was super-admin toggled OFF then ON — final state restored to seed (true). No leftover test artefacts.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Phase 12 deliverables all green. Tenant switcher testid is 'institution-switcher' (not 'institution-switcher-trigger'). To exercise lang auto-recovery via cross-tenant switch as super_admin, open the institution-switcher dropdown and click items by text — note dropdown items themselves do NOT have stable data-testids (e.g., 'institution-option-eaic' would be a nice add). Phase-11 test now over-asserts active-module count; consider updating to 5 if psychometrics is intended to be active.",
+  "rca of the issue": "No new bugs introduced by Phase 12. The pre-existing Phase-11 assertion drift (4 vs 5 active modules) is data/policy evolution unrelated to this iteration's changes; either tighten the seed back to 4 active or update the Phase-11 assertion."
+}

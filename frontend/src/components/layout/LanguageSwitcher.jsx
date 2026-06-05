@@ -1,9 +1,18 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Languages } from "lucide-react";
 import { useLang } from "../../context/LanguageContext";
+import { useTenantLocale } from "../../lib/useTenantLocale";
 
 export default function LanguageSwitcher() {
   const { lang, setLanguage } = useLang();
+  const { arabicEnabled } = useTenantLocale();
+
+  // Auto-recover: if the tenant has Arabic disabled but the user's stored
+  // preference is "ar" (because they switched in another tenant), drop back to EN.
+  useEffect(() => {
+    if (!arabicEnabled && lang === "ar") setLanguage("en");
+  }, [arabicEnabled, lang, setLanguage]);
+
   return (
     <div
       role="group"
@@ -22,17 +31,19 @@ export default function LanguageSwitcher() {
       >
         EN
       </button>
-      <button
-        data-testid="lang-ar"
-        aria-label="Arabic"
-        onClick={() => setLanguage("ar")}
-        className={`px-2 py-1 rounded-sm me-1 transition ${
-          lang === "ar" ? "bg-primary text-primary-foreground font-medium" : "text-foreground/70"
-        }`}
-        style={{ fontFamily: "var(--font-arabic)" }}
-      >
-        ع
-      </button>
+      {arabicEnabled && (
+        <button
+          data-testid="lang-ar"
+          aria-label="Arabic"
+          onClick={() => setLanguage("ar")}
+          className={`px-2 py-1 rounded-sm me-1 transition ${
+            lang === "ar" ? "bg-primary text-primary-foreground font-medium" : "text-foreground/70"
+          }`}
+          style={{ fontFamily: "var(--font-arabic)" }}
+        >
+          ع
+        </button>
+      )}
     </div>
   );
 }

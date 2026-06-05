@@ -145,6 +145,7 @@ class Institution(BaseModel):
     country: str
     primary_language: str
     secondary_language: Optional[str] = None
+    locale_arabic_enabled: bool = False
     timezone: str = "UTC"
     data_residency: Optional[str] = None
     compliance_framework: Optional[str] = None
@@ -775,6 +776,14 @@ async def seed_database():
             doc["created_at"] = datetime.now(timezone.utc).isoformat()
             await db.institutions.insert_one(doc)
             logger.info("Seeded institution %s", inst["short_name"])
+        else:
+            # Backfill new fields added in later releases (idempotent)
+            backfill = {}
+            if "locale_arabic_enabled" not in existing:
+                backfill["locale_arabic_enabled"] = inst.get("locale_arabic_enabled", False)
+            if backfill:
+                await db.institutions.update_one({"id": inst["id"]}, {"$set": backfill})
+                logger.info("Backfilled %s on %s", list(backfill), inst["short_name"])
 
     # Roles
     for r in SEED_ROLES:

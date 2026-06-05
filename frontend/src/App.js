@@ -29,6 +29,7 @@ import Analytics from "./pages/Analytics";
 import Workflows from "./pages/Workflows";
 import Compliance from "./pages/Compliance";
 import Governance from "./pages/Governance";
+import AdminGuide from "./pages/AdminGuide";
 import AuthCallback from "./pages/AuthCallback";
 
 function LoginRoute() {
@@ -57,6 +58,7 @@ function ShellRoutes() {
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/workflows" element={<Workflows />} />
         <Route path="/governance" element={<Governance />} />
+        <Route path="/admin-guide" element={<AdminGuide />} />
         <Route path="/compliance" element={<Compliance />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

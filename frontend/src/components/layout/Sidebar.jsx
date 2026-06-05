@@ -16,6 +16,7 @@ import {
   Workflow,
   ShieldCheck,
   Scale,
+  BookOpenCheck,
   Settings as SettingsIcon,
 } from "lucide-react";
 import { useLang } from "../../context/LanguageContext";
@@ -40,6 +41,8 @@ const NAV = [
   { to: "/governance", icon: Scale, key: "nav.governance", testid: "sidebar-nav-governance",
     roles: ["super_admin", "institution_admin", "ai_governance_admin", "compliance_officer"], label: "AI Governance" },
   { to: "/compliance", icon: ShieldCheck, key: "nav.compliance", testid: "sidebar-nav-compliance" },
+  { to: "/admin-guide", icon: BookOpenCheck, key: "nav.admin_guide", testid: "sidebar-nav-admin-guide",
+    roles: ["super_admin", "institution_admin"], label: "Admin Guide" },
   { to: "/settings", icon: SettingsIcon, key: "nav.settings", testid: "sidebar-nav-settings" },
 ];
 

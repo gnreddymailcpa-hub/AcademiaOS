@@ -42,6 +42,7 @@ export default function InstitutionSetup() {
       country: current.country || "",
       primary_language: current.primary_language || "en",
       secondary_language: current.secondary_language || "",
+      locale_arabic_enabled: !!current.locale_arabic_enabled,
       timezone: current.timezone || "UTC",
       data_residency: current.data_residency || "",
       compliance_framework: current.compliance_framework || "",
@@ -73,6 +74,7 @@ export default function InstitutionSetup() {
         country: form.country,
         primary_language: form.primary_language,
         secondary_language: form.secondary_language || null,
+        locale_arabic_enabled: form.locale_arabic_enabled,
         timezone: form.timezone,
         data_residency: form.data_residency || null,
         compliance_framework: form.compliance_framework || null,
@@ -236,6 +238,21 @@ export default function InstitutionSetup() {
                   <Label className="text-xs">Data residency</Label>
                   <Input value={form.data_residency} onChange={(e) => set("data_residency", e.target.value)} placeholder="UAE-only · India · UK / EEA" />
                 </div>
+              </div>
+              <div className="mt-4 flex items-start justify-between gap-4 rounded-md border border-border bg-muted/30 p-4">
+                <div className="space-y-1">
+                  <div className="text-sm font-medium">Enable Arabic UI</div>
+                  <div className="text-xs text-muted-foreground max-w-xl">
+                    When ON, learners and staff in this tenant can toggle the workspace to العربية from the top bar,
+                    and bilingual AR/EN headings appear on AI Instructor, Advisor and Assistant. Recommended only for
+                    institutions where Arabic is an operating language.
+                  </div>
+                </div>
+                <Switch
+                  checked={!!form.locale_arabic_enabled}
+                  onCheckedChange={(v) => set("locale_arabic_enabled", v)}
+                  data-testid="form-locale-arabic"
+                />
               </div>
             </div>
           )}

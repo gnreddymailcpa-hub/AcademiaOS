@@ -236,21 +236,20 @@ html[dir="rtl"] .tree-connector {
 }
 
 /* =============================================================
-   AI Virtual Instructor — editorial dark surface
+   AI Virtual Instructor — uniform theme (inherits app tokens)
    ============================================================= */
 .instructor-shell {
-  --i-bg: 230 36% 6%;            /* near-black with blue cast */
-  --i-bg-2: 230 32% 9%;
-  --i-fg: 38 64% 96%;            /* warm ivory */
-  --i-muted: 38 18% 70%;
-  --i-accent: 44 78% 58%;        /* signature gold */
-  --i-accent-fg: 230 50% 10%;
-  --i-edge: 38 30% 70% / 0.18;
-  --i-pill: 230 32% 12% / 0.85;
-  --i-composer: 230 36% 7%;
+  --i-bg: var(--background);
+  --i-bg-2: var(--card);
+  --i-fg: var(--foreground);
+  --i-muted: var(--muted-foreground);
+  --i-accent: var(--primary);
+  --i-accent-fg: var(--primary-foreground);
+  --i-edge: var(--border);
+  --i-pill: var(--muted);
+  --i-composer: var(--card);
   background: hsl(var(--i-bg));
   color: hsl(var(--i-fg));
-  font-feature-settings: "ss01", "cv11";
 }
 html[dir="rtl"] .instructor-shell { letter-spacing: 0; }
 
@@ -259,9 +258,9 @@ html[dir="rtl"] .instructor-shell { letter-spacing: 0; }
 }
 .instructor-hero-bg {
   background:
-    radial-gradient(circle at 18% 0%, hsl(var(--i-accent) / 0.18), transparent 55%),
-    radial-gradient(circle at 92% 30%, hsl(var(--i-accent) / 0.08), transparent 55%),
-    radial-gradient(circle at 1px 1px, hsl(var(--i-fg) / 0.04) 1px, transparent 0);
+    radial-gradient(circle at 18% 0%, hsl(var(--i-accent) / 0.07), transparent 55%),
+    radial-gradient(circle at 92% 30%, hsl(var(--i-accent) / 0.04), transparent 55%),
+    radial-gradient(circle at 1px 1px, hsl(var(--foreground) / 0.04) 1px, transparent 0);
   background-size: auto, auto, 28px 28px;
 }
 .text-instructor-fg { color: hsl(var(--i-fg)); }
@@ -337,7 +336,7 @@ html[dir="rtl"] .instructor-shell { letter-spacing: 0; }
   box-shadow: 0 2px 16px hsl(var(--i-accent) / 0.18);
 }
 .instructor-bubble-ai {
-  background: hsl(var(--i-bg) / 0.6);
+  background: hsl(var(--card));
   border: 1px solid hsl(var(--i-edge));
 }
 

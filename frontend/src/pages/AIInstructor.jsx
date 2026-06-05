@@ -142,6 +142,12 @@ export default function AIInstructor() {
   const currentCourse = courses.find((c) => c.id === courseId);
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
 
+  // Show Arabic only for tenants in Arabic-speaking regions
+  const country = (current.country || "").toLowerCase();
+  const isArabicTenant =
+    country.includes("arab") || country.includes("uae") || country.includes("saudi") || country.includes("emirat");
+  const showArabic = isArabicTenant;
+
   const trustBadges = [
     { icon: ShieldCheck, label: lang === "ar" ? "محمية للمستأجر" : "Tenant-isolated" },
     { icon: Quote, label: lang === "ar" ? "إجابات موثّقة" : "Source-grounded" },
@@ -162,16 +168,22 @@ export default function AIInstructor() {
                 <span data-testid="instructor-eyebrow">Module 4.1 · Virtual AI Instructor</span>
               </div>
               <div className="mt-4 flex flex-wrap items-baseline gap-5">
-                <h1 className="instructor-title-ar" dir="rtl">
-                  المعلم الذكي
-                </h1>
-                <div className="instructor-divider" />
+                {showArabic && (
+                  <>
+                    <h1 className="instructor-title-ar" dir="rtl" data-testid="instructor-title-ar">
+                      المعلم الذكي
+                    </h1>
+                    <div className="instructor-divider" />
+                  </>
+                )}
                 <h2 className="instructor-title-en">Virtual AI Instructor</h2>
               </div>
               <p className="mt-3 max-w-2xl text-sm md:text-base text-instructor-muted leading-relaxed">
                 {lang === "ar"
                   ? "وكيل تعليمي تكيفي يقدّم محتوى دورات منظّمًا بالعربية والإنجليزية، مع استشهادات من المصادر المعتمدة وتسريع تصعيد التقييم."
-                  : "Adaptive conversational agent delivering structured course content in English & Arabic — every answer cited from approved sources, with faculty escalation when confidence drops."}
+                  : showArabic
+                    ? "Adaptive conversational agent delivering structured course content in English & Arabic — every answer cited from approved sources, with faculty escalation when confidence drops."
+                    : "Adaptive conversational agent delivering structured course content — every answer cited from approved sources, with faculty escalation when confidence drops."}
               </p>
               <div className="mt-5 flex flex-wrap gap-2">
                 {trustBadges.map((b) => (
@@ -194,7 +206,7 @@ export default function AIInstructor() {
                 label="Median latency"
               />
               <Stat icon={Quote} value="100%" label="Cited answers" />
-              <Stat icon={Languages} value="AR + EN" label="Bilingual" />
+              <Stat icon={Languages} value={showArabic ? "AR + EN" : "EN"} label={showArabic ? "Bilingual" : "Language"} />
               <Stat icon={Layers} value={sources.length || "—"} label="Approved sources" />
             </div>
           </div>

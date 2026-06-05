@@ -1,5 +1,22 @@
 # AcademiaOS.ai — PRD
 
+## ⚠️ Standing Engineering Rules (apply to ALL pages, current + future)
+1. **Typography consistency** — every page MUST use the app's standard font
+   stack (`--font-heading` = Work Sans, `--font-body` = IBM Plex Sans, `--font-arabic`
+   = Noto Naskh Arabic / Cairo). No serif italics, no decorative typefaces, no
+   monospace eyebrows. Use the shared `.label-eyebrow` utility for KPI/section
+   labels. (Origin: Phase 12.1 — Feb 2026, user standing instruction.)
+2. **Tenant-aware locale** — never hard-code `lang === "ar"` against
+   user-facing copy. Read from `useTenantLocale()` so the Arabic surface is
+   purely tenant-controlled. (Origin: Phase 12.)
+3. **No mock data in production paths** — all KPIs / notifications / tickets /
+   audit must read from live endpoints. Hard-coded numbers belong only in
+   demo-fallback panels and must be clearly marked. (Origin: Phase 10.)
+4. **Sidebar role-gating** — any new top-level nav must declare a `roles`
+   whitelist when it's not meant for every persona. (Origin: Phase 11.)
+5. **MongoDB only** — never propose Postgres/Supabase migration in this
+   environment; the Kubernetes contract requires `MONGO_URL`.
+
 ## Vision
 Gartner-grade enterprise Academic AI Operating System. Multi-tenant SaaS where an
 Institution Admin can configure a university, business school, government academy,
@@ -290,6 +307,43 @@ corporate academy, or online education platform end-to-end — without code.
   100% frontend coverage across all 11 role variants, /governance
   approve/pause/hitl flows, sidebar gating and cross-tenant inbox.
   See `/app/test_reports/iteration_12.json`.
+
+### Phase 12 — Feb 2026 (Tenant-controlled locale + Admin SOP)
+- **Removed all hard-coded Arabic copy** across modules via a single
+  source of truth: new `useTenantLocale()` hook in
+  `frontend/src/lib/useTenantLocale.js` resolves `arabicEnabled` from
+  `current.locale_arabic_enabled` with country-name fallback.
+- **`locale_arabic_enabled` field on the Institution model** (server.py)
+  with idempotent backfill on startup (seed.py). Defaults: ISB=false,
+  EAIC=true, UoB=false.
+- **LanguageSwitcher refactor**: AR `ع` button hides for tenants where
+  arabic is disabled; if the user's persisted `lang === "ar"` and the
+  tenant flips off, lang auto-recovers to `en`. Cascade is automatic —
+  every existing `lang === "ar"` ternary in StudentAssistant /
+  Analytics / AIUseCases / Settings naturally resolves to English
+  because `lang` can no longer be `ar` in those tenants.
+- **AI Instructor** dropped its local country-check in favour of the
+  hook, keeping the dual-script editorial title for EAIC but cleanly
+  hiding it for ISB/UoB.
+- **Institution Setup wizard, step 1 (Locale)** now has an "Enable
+  Arabic UI" Switch (`form-locale-arabic`) wired to PATCH
+  `/api/institutions/{id}`. Persisted state survives reload. UI cascade
+  is instant: toggle ON → `lang-ar` button appears in TopBar; toggle
+  OFF → it disappears.
+- **First-class `/admin-guide` SOP page**: 10-step Standard Operating
+  Procedure for newly-onboarded Institution Admins (Sign in →
+  Institution profile → Academic structure → Users & roles → AI
+  modules → Content → Governance → Workflows → Pilot cohort → Go
+  live), with hero summary card (~60 min effort + support contact),
+  Radix Accordion of bulleted steps, CTAs to each related app route
+  ("Open Academic Structure", "Open Content Studio", etc.), and a
+  quick-reference card grid. Role-gated sidebar entry "Admin Guide"
+  for `super_admin` + `institution_admin` only.
+- 8/8 new backend tests in `test_phase12_locale_admin_guide.py`;
+  16/16 frontend critical flows verified including auto-recovery
+  cross-tenant switch. Report: `/app/test_reports/iteration_13.json`.
+- Restored psychometrics module to `coming_soon` (drift from prior
+  testing runs) so the Phase-11 4-active/4-pending contract holds.
 
 ### Phase 10 — Feb 2026 (Notifications + Tickets + 15-role coverage)
 - **Real Notifications system**: new `routes_messaging.py` exposes

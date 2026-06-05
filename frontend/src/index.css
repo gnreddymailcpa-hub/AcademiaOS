@@ -289,20 +289,33 @@ html[dir="rtl"] .instructor-shell { letter-spacing: 0; }
   margin: 0 4px;
 }
 .instructor-title-ar {
-  font-family: "Cairo", "Tajawal", "Noto Naskh Arabic", "Inter", serif;
+  font-family: "Cairo", "Tajawal", "Noto Naskh Arabic", var(--font-sans, system-ui), sans-serif;
   font-weight: 600;
-  font-size: clamp(2rem, 4.2vw, 3.4rem);
-  line-height: 1.1;
+  font-size: 1.5rem;
+  line-height: 1.2;
   color: hsl(var(--i-fg));
   letter-spacing: -0.01em;
 }
 .instructor-title-en {
-  font-family: "Cormorant Garamond", "Source Serif 4", "Georgia", serif;
-  font-weight: 500;
-  font-style: italic;
-  font-size: clamp(1.6rem, 3.4vw, 2.6rem);
-  line-height: 1.15;
+  font-family: var(--font-heading), system-ui, sans-serif;
+  font-weight: 600;
+  font-style: normal;
+  font-size: 1.875rem;
+  line-height: 1.2;
   color: hsl(var(--i-fg));
+  letter-spacing: -0.02em;
+}
+@media (min-width: 768px) {
+  .instructor-title-en { font-size: 2.25rem; }
+  .instructor-title-ar { font-size: 1.875rem; }
+}
+
+/* Standard-font enforcement: AI Instructor inherits the app's sans-serif
+   stack everywhere — no monospace eyebrows, no serif italics. Maintains
+   typography consistency with Dashboard, Governance, Admin Guide, etc. */
+.instructor-shell .font-mono,
+.instructor-shell [class*="font-mono"] {
+  font-family: inherit !important;
 }
 
 .instructor-stat-card {

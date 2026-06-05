@@ -420,3 +420,14 @@ html[dir="rtl"] .instructor-shell { letter-spacing: 0; }
 @layer base {
   [data-debug-wrapper="true"] { display: contents !important; }
 }
+
+/* Print stylesheet — used by /product-brief "Print / Export PDF" */
+@media print {
+  @page { size: A4 portrait; margin: 16mm 14mm; }
+  body { background: #fff !important; }
+  .sidebar-rail,
+  [data-testid="topbar"],
+  [data-testid="product-brief-print"] { display: none !important; }
+  .product-brief section { break-inside: avoid; }
+  .product-brief { color: #000; }
+}

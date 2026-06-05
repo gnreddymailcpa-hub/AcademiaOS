@@ -18,6 +18,7 @@ import {
   Scale,
   BookOpenCheck,
   Settings as SettingsIcon,
+  FileText,
   X,
 } from "lucide-react";
 import { useLang } from "../../context/LanguageContext";
@@ -94,6 +95,14 @@ const NAV_GROUPS = [
         testid: "sidebar-nav-admin-guide",
         roles: ["super_admin", "institution_admin"],
         label: "Admin Guide",
+      },
+      {
+        to: "/product-brief",
+        icon: FileText,
+        key: "nav.product_brief",
+        testid: "sidebar-nav-product-brief",
+        roles: ["super_admin", "institution_admin"],
+        label: "Product Brief",
       },
       { to: "/settings", icon: SettingsIcon, key: "nav.settings", testid: "sidebar-nav-settings" },
     ],

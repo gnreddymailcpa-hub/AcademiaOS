@@ -45,6 +45,7 @@ import Guardian from "./pages/Guardian";
 import GreenIQ from "./pages/GreenIQ";
 import ExecBriefing from "./pages/ExecBriefing";
 import Onboarding from "./pages/Onboarding";
+import Phase1Complete from "./pages/Phase1Complete";
 import AuthCallback from "./pages/AuthCallback";
 import ModuleGate from "./components/layout/ModuleGate";
 
@@ -89,6 +90,7 @@ function ShellRoutes() {
         <Route path="/greeniq" element={<ModuleGate module="GREENIQ"><GreenIQ /></ModuleGate>} />
         <Route path="/exec-briefing" element={<ExecBriefing />} />
         <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/phase1-complete" element={<Phase1Complete />} />
         <Route path="/admin/modules" element={<PlatformModules />} />
         <Route path="/compliance" element={<ModuleGate module="COMPASS"><Compliance /></ModuleGate>} />
         <Route path="*" element={<Navigate to="/" replace />} />

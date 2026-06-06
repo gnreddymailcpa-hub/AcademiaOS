@@ -51,6 +51,7 @@ import Phase3Complete from "./pages/Phase3Complete";
 import VedaConsole from "./pages/VedaConsole";
 import AriseConsole from "./pages/AriseConsole";
 import NexusConsole from "./pages/NexusConsole";
+import RemainingConsole from "./pages/RemainingConsole";
 import AuthCallback from "./pages/AuthCallback";
 import ModuleGate from "./components/layout/ModuleGate";
 
@@ -101,6 +102,7 @@ function ShellRoutes() {
         <Route path="/veda-console" element={<VedaConsole />} />
         <Route path="/arise-console" element={<AriseConsole />} />
         <Route path="/nexus-console" element={<NexusConsole />} />
+        <Route path="/closeout-console" element={<RemainingConsole />} />
         <Route path="/admin/modules" element={<PlatformModules />} />
         <Route path="/compliance" element={<ModuleGate module="COMPASS"><Compliance /></ModuleGate>} />
         <Route path="*" element={<Navigate to="/" replace />} />

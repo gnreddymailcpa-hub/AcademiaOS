@@ -1,0 +1,34 @@
+{
+  "summary": "Phase 27 bulk closeout (9 platforms) + sidebar re-grouping (11 logical clusters) end-to-end testing complete. Backend: 24/24 Phase-27 PASS. Cumulative regression Phase 21-26: 131/132 (one pre-existing flaky test in test_phase25_arise.py::TestAutoDrip::test_drip_dispatched_on_create — same failure documented in iteration_25/26, NOT introduced by Phase 27). Cumulative new Phase 27 + regression = 24+131 = 155/156 (99.36%). Frontend: All 11 new sidebar groups present with correct testids; all 6 old groups (setup/campus-ops/ai-modules/people/operations/governance) fully removed. Specific nav placements validated: prism under Faculty & Research (per agent note), placements/alumni under Career & Alumni, admissions/arise-console under Recruitment, nexus/nexus-console/student-assistant/veda-console under Student Services, phase1/2/3-complete + new closeout-console under Phase Closeout. /closeout-console route renders remaining-console-page with all 9 tabs. COMMAND: KPI stream auto-loads with students=154 + leads/pub/grv/inc; board deck LLM generation completed and cmd-deck-result rendered. PATHFINDER: skill-gap returned coverage=33.3%, band=gap for python/java/sql vs swe. COMPASS: 5 timeline rows. ILLUMINATE: 'go die loser' -> block / harassment; 'great class' -> ok. PRISM: h-index for Hinton rendered + grant pipeline panel on mount. ALUMNI: mentor-match returned (empty matches — acceptable per spec) + giving summary panel on mount. FACULTY+: fdp-panel renders. GUARDIAN: dash-panel renders with total/open/type-list. GREENIQ: carbon footprint shows grid=103467, solar=30745, emissions=84842.94, net tons=59.632; ESG composite shows E=27.5, S=51, G=60, band=lagging. Cross-tenant 403 confirmed via curl: ISB admin → VCE /command/kpi-stream returns 403 'Cross-tenant denied'.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "test_phase25_arise.py::TestAutoDrip::test_drip_dispatched_on_create", "issue": "PRE-EXISTING flaky test (documented in iteration_25 and iteration_26); assertion 'drip-XXXX in [...]' depends on shared drip dispatch state across reruns. Not introduced by Phase 27. Same drip_id pool as before, not a Phase-27 regression."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_phase27_remaining.py",
+    "/app/test_reports/pytest/pytest_phase27.xml",
+    "/app/test_reports/pytest/pytest_phase27_regression.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Sidebar.jsx (317 lines) cleanly groups 11 sections via declarative NAV_GROUPS array — readable and role-gated correctly. Empty groups auto-hide.",
+    "routes_phase27_remaining.py (~760 lines) packs 24 endpoints across 9 platforms; getting close to the 700-line guideline — when Phase 28 adds more endpoints, recommend splitting into per-platform files (pathfinder.py / compass.py / etc.) to keep maintainability.",
+    "_admin_only allows 'programme_manager' and 'career_services' alongside admins — verify this matches RBAC intent; principal@vaagdevi is institution_admin so it passes regardless.",
+    "Note: spec said PRISM should be 'under Strategy & Compliance' in one bullet but agent_to_agent_context_note clarifies it was intentionally placed under Faculty & Research. Confirmed nav-prism in faculty-research group only — alignment with the intended placement."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (24/24 Phase-27 new) + 99.24% (131/132 Phase 21-26 regression cumulative)", "frontend": "100% (sidebar groups + 9 closeout tabs + all critical KPIs + AI board deck + cross-tenant 403)"},
+  "test_credentials": "principal@vaagdevi.edu.in / Demo@2026 (institution_admin); rajiv.admin@isb.edu / Demo@2026 (cross-tenant). VCE tenant id 44444444-4444-4444-4444-444444444444.",
+  "seed_data_creation": "Phase-27 tests created: 1 pathfinder resume parse (s_parse), 1 PRISM grant (DST awarded ₹15L per run), 1 alumni giving (al-test ₹25k research), 1 FDP record (ML Workshop f1), 1 appraisal (f1), 1 fire drill record, 1 SSR draft (research_innovations), 1 command board deck, 1 illuminate learning path. All scoped to VCE tenant — no production impact.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All Phase-27 testids confirmed: bulk-tab-{cmd|path|cmp|ill|prsm|alm|fac|gd|gr}. COMMAND: cmd-kpi-{students|leads|enr|conv|pub|alm|grv|inc}, cmd-deck-btn → cmd-deck-result (LLM ~30-60s). PATHFINDER: path-skills/path-role(select)/path-btn → path-result(path-cov/path-miss/path-band). COMPASS: cmp-tl-list (5 hardcoded items: NAAC AQAR, SSR re-accred, NBA, NIRF, ISO 14001). ILLUMINATE: ill-msg/ill-btn → ill-result (decision badge: ok/review/block). PRISM: prsm-author/prsm-btn → prsm-h-result + prsm-grant-panel on mount. ALUMNI: alm-int/alm-btn → alm-match-list (may be empty) + alm-giv-panel on mount. FACULTY+: fac-fdp-panel (fac-fdp-total + fac-fdp-list). GUARDIAN: gd-dash-panel (gd-total/gd-open/gd-type-list). GREENIQ: gr-cf-panel (gr-grid/solar/em/tons) + gr-esg-panel (gr-e/s/g/band). NOTE for next agent: in Radix Tabs, only the active TabsContent is rendered; testing visibility of testids from earlier tabs after a tab-switch will fail — re-click the relevant tab first. Cross-tenant /api/closeout/{iid}/command/kpi-stream from ISB token → 403 Cross-tenant denied confirmed via curl.",
+  "rca of the issue": "Pre-existing Phase-25 TestAutoDrip flake: shared state between auto-drip background dispatcher runs causes the specific drip_id created by a single test to fall out of the most-recent N dispatched list when many drips accumulate across iterations. RCA same as iteration_25/26: switch to tagging drips with test-run-uuid and asserting on the tagged subset instead of dispatched_list[0:N]. Out of scope for Phase 27 — not blocking."
+}

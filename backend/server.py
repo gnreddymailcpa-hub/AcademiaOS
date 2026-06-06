@@ -781,6 +781,7 @@ import routes_phase3_complete
 import routes_phase24_veda
 import routes_phase25_arise
 import routes_phase26_nexus
+import routes_phase27_remaining
 from collections import Counter
 from ai_service import chunk_text, _tokens
 
@@ -1021,6 +1022,7 @@ app.include_router(routes_phase3_complete.build_phase3_router(lambda: db, get_cu
 app.include_router(routes_phase24_veda.build_phase24_router(lambda: db, get_current_user))
 app.include_router(routes_phase25_arise.build_phase25_router(lambda: db, get_current_user))
 app.include_router(routes_phase26_nexus.build_phase26_router(lambda: db, get_current_user))
+app.include_router(routes_phase27_remaining.build_phase27_router(lambda: db, get_current_user))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

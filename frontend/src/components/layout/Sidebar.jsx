@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -26,7 +26,7 @@ import {
 import { useLang } from "../../context/LanguageContext";
 import { useInstitution } from "../../context/InstitutionContext";
 import { useAuth } from "../../context/AuthContext";
-import { api } from "../../lib/api";
+import { useTenantModules } from "../../lib/useTenantModules";
 
 /**
  * Sidebar nav is grouped into logical sections to scale to 17+ destinations
@@ -121,11 +121,21 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
   const { t } = useLang();
   const { current } = useInstitution();
   const { user } = useAuth();
+  const { statusOf } = useTenantModules();
 
   const visibleGroups = NAV_GROUPS
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => !item.roles || item.roles.includes(user?.role)),
+      items: group.items.filter((item) => {
+        if (item.roles && !item.roles.includes(user?.role)) return false;
+        // Hide nav entry when its module is `disabled` for this tenant.
+        // `coming_soon` modules remain visible so users can discover the roadmap.
+        if (item.module && statusOf(item.module) === "disabled") return false;
+        return true;
+      }).map((item) => ({
+        ...item,
+        _moduleStatus: item.module ? statusOf(item.module) : "active",
+      })),
     }))
     .filter((group) => group.items.length > 0);
 
@@ -199,7 +209,15 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
                           className="h-4 w-4 shrink-0"
                           strokeWidth={isActive ? 2.25 : 1.75}
                         />
-                        <span className="truncate">{item.label || t(item.key)}</span>
+                        <span className="truncate flex-1">{item.label || t(item.key)}</span>
+                        {item._moduleStatus === "coming_soon" && (
+                          <span
+                            className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 border border-amber-200"
+                            data-testid={`sidebar-soon-${item.module}`}
+                          >
+                            Soon
+                          </span>
+                        )}
                       </>
                     )}
                   </NavLink>

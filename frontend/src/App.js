@@ -34,6 +34,7 @@ import ProductBrief from "./pages/ProductBrief";
 import Admissions from "./pages/Admissions";
 import PlatformModules from "./pages/PlatformModules";
 import AuthCallback from "./pages/AuthCallback";
+import ModuleGate from "./components/layout/ModuleGate";
 
 function LoginRoute() {
   const { user, loading } = useAuth();
@@ -48,24 +49,24 @@ function ShellRoutes() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/institution-setup" element={<InstitutionSetup />} />
-        <Route path="/academic-structure" element={<AcademicStructure />} />
+        <Route path="/academic-structure" element={<ModuleGate module="NEXUS"><AcademicStructure /></ModuleGate>} />
         <Route path="/users-roles" element={<UsersRoles />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/ai-use-cases" element={<AIUseCases />} />
-        <Route path="/content-studio" element={<ContentStudio />} />
-        <Route path="/ai-instructor" element={<AIInstructor />} />
-        <Route path="/ai-advisor" element={<AIAdvisor />} />
-        <Route path="/student-assistant" element={<StudentAssistant />} />
-        <Route path="/assessments" element={<Assessments />} />
+        <Route path="/content-studio" element={<ModuleGate module="ILLUMINATE"><ContentStudio /></ModuleGate>} />
+        <Route path="/ai-instructor" element={<ModuleGate module="VEDA"><AIInstructor /></ModuleGate>} />
+        <Route path="/ai-advisor" element={<ModuleGate module="VEDA"><AIAdvisor /></ModuleGate>} />
+        <Route path="/student-assistant" element={<ModuleGate module="PATHFINDER"><StudentAssistant /></ModuleGate>} />
+        <Route path="/assessments" element={<ModuleGate module="ILLUMINATE"><Assessments /></ModuleGate>} />
         <Route path="/psychometrics" element={<Psychometrics />} />
-        <Route path="/analytics" element={<Analytics />} />
+        <Route path="/analytics" element={<ModuleGate module="COMMAND"><Analytics /></ModuleGate>} />
         <Route path="/workflows" element={<Workflows />} />
         <Route path="/governance" element={<Governance />} />
         <Route path="/admin-guide" element={<AdminGuide />} />
         <Route path="/product-brief" element={<ProductBrief />} />
-        <Route path="/admissions" element={<Admissions />} />
+        <Route path="/admissions" element={<ModuleGate module="ARISE"><Admissions /></ModuleGate>} />
         <Route path="/admin/modules" element={<PlatformModules />} />
-        <Route path="/compliance" element={<Compliance />} />
+        <Route path="/compliance" element={<ModuleGate module="COMPASS"><Compliance /></ModuleGate>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Shell>

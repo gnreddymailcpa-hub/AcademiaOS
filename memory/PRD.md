@@ -809,8 +809,59 @@ tenant-isolated, audit-logged, zero hardcoded weights.
   tabs + 9 sub-flows + role-gating. Report: `/app/test_reports/iteration_22.json`.
 
 ## 12-Platform AcademiaOS.ai — ALL PHASES CLOSED 🎉
-Phase 1-3 + VEDA + ARISE — **107/107 backend** + 100% frontend across the
-full closeout suite.
+Phase 1-3 + VEDA + ARISE + NEXUS — **132/132 backend cumulative**
++ 100% frontend across the full closeout suite (Phase 21-26).
+
+### Phase 26 — Feb 2026 (NEXUS Deepening · 14 endpoints + 11-tab console)
+Closes the 11 NEXUS bullets audited from the user's spec card. Routes under
+`/api/nexus2/{iid}/...`.
+
+- **CSP timetable solver** — backtracking with MRV ordering + faculty / room /
+  cohort clash propagation. Verified clash-free for 9 cohorts × 3 sessions
+  in <0.05s (target: <60s). Returns elapsed_seconds + per-session
+  (day, slot, room) assignment.
+- **14-day defaulter predictor** — logistic regression over
+  (overdue_days, days_since_last_payment, 1-paid_ratio, has_multiple_pending),
+  outputs default_probability + days_until_default + risk_band + advance_warning.
+- **Library collaborative filter** — Jaccard similarity over co-borrowed books
+  with popularity cold-start fallback. Top-K recommendations per student.
+- **JNTUH sync** — POST accepts `results | syllabus | exam_schedule |
+  regulations` payloads with `published_at`; computes sla_minutes vs 1-hour
+  acceptance criterion, persists to `nexus_jntuh_sync`. GET filters by kind.
+- **Grievance management** — CRUD with category enum + severity-driven SLA
+  (critical 4h / high 24h / medium 72h / low 168h). List endpoint computes
+  live `sla_breach` flag.
+- **Certificate hash-chain** — issue creates a SHA-256 content hash + block
+  hash chained to the previous block in `nexus_cert_chain` (simulated
+  blockchain). Verify endpoint recomputes both hashes and returns
+  content_hash_ok / block_hash_ok / valid.
+- **CampX migration tool** — POST accepts target_collection + rows[];
+  upserts by primary_key, returns insert / update / skip counts + fidelity %.
+- **AI noticeboard draft** — Claude-grounded with audience + tone params,
+  returns title / body / recommended_schedule / tags.
+- **Fee instalment plans** — POST creates N pending fee rows with computed
+  due dates, last instalment adjusted to hit total exactly.
+- **Attendance auto-alert sweep** — POST scans nexus_attendance, idempotently
+  emits a VEDA alert for students below threshold (default 75%).
+- **Lifecycle graduate → alumni** — POST graduate idempotently creates an
+  `alumni_directory` row linked by origin_student_id and flips
+  `nexus_students.status=graduated`.
+
+- **Frontend `/nexus-console`** (`NexusConsole.jsx`): 11-tab console.
+  Sidebar entry `sidebar-nav-nexus-console` role-gated to admin / registrar /
+  programme_manager / hostel_warden.
+
+- **Tests**: 25/25 PASS in `tests/test_phase26_nexus.py` covering CSP
+  clash-free 9-dept solve, defaulter prediction shape + bad-horizon 422,
+  CF cold-start, JNTUH SLA OK/BREACH/422, grievance CRUD with SLA breach
+  detection, certificate chain valid/invalid, CampX 100% fidelity + skip
+  invalid, AI notice draft (Claude live), 4-instalment plan creation,
+  attendance auto-alert sweep, lifecycle graduate idempotency, role-gate 403,
+  cross-tenant 403. **132/132 cumulative** with Phase 21-25 regression.
+  Frontend Playwright 100% green on all 11 tabs + role-gating + cross-tenant.
+  Report: `/app/test_reports/iteration_26.json`.
+
+
 
 ### Phase 25 — Feb 2026 (ARISE Deepening · 8 endpoints + admissions in-place upgrades)
 Closes the 7 ARISE bullets audited as partial / missing on the user's spec

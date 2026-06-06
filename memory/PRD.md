@@ -808,7 +808,55 @@ tenant-isolated, audit-logged, zero hardcoded weights.
   Phase 1 regression (29 + 20). Frontend Playwright 100% green on all 5
   tabs + 9 sub-flows + role-gating. Report: `/app/test_reports/iteration_22.json`.
 
-## 12-Platform AcademiaOS.ai — DELIVERY COMPLETE 🎉
+## 12-Platform AcademiaOS.ai — ALL PHASES CLOSED 🎉
+Phases 1, 2 and 3 closeout sprints all green — 65/65 backend + 100% frontend.
+
+### Phase 23 — Feb 2026 (Phase-3 Closeout · GREENIQ · 6 endpoints)
+The final Phase-3 platform now has its full bullet list closed.
+
+- **Z-score anomaly detection** — `GET /api/phase3/{iid}/greeniq/anomalies?metric=energy|water&threshold=N`
+  computes mean + population stdev per meter (energy) / source (water), flags
+  any reading with |z| ≥ threshold, sorts by magnitude. Skips groups with
+  n<3 or σ=0 (insufficient signal). Severity = `high` if |z| ≥ threshold+1
+  else `medium`. Regulator-explainable, no ML dependency — designed for AQAR
+  / ISO-14001 documentation.
+
+- **Solar inverter ingestion** — `POST /api/phase3/{iid}/greeniq/solar/ingest`
+  is the open webhook for any external inverter / SCADA worker. Stores raw
+  reading in `greeniq_solar_readings` AND auto-computes **Performance Ratio
+  = generation_kwh / (irradiance/1000 · capacity_kwp)** (clamped 0..2).
+  Mirrors the energy into `greeniq_energy` as `source=solar` via idempotent
+  upsert on `(institution_id, meter_id="solar-{inv}", period_month, source)`
+  with `$inc` on kwh — so re-ingests of the same period accumulate cleanly
+  and the existing ESG composite picks it up automatically.
+  `GET /solar/summary` rolls up total/today/week kWh, avg irradiance, avg PR,
+  and per-inverter rollup ordered by total kWh.
+
+- **Claude-grounded sustainability action plan** —
+  `POST /api/phase3/{iid}/greeniq/action-plan` pulls live counts (energy /
+  water / carbon readings, total kWh, grid kWh, solar kWh, solar share %,
+  anomaly count) and feeds them to Claude with strict grounding instructions.
+  Returns 5-10 prioritised actions, each with `target_metric`, `effort`,
+  `impact`, `timeline_months`, `owner_role`. Persists to `greeniq_action_plans`
+  for audit. Verified end-to-end: live LLM cites real metrics (e.g. "0.0%
+  solar share", "2 anomalies flagged") with no fabrication.
+
+- **Frontend `/phase3-complete`** (`Phase3Complete.jsx`): 3-tab console
+  (Anomalies / Solar / Action Plan). Auto-runs the anomaly scan on mount.
+  Sidebar entry `sidebar-nav-phase3-complete` under Setup group, role-gated
+  to admin + registrar + compliance + ai_gov + programme_mgr tiers.
+
+- **Tests**: 16/16 PASS in `tests/test_phase23_phase3_complete.py` covering
+  seed→detect z-score boundary, threshold validation (422 on ≤0), invalid
+  metric 422, monotonic anomaly count vs threshold, cross-tenant 403, PR
+  math at PR=1.0 and PR=0.4, null PR when irradiance missing, solar mirror
+  into greeniq_energy verification, readings listing cap, irradiance > 1500
+  rejection, action-plan grounded baseline metrics, plan listing,
+  student 403, focus enum validation. **65/65 cumulative** across the three
+  closeout phases. Frontend Playwright 100% green on all 3 tabs + role-gating.
+  Report: `/app/test_reports/iteration_23.json`.
+
+
 All 12 platforms live with cross-platform glue, Executive Briefing, and
 guided Onboarding. The Build Plan + polish layer are shipped end-to-end.
 

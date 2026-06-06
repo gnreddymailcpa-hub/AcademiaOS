@@ -1,0 +1,32 @@
+{
+  "summary": "Phase 24 (VEDA hardening) end-to-end testing complete. Backend 24/24 NEW Phase-24 tests PASS + 65/65 Phase-1/2/3 regression PASS (cumulative 89/89). Frontend /veda-console renders all 3 tabs (Intent / Voice / KB). Intent: keyword classification (fees/fee_due/keyword/0.65), catalog (8 categories, 61 intents), LLM fallback path, recent classifications list — all working. Voice: hi-language selectable, invalid .png upload returns 422 with toast 'audio extension must be one of [...]'. KB: 4 KPI cards (3/3/0/8), only_pending toggle, ingestion run history (incremental run shows 0 src / 0 chunks after full run). Role-gating verified: student sidebar entry hidden, direct nav loads page, kb-run-btn returns 403 'Admin / governance required' toast. Multi-role chat API works (persona=admin/student/parent inferred + RAG grounding + Telugu language passthrough).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Voice tab — Recent transcripts (empty state)", "issues": ["voice-recent-list data-testid is attached to the ItemList component; when the items array is empty, the ItemList renders the empty-state ('Nothing here yet.') without exposing the data-testid root, so a strict query_selector for [data-testid=voice-recent-list] returns null while voice-recent-panel renders correctly. Cosmetic only — the panel itself is visible per spec requirement."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_phase24_veda.py",
+    "/app/test_reports/pytest/pytest_phase24.xml",
+    "/app/test_reports/pytest/pytest_phase24_regression.xml"
+  ],
+  "action_items": [
+    "(Optional, cosmetic) Ensure data-testid='voice-recent-list' renders on the wrapper even when items=[] so empty-state can be asserted directly by tests."
+  ],
+  "critical_code_review_comments": [
+    "routes_phase24_veda.py is clean — Pydantic validation (Field constraints on text length, language enum, audio extension whitelist), tenant guard on every route, role-gating on writes (kb/ingest-run = admin/governance, voice/transcribe write allowed broadly per spec), _id excluded from Mongo reads, intent classifier uses word-boundary regex with optional s/es plural (catches 'exam dates' for 'exam date' keyword, avoids matching 'fee' inside 'feeling'). LLM fallback path degrades gracefully to method='fallback' when Claude returns invalid JSON or unknown category. KB ingestion is idempotent — second run with only_pending=True correctly processes 0 sources.",
+    "routes_ai.py assistant/message: persona inference from user.role with explicit role_override support is backward-compatible. Multilingual passthrough (en/hi/te/ar) preserved in response. RAG grounding falls back to 'faq' when no approved content_sources exist for the tenant — test accepts both 'rag' and 'faq' which is correct.",
+    "ai_service.py chat_send max_history=20 rolling cap is implemented correctly — prevents unbounded message history accumulation.",
+    "/veda-console route intentionally not route-protected on the frontend (consistent with Phase 1/2/3 closeout pattern); only sidebar visibility + write API role-gating enforce access — confirmed by design note from main agent."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (89/89 cumulative — 24 phase24 + 65 regression)", "frontend": "100%"},
+  "test_credentials": "VCE Principal principal@vaagdevi.edu.in / Demo@2026; VCE Student manikanta.cse@vaagdevi.edu.in / Demo@2026; ISB Admin rajiv.admin@isb.edu / Demo@2026",
+  "seed_data_creation": "test_phase24_veda persists ~6 intent classifications per run (with uuid suffix) into veda_intent_logs; runs kb/ingest-run twice per fixture which appends 2 rows to veda_kb_runs. No destructive operations.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Phase 24 closeout (iteration_24) green. Cumulative regression suite: phase21 (29) + phase22 (20) + phase23 (16) + phase24 (24) = 89 tests, all PASS. Set REACT_APP_BACKEND_URL env var when running pytest. The intent classifier persists logs with unique uuid tokens so re-runs accumulate but stay bounded. Voice 422 paths are the only tested voice flow — Whisper live transcription was not exercised (per agent context). KB ingestion uses content_sources table — after full run, all sources are flagged 'ingested', so incremental runs are 0/0."
+}

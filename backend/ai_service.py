@@ -146,21 +146,26 @@ async def chat_send(
     provider: str,
     model: str,
     citations: Optional[List[dict]] = None,
+    max_history: int = 20,
 ) -> dict:
-    """Send a message in a session; history is replayed from DB."""
+    """Send a message in a session; history is replayed from DB.
+
+    `max_history` caps the rolling window — only the last N user-turns are
+    replayed to keep context lean and prevent quadratic token growth.
+    """
     chat = LlmChat(
         api_key=EMERGENT_LLM_KEY,
         session_id=session["id"],
         system_message=system_message,
     ).with_model(provider, model).with_params(max_tokens=1200)
 
-    # Replay prior turns into the underlying chat object
-    for m in session.get("messages", []):
-        if m["role"] == "user":
-            try:
-                await chat.send_message(UserMessage(text=m["text"]))
-            except Exception:
-                pass  # best-effort replay; lib stores history internally too
+    # Replay only the rolling window of prior USER turns into the chat object.
+    prior_user_msgs = [m for m in session.get("messages", []) if m.get("role") == "user"]
+    for m in prior_user_msgs[-max_history:]:
+        try:
+            await chat.send_message(UserMessage(text=m["text"]))
+        except Exception:
+            pass  # best-effort replay; lib stores history internally too
 
     response = await chat.send_message(UserMessage(text=user_text))
 

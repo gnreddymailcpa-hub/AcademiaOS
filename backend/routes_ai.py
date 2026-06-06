@@ -690,12 +690,17 @@ def build_router(get_db, get_current_user):
         return record
 
     # ---------------------------------------------------------------------
-    # AI Student Assistant
+    # AI Student Assistant — VEDA chat entry point.
+    # Multi-role (student / faculty / admin / parent), multi-lingual
+    # (en / hi / te / ar with code-switching awareness), and RAG-grounded
+    # against approved Content Studio sources.
     # ---------------------------------------------------------------------
     class AssistantMsg(BaseModel):
         institution_id: str
         text: str
-        language: str = "en"
+        language: str = "en"  # en | hi | te | ar
+        # When omitted, the assistant infers persona from `user["role"]`.
+        role_override: Optional[str] = None
 
     FAQ = (
         "AcademiaOS academic services FAQ:\n"
@@ -709,19 +714,88 @@ def build_router(get_db, get_current_user):
         "- Student support: open a ticket and the assistant escalates to programme office within 24h SLA."
     )
 
+    # Role-specific persona blocks for VEDA
+    _PERSONA = {
+        "student":
+            "You are responding to a STUDENT. Prioritise: timetable, attendance, fees, exams, "
+            "certificates, placement readiness, mental-health resources. Be encouraging and concise.",
+        "faculty":
+            "You are responding to a FACULTY member. Prioritise: course allocation, attendance "
+            "submission, research publications, OBE attainment, IQAC processes. Be precise and "
+            "reference policy / NAAC / NBA where relevant.",
+        "admin":
+            "You are responding to an ADMINISTRATOR. Prioritise: cohort analytics, finance, "
+            "compliance (NIRF/NAAC/AQAR), staff workload, accreditation timelines. "
+            "Provide actionable summaries with named owners.",
+        "parent":
+            "You are responding to a PARENT/GUARDIAN. Prioritise: attendance %, fee schedule, "
+            "exam dates, hostel contact, ward's wellbeing. Use plain language, avoid jargon, "
+            "and clearly state where the parent should escalate (programme office vs hostel warden).",
+    }
+    _ROLE_TO_PERSONA = {
+        "student": "student", "guardian": "parent", "parent": "parent",
+        "faculty": "faculty", "instructor": "faculty",
+        "institution_admin": "admin", "super_admin": "admin",
+        "registrar": "admin", "compliance_officer": "admin",
+        "ai_governance_admin": "admin", "career_services": "admin",
+        "programme_manager": "admin", "training_manager": "admin",
+        "hostel_warden": "admin", "counselor": "admin",
+    }
+    _LANG_LABEL = {
+        "en": "English",
+        "hi": "Hindi (Devanagari script)",
+        "te": "Telugu (Telugu script)",
+        "ar": "Arabic (formal modern, RTL)",
+    }
+
     @router.post("/assistant/message")
     async def assistant_message(req: AssistantMsg = Body(...), user: dict = Depends(get_current_user)):
         await _scope(user, req.institution_id)
         db = get_db()
         provider, model = await resolve_model(db, req.institution_id, "student_assistant")
         inst = await db.institutions.find_one({"id": req.institution_id}, {"_id": 0}) or {}
-        lang = "Arabic (formal modern)" if req.language == "ar" else "English"
+
+        # 1) Resolve persona from explicit override or user.role
+        persona_key = req.role_override or _ROLE_TO_PERSONA.get(user.get("role"), "student")
+        persona_key = persona_key if persona_key in _PERSONA else "student"
+        persona_block = _PERSONA[persona_key]
+
+        # 2) Resolve language with code-switch instruction
+        lang_label = _LANG_LABEL.get(req.language, "English")
+        code_switch = (
+            "Mirror the user's language. If they code-switch (mix English with Hindi/Telugu), "
+            "respond in the same code-switched style they used."
+        ) if req.language != "en" else ""
+
+        # 3) RAG retrieval over approved Content Studio sources
+        passages = []
+        try:
+            passages = await retrieve(
+                db, institution_id=req.institution_id, query=req.text, top_k=4,
+            )
+        except Exception:
+            passages = []
+        rag_block = (
+            "\n\n<KNOWLEDGE_BASE>\n" + "\n\n".join(
+                f"[Doc {i+1} — {p.get('source_title') or 'untitled'}]\n{p.get('text','')[:480]}"
+                for i, p in enumerate(passages)
+            ) + "\n</KNOWLEDGE_BASE>"
+        ) if passages else ""
+
         sys = (
-            f"You are the AcademiaOS Student Assistant for {inst.get('name','this institution')}. "
-            f"Respond in {lang}. Use ONLY the FAQ block below as the authoritative source. "
-            "If the question is out of scope, offer to open a support ticket with the programme office."
-            "\n\n<FAQ>\n" + FAQ + "\n</FAQ>"
+            f"You are VEDA, the AcademiaOS assistant for {inst.get('name','this institution')}. "
+            f"Respond in {lang_label}. {code_switch}\n\n"
+            f"PERSONA: {persona_block}\n\n"
+            "GROUNDING RULES:\n"
+            "1. If a KNOWLEDGE_BASE block is present, use it as the AUTHORITATIVE source and cite "
+            "doc numbers like [Doc 1] inline.\n"
+            "2. Otherwise fall back to the static FAQ.\n"
+            "3. If neither covers the question, say so politely and offer to open a support ticket.\n"
+            "4. Stay in role-scope: a student persona must NOT discuss admin/finance reports."
+            "\n\n<FAQ>\n" + FAQ + "</FAQ>"
+            + rag_block
         )
+
         sess = await get_or_create_session(
             db, institution_id=req.institution_id, user_id=user["id"], kind="assistant"
         )
@@ -729,8 +803,17 @@ def build_router(get_db, get_current_user):
             assistant = await chat_send(
                 db, session=sess, user_text=req.text,
                 system_message=sys, provider=provider, model=model,
+                citations=[{"source_id": p.get("source_id"), "title": p.get("source_title"),
+                            "score": p.get("score")} for p in passages],
+                max_history=20,
             )
-            return {"reply": assistant["text"], "model": assistant["model"], "session_id": sess["id"]}
+            return {
+                "reply": assistant["text"], "model": assistant["model"],
+                "session_id": sess["id"],
+                "persona": persona_key, "language": req.language,
+                "grounding": "rag" if passages else "faq",
+                "citations": assistant.get("citations", []),
+            }
         except Exception as e:
             logger.exception("Assistant chat failed")
             raise HTTPException(502, f"AI error: {e}")

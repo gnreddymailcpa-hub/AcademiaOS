@@ -47,6 +47,7 @@ import ExecBriefing from "./pages/ExecBriefing";
 import Onboarding from "./pages/Onboarding";
 import Phase1Complete from "./pages/Phase1Complete";
 import Phase2Complete from "./pages/Phase2Complete";
+import Phase3Complete from "./pages/Phase3Complete";
 import AuthCallback from "./pages/AuthCallback";
 import ModuleGate from "./components/layout/ModuleGate";
 
@@ -93,6 +94,7 @@ function ShellRoutes() {
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/phase1-complete" element={<Phase1Complete />} />
         <Route path="/phase2-complete" element={<Phase2Complete />} />
+        <Route path="/phase3-complete" element={<Phase3Complete />} />
         <Route path="/admin/modules" element={<PlatformModules />} />
         <Route path="/compliance" element={<ModuleGate module="COMPASS"><Compliance /></ModuleGate>} />
         <Route path="*" element={<Navigate to="/" replace />} />

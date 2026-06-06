@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -19,11 +19,14 @@ import {
   BookOpenCheck,
   Settings as SettingsIcon,
   FileText,
+  UserPlus,
+  SlidersHorizontal,
   X,
 } from "lucide-react";
 import { useLang } from "../../context/LanguageContext";
 import { useInstitution } from "../../context/InstitutionContext";
 import { useAuth } from "../../context/AuthContext";
+import { api } from "../../lib/api";
 
 /**
  * Sidebar nav is grouped into logical sections to scale to 17+ destinations
@@ -43,21 +46,26 @@ const NAV_GROUPS = [
     label: "Setup",
     testid: "sidebar-group-setup",
     items: [
+      { to: "/admin/modules", icon: SlidersHorizontal, key: "nav.platform_modules",
+        testid: "sidebar-nav-platform-modules",
+        roles: ["super_admin", "institution_admin"], label: "Platform Modules" },
       { to: "/institution-setup", icon: Building2, key: "nav.institution_setup", testid: "sidebar-nav-institution-setup" },
-      { to: "/academic-structure", icon: Network, key: "nav.academic_structure", testid: "sidebar-nav-academic-structure" },
+      { to: "/academic-structure", icon: Network, key: "nav.academic_structure", testid: "sidebar-nav-academic-structure", module: "NEXUS" },
       { to: "/users-roles", icon: Users, key: "nav.users_roles", testid: "sidebar-nav-users-roles" },
       { to: "/ai-use-cases", icon: Sparkles, key: "nav.ai_use_cases", testid: "sidebar-nav-ai-use-cases" },
+      { to: "/admissions", icon: UserPlus, key: "nav.admissions", testid: "sidebar-nav-admissions",
+        module: "ARISE", label: "Admissions · ARISE" },
     ],
   },
   {
     label: "AI Modules",
     testid: "sidebar-group-ai-modules",
     items: [
-      { to: "/content-studio", icon: FileStack, key: "nav.content_studio", testid: "sidebar-nav-content-studio" },
-      { to: "/ai-instructor", icon: GraduationCap, key: "nav.ai_instructor", testid: "sidebar-nav-ai-instructor" },
-      { to: "/ai-advisor", icon: Compass, key: "nav.ai_advisor", testid: "sidebar-nav-ai-advisor" },
-      { to: "/student-assistant", icon: MessageSquareText, key: "nav.student_assistant", testid: "sidebar-nav-student-assistant" },
-      { to: "/assessments", icon: ClipboardCheck, key: "nav.assessments", testid: "sidebar-nav-assessments" },
+      { to: "/content-studio", icon: FileStack, key: "nav.content_studio", testid: "sidebar-nav-content-studio", module: "ILLUMINATE" },
+      { to: "/ai-instructor", icon: GraduationCap, key: "nav.ai_instructor", testid: "sidebar-nav-ai-instructor", module: "VEDA" },
+      { to: "/ai-advisor", icon: Compass, key: "nav.ai_advisor", testid: "sidebar-nav-ai-advisor", module: "VEDA" },
+      { to: "/student-assistant", icon: MessageSquareText, key: "nav.student_assistant", testid: "sidebar-nav-student-assistant", module: "PATHFINDER" },
+      { to: "/assessments", icon: ClipboardCheck, key: "nav.assessments", testid: "sidebar-nav-assessments", module: "ILLUMINATE" },
       { to: "/psychometrics", icon: Brain, key: "nav.psychometrics", testid: "sidebar-nav-psychometrics" },
     ],
   },
@@ -65,7 +73,7 @@ const NAV_GROUPS = [
     label: "Operations",
     testid: "sidebar-group-operations",
     items: [
-      { to: "/analytics", icon: BarChart3, key: "nav.analytics", testid: "sidebar-nav-analytics" },
+      { to: "/analytics", icon: BarChart3, key: "nav.analytics", testid: "sidebar-nav-analytics", module: "COMMAND" },
       { to: "/workflows", icon: Workflow, key: "nav.workflows", testid: "sidebar-nav-workflows" },
     ],
   },
@@ -81,7 +89,7 @@ const NAV_GROUPS = [
         roles: ["super_admin", "institution_admin", "ai_governance_admin", "compliance_officer"],
         label: "AI Governance",
       },
-      { to: "/compliance", icon: ShieldCheck, key: "nav.compliance", testid: "sidebar-nav-compliance" },
+      { to: "/compliance", icon: ShieldCheck, key: "nav.compliance", testid: "sidebar-nav-compliance", module: "COMPASS" },
     ],
   },
   {

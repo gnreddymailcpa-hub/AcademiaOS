@@ -762,6 +762,7 @@ import routes_psychometrics
 import routes_analytics
 import routes_workflows
 import routes_messaging
+import routes_modules
 from collections import Counter
 from ai_service import chunk_text, _tokens
 
@@ -883,6 +884,25 @@ async def seed_database():
                 ])
     logger.info("Seeded %d knowledge documents", len(SEED_DOCUMENTS))
 
+    # Platform module status — pre-activate all Phase-1 modules for VCE (the
+    # showcase tenant). Other tenants fall back to catalog default_status.
+    from routes_modules import PLATFORM_CATALOG  # local import to avoid cycles
+    from seed_data import VCE_ID
+    phase1_codes = [p["code"] for p in PLATFORM_CATALOG if p["phase"] == 1]
+    for code in phase1_codes:
+        await db.platform_modules.update_one(
+            {"institution_id": VCE_ID, "code": code},
+            {"$setOnInsert": {
+                "institution_id": VCE_ID,
+                "code": code,
+                "status": "active",
+                "configured_at": datetime.now(timezone.utc).isoformat(),
+                "configured_by": "seed@academiaos.ai",
+            }},
+            upsert=True,
+        )
+    logger.info("Seeded VCE Phase-1 modules: %s", phase1_codes)
+
     # Skill frameworks
     for inst_id, fw in SEED_SKILL_FRAMEWORK.items():
         await db.skill_frameworks.update_one(
@@ -958,6 +978,7 @@ app.include_router(routes_workflows.build_workflows_router(lambda: db, get_curre
 app.include_router(routes_workflows.build_audit_router(lambda: db, get_current_user))
 app.include_router(routes_messaging.build_notifications_router(lambda: db, get_current_user))
 app.include_router(routes_messaging.build_tickets_router(lambda: db, get_current_user))
+app.include_router(routes_modules.build_modules_router(lambda: db, get_current_user))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

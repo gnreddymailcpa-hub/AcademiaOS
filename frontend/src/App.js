@@ -31,6 +31,8 @@ import Compliance from "./pages/Compliance";
 import Governance from "./pages/Governance";
 import AdminGuide from "./pages/AdminGuide";
 import ProductBrief from "./pages/ProductBrief";
+import Admissions from "./pages/Admissions";
+import PlatformModules from "./pages/PlatformModules";
 import AuthCallback from "./pages/AuthCallback";
 
 function LoginRoute() {
@@ -61,6 +63,8 @@ function ShellRoutes() {
         <Route path="/governance" element={<Governance />} />
         <Route path="/admin-guide" element={<AdminGuide />} />
         <Route path="/product-brief" element={<ProductBrief />} />
+        <Route path="/admissions" element={<Admissions />} />
+        <Route path="/admin/modules" element={<PlatformModules />} />
         <Route path="/compliance" element={<Compliance />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

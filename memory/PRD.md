@@ -746,3 +746,60 @@ zero functional value — deferred).
 All 12 platforms live with cross-platform glue, Executive Briefing, and
 guided Onboarding. The Build Plan + polish layer are shipped end-to-end.
 
+### Phase 21 — Feb 2026 (Phase-1 Closeout · ~25 feature bullets · VEDA · ARISE · NEXUS · PATHFINDER · COMPASS · COMMAND)
+Closes the remaining ~25 feature bullets from the VCE Build Plan across the six
+Phase-1 platforms. All endpoints tenant-isolated, audit-logged, and pulling
+live data from existing collections — **zero hardcoded tenant ids / weights /
+thresholds**. Surfaced behind a single `/phase1-complete` console.
+
+- **VEDA**: proactive `veda_alerts` push (audience: student/faculty/parent/
+  admin), `veda_sentiment` log with auto-flag at score ≤ -0.5 for counsellor
+  triage, `veda_query_gaps` capture for KB curation.
+- **ARISE**: WhatsApp / SMS / Email `arise_drip_log` (404 on unknown lead),
+  keyword-scored `program-match` across 7 B.Tech streams, `application-status`
+  self-serve lookup.
+- **NEXUS**: hostel allocation (warden/admin gate), library issue/return log,
+  digital noticeboard (faculty/admin gate), Parent Portal aggregating attendance %
+  + fees + certs for any student, timetable generator with greedy room/faculty
+  clash detection, fee-defaulter prediction (transparent 60+(1-paid_ratio)·40
+  heuristic).
+- **PATHFINDER**: AI mock-interview scoring (depth + company-fit kw + baseline →
+  Strong ≥ 75 / Good ≥ 55 / Needs prep), company-intel CRM (T&P-gated),
+  adaptive aptitude difficulty (±1 clamped 1..5), industry-trends derived from
+  drives + resume_scores.
+- **COMPASS**: OBE CO/PO upsert + PO-rollup average attainment, IQAC
+  meetings register (compliance-gated), NIRF auto-compile (TLR/RP/GO/OI/PR
+  from live counts), gap-analysis (OBE < 60% or publications < 5 → flag).
+- **COMMAND**: finance deep-dive (billed/collected/by-term collection %),
+  peer benchmark vs other DB tenants (placement_rate / avg_package / alumni).
+
+- **Single console `/phase1-complete`** (`Phase1Complete.jsx`): 6-tab interface
+  (VEDA / ARISE / NEXUS / PATHFINDER / COMPASS / COMMAND) where each tab is a
+  thin form + list pair over its routes. Reusable MiniForm + Panel + ItemList
+  + Kpi + MiniBar widgets keep the 458-line file DRY. Sidebar entry under
+  Setup group (`sidebar-nav-phase1-complete`), role-gated to admin /
+  faculty / registrar / career_services / compliance / ai_governance tiers
+  (student excluded).
+
+- **Tests**: 29/29 PASS in `tests/test_phase21_phase1_complete.py` covering
+  every endpoint family, audience validation, sentiment auto-flag thresholds,
+  drip 404, warden/admin gating, library, parent-view aggregation, timetable
+  clash detection, defaulters, mock-interview band math, company-intel
+  RBAC, aptitude adaptive clamp, OBE upsert + rollup, IQAC RBAC, NIRF
+  shape, finance, benchmark, cross-tenant 403. 87/87 regression smoke on
+  test_phase14/16/17/18/19/20 PASS. Frontend Playwright 100% green:
+  sidebar gating verified for student tier, all 6 tabs render and submit
+  + list flows confirmed end-to-end. Report: `/app/test_reports/iteration_21.json`.
+
+## Phase-2 Gap-Closure Backlog (Next sprint candidates)
+- ILLUMINATE: AI quiz/MCQ generation from Content Studio sources · at-risk LSTM
+- PRISM: Scopus / OpenAlex sync · DOI lookup
+- ALUMNI360: LinkedIn auto-enrichment · UTM campaign analytics
+- FACULTY+: workload-balance optimiser · 360° peer review
+- GUARDIAN: YOLOv8 CCTV stream ingestion (currently event-API only)
+
+## Phase-3 Gap-Closure Backlog
+- GREENIQ: anomaly detection on consumption · solar inverter API
+- Kafka event bus (currently direct DB writes across platforms)
+- Print-CSS polish + per-platform footnotes for Executive Briefing / AQAR
+

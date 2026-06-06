@@ -768,6 +768,10 @@ import routes_nexus
 import routes_compass
 import routes_pathfinder
 import routes_command
+import routes_illuminate
+import routes_prism
+import routes_alumni
+import routes_faculty
 from collections import Counter
 from ai_service import chunk_text, _tokens
 
@@ -889,12 +893,14 @@ async def seed_database():
                 ])
     logger.info("Seeded %d knowledge documents", len(SEED_DOCUMENTS))
 
-    # Platform module status — pre-activate all Phase-1 modules for VCE (the
-    # showcase tenant). Other tenants fall back to catalog default_status.
+    # Platform module status — pre-activate all Phase-1 AND Phase-2 modules for
+    # VCE (the showcase tenant). Other tenants fall back to catalog
+    # default_status (Phase-1 active; Phase-2 ILLUMINATE/PRISM/ALUMNI360/FACULTY
+    # active by default after Phase 16; GUARDIAN + GREENIQ remain coming_soon).
     from routes_modules import PLATFORM_CATALOG  # local import to avoid cycles
     from seed_data import VCE_ID
-    phase1_codes = [p["code"] for p in PLATFORM_CATALOG if p["phase"] == 1]
-    for code in phase1_codes:
+    phase12_codes = [p["code"] for p in PLATFORM_CATALOG if p["phase"] in (1, 2)]
+    for code in phase12_codes:
         await db.platform_modules.update_one(
             {"institution_id": VCE_ID, "code": code},
             {"$setOnInsert": {
@@ -906,7 +912,7 @@ async def seed_database():
             }},
             upsert=True,
         )
-    logger.info("Seeded VCE Phase-1 modules: %s", phase1_codes)
+    logger.info("Seeded VCE Phase 1+2 modules: %s", phase12_codes)
 
     # Skill frameworks
     for inst_id, fw in SEED_SKILL_FRAMEWORK.items():
@@ -989,6 +995,10 @@ app.include_router(routes_nexus.build_nexus_router(lambda: db, get_current_user)
 app.include_router(routes_compass.build_compass_router(lambda: db, get_current_user))
 app.include_router(routes_pathfinder.build_pathfinder_router(lambda: db, get_current_user))
 app.include_router(routes_command.build_command_router(lambda: db, get_current_user))
+app.include_router(routes_illuminate.build_illuminate_router(lambda: db, get_current_user))
+app.include_router(routes_prism.build_prism_router(lambda: db, get_current_user))
+app.include_router(routes_alumni.build_alumni_router(lambda: db, get_current_user))
+app.include_router(routes_faculty.build_faculty_router(lambda: db, get_current_user))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

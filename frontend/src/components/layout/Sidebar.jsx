@@ -25,6 +25,9 @@ import {
   Award,
   Briefcase,
   Command,
+  BookOpen,
+  Search,
+  HeartHandshake,
   X,
 } from "lucide-react";
 import { useLang } from "../../context/LanguageContext";
@@ -75,12 +78,24 @@ const NAV_GROUPS = [
     label: "AI Modules",
     testid: "sidebar-group-ai-modules",
     items: [
+      { to: "/illuminate", icon: BookOpen, key: "nav.illuminate", testid: "sidebar-nav-illuminate",
+        module: "ILLUMINATE", label: "ILLUMINATE · LMS" },
       { to: "/content-studio", icon: FileStack, key: "nav.content_studio", testid: "sidebar-nav-content-studio", module: "ILLUMINATE" },
       { to: "/ai-instructor", icon: GraduationCap, key: "nav.ai_instructor", testid: "sidebar-nav-ai-instructor", module: "VEDA" },
       { to: "/ai-advisor", icon: Compass, key: "nav.ai_advisor", testid: "sidebar-nav-ai-advisor", module: "VEDA" },
       { to: "/student-assistant", icon: MessageSquareText, key: "nav.student_assistant", testid: "sidebar-nav-student-assistant", module: "PATHFINDER" },
       { to: "/assessments", icon: ClipboardCheck, key: "nav.assessments", testid: "sidebar-nav-assessments", module: "ILLUMINATE" },
       { to: "/psychometrics", icon: Brain, key: "nav.psychometrics", testid: "sidebar-nav-psychometrics" },
+    ],
+  },
+  {
+    label: "People & Engagement",
+    testid: "sidebar-group-people",
+    items: [
+      { to: "/faculty-plus", icon: GraduationCap, key: "nav.faculty_plus", testid: "sidebar-nav-faculty-plus",
+        module: "FACULTY", label: "FACULTY+ · Operations" },
+      { to: "/alumni", icon: HeartHandshake, key: "nav.alumni", testid: "sidebar-nav-alumni",
+        module: "ALUMNI360", label: "ALUMNI360 · Network" },
     ],
   },
   {
@@ -109,6 +124,8 @@ const NAV_GROUPS = [
       { to: "/compass-aqar", icon: Award, key: "nav.compass_aqar", testid: "sidebar-nav-compass-aqar",
         module: "COMPASS", label: "NAAC AQAR · COMPASS",
         roles: ["super_admin", "institution_admin", "compliance_officer", "ai_governance_admin"] },
+      { to: "/prism", icon: Search, key: "nav.prism", testid: "sidebar-nav-prism",
+        module: "PRISM", label: "PRISM · Research" },
     ],
   },
   {

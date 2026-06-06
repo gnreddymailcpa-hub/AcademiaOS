@@ -37,6 +37,10 @@ import Nexus from "./pages/Nexus";
 import CompassAQAR from "./pages/CompassAQAR";
 import Placements from "./pages/Placements";
 import CommandCentre from "./pages/CommandCentre";
+import Illuminate from "./pages/Illuminate";
+import Prism from "./pages/Prism";
+import Alumni from "./pages/Alumni";
+import FacultyPlus from "./pages/FacultyPlus";
 import AuthCallback from "./pages/AuthCallback";
 import ModuleGate from "./components/layout/ModuleGate";
 
@@ -73,6 +77,10 @@ function ShellRoutes() {
         <Route path="/compass-aqar" element={<ModuleGate module="COMPASS"><CompassAQAR /></ModuleGate>} />
         <Route path="/placements" element={<ModuleGate module="PATHFINDER"><Placements /></ModuleGate>} />
         <Route path="/command" element={<ModuleGate module="COMMAND"><CommandCentre /></ModuleGate>} />
+        <Route path="/illuminate" element={<ModuleGate module="ILLUMINATE"><Illuminate /></ModuleGate>} />
+        <Route path="/prism" element={<ModuleGate module="PRISM"><Prism /></ModuleGate>} />
+        <Route path="/alumni" element={<ModuleGate module="ALUMNI360"><Alumni /></ModuleGate>} />
+        <Route path="/faculty-plus" element={<ModuleGate module="FACULTY"><FacultyPlus /></ModuleGate>} />
         <Route path="/admin/modules" element={<PlatformModules />} />
         <Route path="/compliance" element={<ModuleGate module="COMPASS"><Compliance /></ModuleGate>} />
         <Route path="*" element={<Navigate to="/" replace />} />

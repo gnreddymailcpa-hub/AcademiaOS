@@ -83,6 +83,40 @@ def build_prism_router(get_db, get_current_user):
         db = get_db()
         return await db.prism_publications.find({"institution_id": institution_id}, {"_id": 0}).sort("year", -1).to_list(1000)
 
+    @router.get("/{institution_id}/publications-by-author")
+    async def pubs_by_author(institution_id: str, author: str, user: dict = Depends(get_current_user)):
+        """Return publications where any author entry matches `author`.
+
+        Used by FACULTY+ profile cards to surface a researcher's PRISM output
+        without forcing an explicit author_id join — the heuristic matches by
+        token overlap on the author's display name (typical academic
+        convention where the same researcher appears under multiple name
+        variants like "Dr Hari", "Hari S.", "S Hari"). We split the query on
+        whitespace, strip trailing periods, drop very short / common
+        academic prefixes, and consider a paper a match if ANY query token
+        is a substring of ANY author string (case-insensitive).
+        """
+        _guard(user, institution_id)
+        db = get_db()
+        STOPWORDS = {"dr", "dr.", "prof", "prof.", "mr", "mrs", "ms", "the", "and", "of"}
+        tokens = [
+            t.strip(".").lower()
+            for t in author.split()
+            if t and t.strip(".").lower() not in STOPWORDS and len(t.strip(".")) >= 3
+        ]
+        if not tokens:
+            return []
+        rows = await db.prism_publications.find(
+            {"institution_id": institution_id}, {"_id": 0}
+        ).sort("year", -1).to_list(2000)
+        return [
+            r for r in rows
+            if any(
+                any(tok in (a or "").lower() for a in r.get("authors", []))
+                for tok in tokens
+            )
+        ]
+
     @router.post("/{institution_id}/publications")
     async def add_pub(institution_id: str, payload: PublicationIn, user: dict = Depends(get_current_user)):
         _guard(user, institution_id)

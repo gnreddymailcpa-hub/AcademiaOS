@@ -1,0 +1,33 @@
+{
+  "summary": "Phase 19 cross-platform integration (PRISM pubs-by-author on FACULTY+, ALUMNI mentor-match on Student Assistant, COMPASS AQAR live totals) tested end-to-end. 15/15 backend pytest cases pass on /app/backend/tests/test_phase19_integration.py covering PRISM token-split heuristic (basic match, Dr-stopword drop, empty/only-stopword returning [], cross-tenant 403), ALUMNI mentor-match scoring (branch=CSE+role=SDE, AIML/ML availability filter, limit=1, cross-tenant 403), and COMPASS preview (C3/C5/C7 new metric keys, extended totals object, A+ band score, freeze persistence). Frontend FACULTY+ Profiles tab shows 3 expandable faculty cards — clicking faculty-prof-pubs-toggle-fac-38e7ba16c3 expanded the panel showing PRISM publications list (Deep Learning for IIoT · IEEE TII · 2024 · Hari, Sundar · 42 cited) and toggle text flipped to 'Hide publications(7)'. Collapse works. Student Assistant mentor-recommendations-panel renders with ALUMNI360 badge, defaults CSE/Software Engineer, clicking mentor-match-btn returned 3 cards (Ravi · 53.5 · CSE '19 · SDE-III · Google). Changing to ECE/Embedded and re-matching returned 3 different-score cards (3.5). After page reload, branch='ECE' and role='Embedded' persisted via localStorage. COMPASS /compass-aqar UI renders composite score 75 → A+ grade; C3 panel shows publications=10, total_citations=252, h-index=8, patents_granted=3, active_grants_value=75₹L; C5 shows placement_drives_total=3, applications_total=2, selected_total=0; C7 shows renewable_energy_share + carbon_footprint; narratives correctly include h-index, patent, drive, selected and renewable.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Recharts containers on Dashboard", "issues": ["Pre-existing recurring warning 'The width(-1) and height(-1) of chart should be greater than 0' from Recharts ResponsiveContainer. Cosmetic, non-blocking, not Phase-19 related."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_phase19_integration.py",
+    "/app/test_reports/pytest/pytest_phase19.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "PRISM /publications-by-author token-split correctly drops stopwords (dr/dr./prof/prof./mr/mrs/ms/the/and/of) and tokens <3 chars (filters initials like 'S.'). Substring matching is case-insensitive on any author entry. Correct heuristic, no false positives observed.",
+    "ALUMNI /mentor-match scoring: +50 exact branch, +30 role-or-company substring, +0.5/year experience capped at +10. Output sorted desc; verified Ravi scored 53.5 with CSE+SDE (50 + 0 + 3.5 yrs experience) and 3.5 with ECE+Embedded (no match, only experience). Available-only filter enforced.",
+    "COMPASS AQAR composite score logic (+5 for ≥5 pubs, +5 for ≥20% renewable, governance baseline reduced from 15→10 to keep max=100) lifts VCE to score=75 → A+ band as expected. Freeze captures totals into compass_aqar collection with audit event written.",
+    "FacultyPlus.jsx FacultyRow uses local state to fetch /publications-by-author lazily on first toggle click — good for perf. Toggle text correctly reflects count in parens after fetch (verified 'Hide publications(7)').",
+    "StudentAssistant.jsx MentorRecommendations persists branch + role to localStorage on every match — verified by page reload retaining ECE/Embedded inputs. Default values CSE/Software Engineer applied only when localStorage empty.",
+    "Module-gating regression (PRISM disabled in /admin/modules) not retested — note: API /publications-by-author is intentionally NOT module-gated, only the /prism route page is. Acceptable per problem-statement note.",
+    "Seed data observation: only CSE alumni appear to be seeded as mentors. ECE/AIML mentor-match returns CSE alumni with low (experience-only) scores. Not a bug — scoring works correctly, but consider seeding diverse-branch alumni for richer demo."
+  ],
+  "updated_files": ["/app/backend/tests/test_phase19_integration.py (new)"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "principal@vaagdevi.edu.in / Demo@2026 (institution_admin), manikanta.cse@vaagdevi.edu.in / Demo@2026 (student), rajiv.admin@isb.edu / Demo@2026 (cross-tenant probe). VCE institution_id=44444444-4444-4444-4444-444444444444, ISB=11111111-1111-1111-1111-111111111111.",
+  "seed_data_creation": "None. Existing PRISM (≥1 publication with author 'Hari, Sundar'), ALUMNI360 (Ravi · CSE '19 · SDE-III · Google with available_for_mentorship=true), PATHFINDER (3 drives, 2 applications, 0 selections, avg ₹18.67 LPA, max ₹20 LPA), GREENIQ (renewable share ≥20%) seed data is sufficient for all assertions.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Phase 19 fully green. Testids confirmed: faculty-prof-row-<id>, faculty-prof-pubs-toggle-<id>, faculty-prof-pubs-<id> (FacultyPlus Profiles tab — selectable via getByRole tab 'Profiles'). Student Assistant route is /student-assistant. Mentor testids: mentor-recommendations-panel, mentor-branch-input (default 'CSE'), mentor-role-input (default 'Software Engineer'), mentor-match-btn, mentor-card-<id>. COMPASS AQAR route is /compass-aqar; criteria objects use {id: 'C1'..'C7', title, metrics:[{key,value,unit}], narrative}. NOTE: HTML displays metric keys with underscores replaced by spaces for human readability ('total citations' not 'total_citations'), so content-string searches by raw key fail visually but data is present — assert by JSON not by page content. Backend tests query the API directly and pass.",
+  "rca of the issue": "No issues found. All three integrations (PRISM↔FACULTY+, ALUMNI↔Student Assistant, COMPASS↔PRISM/PATHFINDER/GREENIQ) behave per spec. Token-split heuristic correctly drops 'Dr' prefix so 'Dr Hari' query matches seeded author 'Hari'. Mentor scoring produces deterministic ordering. AQAR score = 75 lands in A+ band (≥75) due to +5 research + +5 renewable bonuses with governance baseline lowered to 10."
+}

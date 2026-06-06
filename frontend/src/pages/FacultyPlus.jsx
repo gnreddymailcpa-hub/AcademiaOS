@@ -149,16 +149,100 @@ function ProfilesTab({ institutionId, isHR, onChange }) {
       {rows.length === 0 ? (
         <div className="py-6 text-center text-xs text-muted-foreground">No faculty profiles yet.</div>
       ) : (
-        <ItemList
-          testid="faculty-prof-list"
-          items={rows.map((r) => ({
-            id: r.id, title: r.name,
-            meta: `${r.designation} · ${r.department} · since ${r.joined_year}`,
-            right: r.expertise?.[0] || "",
-          }))}
-        />
+        <ul className="space-y-2" data-testid="faculty-prof-list">
+          {rows.map((r) => (
+            <FacultyRow key={r.id} faculty={r} institutionId={institutionId} />
+          ))}
+        </ul>
       )}
     </Panel>
+  );
+}
+
+/**
+ * FacultyRow — expandable card that lazy-loads PRISM publications for the
+ * faculty member when the user clicks "Show publications". Cross-platform
+ * glue between FACULTY+ and PRISM.
+ */
+function FacultyRow({ faculty, institutionId }) {
+  const [open, setOpen] = useState(false);
+  const [pubs, setPubs] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const togglePubs = async () => {
+    if (!open && pubs === null) {
+      setLoading(true);
+      try {
+        const r = await api.get(
+          `/prism/${institutionId}/publications-by-author?author=${encodeURIComponent(faculty.name)}`
+        );
+        setPubs(r.data || []);
+      } catch (e) {
+        setPubs([]);
+        toast.error(formatApiError(e?.response?.data?.detail) || "Could not fetch publications");
+      } finally {
+        setLoading(false);
+      }
+    }
+    setOpen(!open);
+  };
+
+  return (
+    <li className="rounded-md border border-border bg-card" data-testid={`faculty-prof-row-${faculty.id}`}>
+      <div className="flex items-center justify-between gap-3 p-3">
+        <div className="min-w-0">
+          <div className="font-medium text-sm">{faculty.name}</div>
+          <div className="text-xs text-muted-foreground">
+            {faculty.designation} · {faculty.department} · since {faculty.joined_year}
+          </div>
+          {faculty.expertise?.length > 0 && (
+            <div className="mt-1 flex gap-1 flex-wrap">
+              {faculty.expertise.slice(0, 4).map((e) => (
+                <Badge key={e} variant="outline" className="text-[10px]">{e}</Badge>
+              ))}
+            </div>
+          )}
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={togglePubs}
+          data-testid={`faculty-prof-pubs-toggle-${faculty.id}`}
+          className="shrink-0"
+        >
+          {open ? "Hide" : "Show"} publications
+          {pubs !== null && (
+            <span className="ml-1.5 font-mono text-[10px] text-muted-foreground">({pubs.length})</span>
+          )}
+        </Button>
+      </div>
+      {open && (
+        <div className="border-t border-border px-4 py-3 bg-muted/30" data-testid={`faculty-prof-pubs-${faculty.id}`}>
+          <div className="label-eyebrow mb-2">PRISM · Publications</div>
+          {loading && <div className="text-xs text-muted-foreground py-2">Loading…</div>}
+          {!loading && pubs?.length === 0 && (
+            <div className="text-xs text-muted-foreground py-2">
+              No publications attributed to <span className="font-mono">{faculty.name}</span> in PRISM yet.
+            </div>
+          )}
+          {!loading && pubs?.length > 0 && (
+            <ul className="space-y-1.5 text-xs">
+              {pubs.slice(0, 8).map((p) => (
+                <li key={p.id} className="flex items-start justify-between gap-3 border-b border-border/60 last:border-0 pb-1.5">
+                  <div className="min-w-0">
+                    <div className="font-medium truncate">{p.title}</div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {p.venue} · {p.year} · {(p.authors || []).slice(0, 3).join(", ")}
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="font-mono text-[10px] shrink-0">{p.citations} cited</Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </li>
   );
 }
 

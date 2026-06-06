@@ -23,7 +23,7 @@ import { useInstitution } from "../context/InstitutionContext";
 import { useLang } from "../context/LanguageContext";
 import { api } from "../lib/api";
 import { toast } from "sonner";
-import { MessageSquareText, Send, Loader2, LifeBuoy, Clock, CheckCircle2, AlertCircle } from "lucide-react";
+import { MessageSquareText, Send, Loader2, LifeBuoy, Clock, CheckCircle2, AlertCircle, Network, Sparkles } from "lucide-react";
 
 const SUGGESTED = {
   en: [
@@ -234,6 +234,7 @@ export default function StudentAssistant() {
               ))}
             </ul>
           </div>
+          <MentorRecommendations institutionId={current.id} />
           <div className="rounded-lg border border-border bg-card p-5" id="tickets">
             <div className="flex items-center justify-between mb-3">
               <div className="label-eyebrow">Your tickets</div>
@@ -389,3 +390,92 @@ function Msg({ m, idx, onEscalate }) {
     </div>
   );
 }
+
+/**
+ * MentorRecommendations — surfaces ALUMNI360 mentors matched by branch + target
+ * role. Cross-platform glue between Student Assistant and ALUMNI360. Picks up
+ * the most recent values from localStorage so a student doesn't have to retype
+ * their branch/role each visit.
+ */
+function MentorRecommendations({ institutionId }) {
+  const [branch, setBranch] = useState(() => localStorage.getItem("aos.mentor.branch") || "CSE");
+  const [role, setRole] = useState(() => localStorage.getItem("aos.mentor.role") || "Software Engineer");
+  const [mentors, setMentors] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchMatch = async () => {
+    if (!institutionId) return;
+    setLoading(true);
+    try {
+      const r = await api.get(
+        `/alumni/${institutionId}/mentor-match?branch=${encodeURIComponent(branch)}&role=${encodeURIComponent(role)}&limit=3`
+      );
+      setMentors(r.data || []);
+      localStorage.setItem("aos.mentor.branch", branch);
+      localStorage.setItem("aos.mentor.role", role);
+    } catch {
+      setMentors([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchMatch(); /* eslint-disable-next-line */ }, [institutionId]);
+
+  return (
+    <div className="rounded-lg border border-border bg-card p-5" data-testid="mentor-recommendations-panel">
+      <div className="flex items-center justify-between mb-3">
+        <div className="label-eyebrow flex items-center gap-1.5">
+          <Network className="h-3 w-3" /> Suggested mentors
+        </div>
+        <Badge variant="outline" className="text-[10px] gap-1"><Sparkles className="h-2.5 w-2.5" />ALUMNI360</Badge>
+      </div>
+      <div className="grid grid-cols-2 gap-2 mb-3">
+        <Input
+          value={branch}
+          onChange={(e) => setBranch(e.target.value)}
+          placeholder="Branch"
+          className="h-8 text-xs"
+          data-testid="mentor-branch-input"
+        />
+        <Input
+          value={role}
+          onChange={(e) => setRole(e.target.value)}
+          placeholder="Target role"
+          className="h-8 text-xs"
+          data-testid="mentor-role-input"
+        />
+      </div>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={fetchMatch}
+        className="w-full h-8 text-xs mb-3"
+        disabled={loading}
+        data-testid="mentor-match-btn"
+      >
+        {loading ? "Matching…" : "Find matching mentors"}
+      </Button>
+      {mentors.length === 0 ? (
+        <p className="text-xs text-muted-foreground">
+          {loading ? "" : "No available mentors match yet. Try a broader role keyword."}
+        </p>
+      ) : (
+        <ul className="space-y-2" data-testid="mentor-list">
+          {mentors.map((m) => (
+            <li key={m.id} className="rounded-md border border-border bg-background/60 px-3 py-2 text-xs" data-testid={`mentor-card-${m.id}`}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-medium text-foreground truncate">{m.name}</span>
+                <Badge variant="outline" className="text-[10px] font-mono">{m.match_score}</Badge>
+              </div>
+              <div className="mt-0.5 text-[10px] text-muted-foreground truncate">
+                {m.branch} '{String(m.graduation_year).slice(-2)}{m.role ? " · " + m.role : ""}{m.company ? " · " + m.company : ""}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+

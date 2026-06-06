@@ -63,6 +63,45 @@ def build_alumni_router(get_db, get_current_user):
         db = get_db()
         return await db.alumni_directory.find({"institution_id": institution_id}, {"_id": 0}).sort("graduation_year", -1).to_list(2000)
 
+    @router.get("/{institution_id}/mentor-match")
+    async def mentor_match(
+        institution_id: str,
+        branch: Optional[str] = None,
+        role: Optional[str] = None,
+        limit: int = 5,
+        user: dict = Depends(get_current_user),
+    ):
+        """Surface up to `limit` available mentors ranked by branch + role match.
+
+        Used by the Student Assistant aside to recommend alumni mentors to
+        students based on their branch and target career role. Scoring:
+          + 50 for exact branch match
+          + 30 for case-insensitive substring match on company OR role
+          + 0.5 per year since graduation (capped at 10 → experience proxy)
+        Only returns alumni with `available_for_mentorship=True`.
+        """
+        _guard(user, institution_id)
+        db = get_db()
+        rows = await db.alumni_directory.find(
+            {"institution_id": institution_id, "available_for_mentorship": True},
+            {"_id": 0},
+        ).to_list(2000)
+        b = (branch or "").strip().lower()
+        r = (role or "").strip().lower()
+        now_year = datetime.now(timezone.utc).year
+        scored = []
+        for a in rows:
+            s = 0
+            if b and (a.get("branch") or "").lower() == b:
+                s += 50
+            if r and (r in (a.get("role") or "").lower() or r in (a.get("company") or "").lower()):
+                s += 30
+            yrs = max(0, now_year - (a.get("graduation_year") or now_year))
+            s += min(yrs * 0.5, 10)
+            scored.append({**a, "match_score": round(s, 1)})
+        scored.sort(key=lambda x: x["match_score"], reverse=True)
+        return scored[: max(1, min(limit, 20))]
+
     @router.post("/{institution_id}/directory")
     async def add_alumnus(institution_id: str, payload: AlumniIn, user: dict = Depends(get_current_user)):
         _guard(user, institution_id)

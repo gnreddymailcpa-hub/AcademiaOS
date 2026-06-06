@@ -609,3 +609,49 @@ With GUARDIAN activated, **11 of the 12 platforms are now live**. Only GREENIQ
 - **Tests**: 12/12 PASS in `tests/test_phase17_guardian.py` covering all 4
   endpoint families, plate normalisation, status thresholds, role guards,
   cross-tenant denial and resolve audit. 100% frontend in `iteration_17.json`.
+
+
+### Phase 18 — Feb 2026 (12-Platform · GREENIQ goes live · Build Plan COMPLETE)
+**All 12 platforms are now active by default.** The 12-platform VCE Build Plan
+shipped end-to-end (VEDA · ARISE · NEXUS · COMPASS · PATHFINDER · COMMAND
+· ILLUMINATE · PRISM · ALUMNI360 · FACULTY+ · GUARDIAN · GREENIQ).
+
+- **GREENIQ — Energy & Sustainability Intelligence** (`routes_greeniq.py` +
+  `/greeniq`): energy / water / carbon ledgers with auto-derived tCO₂e on
+  energy entries (grid 0.82 · solar 0.04 · diesel 0.96 kgCO₂e/kWh), and an
+  ESG report card composite across 5 weighted dimensions
+  (Environmental 30 + Social 20 + Governance 20 + Carbon 20 + Water 10)
+  with a NAAC-Green grade projection (A++ ≥ 85 · A+ ≥ 75 · A ≥ 65 · B+ ≥ 50).
+  Trend panel shows last 6 periods of energy consumption.
+- **Module registry**: GREENIQ catalog `default_status` flipped to `active`,
+  route `/greeniq`. VCE seed now activates **all 12** modules (Phase 1+2+3).
+- **Sidebar**: GREENIQ · Sustainability added to CAMPUS OPERATIONS group
+  (Leaf icon).
+- **Student Assistant escalation** (`StudentAssistant.jsx`): every assistant
+  reply now carries a discreet "Didn't help? Escalate to ticket" affordance
+  that pops the support-ticket dialog with the original question pre-filled
+  as the subject (truncated at 80 chars) and a structured body block
+  (`Original question` + `Assistant reply` + `Why I still need help`). The
+  student fills in only the residual gap and submits — the ticket persists,
+  appears in the right-side tickets list with an `open` badge, and survives
+  page refresh.
+- **Tests**: 11/11 PASS in `tests/test_phase18_greeniq.py` covering emission
+  factor math, carbon-scope validation (422 on out-of-range), ESG composite
+  formula, role-gating, cross-tenant 403, and the all-12-modules-active
+  registry regression. 100% frontend pass in `iteration_18.json`.
+
+## 12-Platform build plan — COMPLETE 🎉
+| Phase | Code | Module | Route | Status |
+|------:|------|--------|-------|--------|
+| 1 | VEDA | AI Engine | /ai-instructor /ai-advisor | active |
+| 1 | ARISE | Admissions | /admissions | active |
+| 1 | NEXUS | Campus ERP | /nexus | active |
+| 1 | COMPASS | Compliance + AQAR | /compliance /compass-aqar | active |
+| 1 | PATHFINDER | Placement | /placements | active |
+| 1 | COMMAND | Executive Cockpit | /command | active |
+| 2 | ILLUMINATE | LMS | /illuminate | active |
+| 2 | PRISM | Research | /prism | active |
+| 2 | ALUMNI360 | Alumni Network | /alumni | active |
+| 2 | FACULTY | Faculty Excellence | /faculty-plus | active |
+| 2 | GUARDIAN | Campus Safety | /guardian | active |
+| 3 | GREENIQ | Sustainability | /greeniq | active |

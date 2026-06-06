@@ -1,0 +1,36 @@
+{
+  "summary": "Phase 25 ARISE deepening — full backend + frontend verification. 18/18 new Phase-25 tests PASS. 89/89 regression tests (Phase 21-24) PASS. Cumulative 107/107 green. Frontend /arise-console renders for principal with all 5 tabs functional: Scorer (AUC=1.000 holdout >= 0.78 threshold, 41 features, strong CSE@rank2500 prob 96.0% > weak CIVIL@rank200000 prob 0.9%), Enrollment Predictor (prob 68.9%, n=192), EAPCET (best-match + 7-branch list with cutoffs), Source Mix (192 leads, best=Education fair, sorted desc), B-Category (allocation succeeded). Role gating verified: student does NOT see sidebar-nav-arise-console; direct /arise-console nav renders page (consistent with prior console pattern); write APIs return 403 to student (backend test). Cross-tenant 403 verified (backend test). Auto-drip and NEXUS handoff (idempotent) verified via backend tests.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/arise-console B-Category tab", "issues": ["React hydration warning: '<span> cannot be a child of <option>' — caused by the Emergent dev annotation tooling (data-ve-dynamic) injecting <span> wrappers inside native <option> children. Pre-existing pattern from veImpl, does not affect functionality (selects render and submit correctly). Non-blocking; main agent may consider mapping lead label to a flat string to silence the warning in production."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_phase25_arise.py",
+    "/app/test_reports/pytest/pytest_phase25.xml",
+    "/app/test_reports/pytest/pytest_phase25_regression.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "AriseConsole.jsx (382 LOC) is well-organised into 5 tab sub-components, no immediate refactor needed.",
+    "PredictTab/EapcetTab fit a small LR on every API call — acceptable for current dataset sizes (as documented by main agent); consider memoising/caching once leads cross ~10K to keep p95 latency in check.",
+    "B-Category allocation only checks soft caps server-side — UI does not currently surface the remaining capacity per (quota, branch); adding a tiny KPI under bcat-form-panel would close the operator-feedback gap.",
+    "Source attribution UI does not render a no-data empty state when total_leads = 0 (would just render nothing). Low risk because the endpoint will normally have data, but adding an empty state is recommended.",
+    "Lead select <option> children contain JSX expression spans (l.name · l.preferred_branch · l.stage) — the dev-tools annotation wraps in <span> causing a React hydration warning. Replacing with a single template literal would silence it."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (107/107: 18 new + 89 regression)", "frontend": "100% (all 5 tabs + role gating verified)"},
+  "test_credentials": "From /app/memory/test_credentials.md — principal@vaagdevi.edu.in / Demo@2026 (admin), manikanta.cse@vaagdevi.edu.in / Demo@2026 (student), rajiv.admin@isb.edu / Demo@2026 (cross-tenant)",
+  "seed_data_creation": "Pytest fixtures _seed_labelled_leads created ~30 leads per scorer/enrollment/eapcet class invocation (~75 leads). All leads prefixed Phase25_<suffix>_<i> + AutoDrip_/Handoff_/BCat_<uuid6> for traceability. Cumulative tenant lead-pool grew to 192 (visible in Source tab total).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Phase 25 ARISE deepening fully green (107/107 cumulative). The /arise-console route is intentionally NOT route-protected — role-gating is enforced via (a) sidebar visibility and (b) backend write-API 403s. The 'login URL pattern' caveat: app navigates to '/' post-login (NOT /dashboard); use wait_for_selector on [data-testid^=sidebar-nav-] instead of wait_for_url('/dashboard'). The Phase-25 fixture seeds ~75 leads per full run — they persist in admissions_leads but the source/scorer/eapcet endpoints normalise on aggregates and remain stable. The single hydration warning around <option><span> is a dev-tooling annotation artifact, not a real bug.",
+  "rca of the issue": "No bugs found. Initial Playwright wait_for_url('**/dashboard**') was a test-script issue (app routes to '/'); fixed in retry by waiting on sidebar selector instead. All tested flows working as specified."
+}

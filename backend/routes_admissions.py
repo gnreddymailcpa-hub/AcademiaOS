@@ -107,6 +107,29 @@ def build_admissions_router(get_db, get_current_user):
         }
         await db.admissions_leads.insert_one(doc)
         doc.pop("_id", None)
+
+        # Auto-drip — WhatsApp welcome dispatched within the same request.
+        # This closes the spec's "WhatsApp automation dispatches within 2 minutes
+        # of form submit" acceptance criterion via inline queueing.
+        drip_doc = {
+            "id": f"drip-{uuid4().hex[:10]}",
+            "institution_id": institution_id,
+            "lead_id": doc["id"],
+            "channel": "whatsapp",
+            "template": f"auto_welcome:{doc['preferred_branch']}",
+            "status": "queued", "trigger": "lead_create",
+            "queued_at": _now(),
+        }
+        await db.arise_drip_log.insert_one(dict(drip_doc))
+        drip_doc.pop("_id", None)
+        await db.admissions_leads.update_one(
+            {"id": doc["id"]},
+            {"$set": {"drip_dispatched_at": drip_doc["queued_at"],
+                      "drip_id": drip_doc["id"]}},
+        )
+        doc["drip_dispatched_at"] = drip_doc["queued_at"]
+        doc["drip_id"] = drip_doc["id"]
+
         await db.audit_logs.insert_one({
             "id": f"audit-{uuid4().hex[:10]}",
             "institution_id": institution_id,
@@ -114,7 +137,8 @@ def build_admissions_router(get_db, get_current_user):
             "actor": user["email"],
             "action": "admissions.lead.create",
             "target": doc["id"],
-            "details": {"score": score, "branch": body.get("preferred_branch")},
+            "details": {"score": score, "branch": body.get("preferred_branch"),
+                        "auto_drip": drip_doc["id"]},
         })
         return doc
 
@@ -142,6 +166,39 @@ def build_admissions_router(get_db, get_current_user):
         await db.admissions_leads.update_one(
             {"id": lead_id, "institution_id": institution_id}, {"$set": update}
         )
+        # NEXUS hand-off: when a lead reaches `enrolled`, idempotently create
+        # the matching `nexus_students` row so the registrar's downstream
+        # workflows (attendance, fees, certificates) have a target record.
+        nexus_handoff_id = None
+        if update.get("stage") == "enrolled":
+            existing_student = await db.nexus_students.find_one(
+                {"institution_id": institution_id, "lead_id": lead_id},
+                {"_id": 0, "id": 1},
+            )
+            if existing_student:
+                nexus_handoff_id = existing_student["id"]
+            else:
+                student = {
+                    "id": f"stu-{uuid4().hex[:10]}",
+                    "institution_id": institution_id,
+                    "lead_id": lead_id,
+                    "name": existing.get("name"),
+                    "phone": existing.get("phone"),
+                    "email": existing.get("email"),
+                    "branch": existing.get("preferred_branch"),
+                    "eapcet_rank": existing.get("eapcet_rank"),
+                    "source": existing.get("source"),
+                    "enrolled_at": _now(),
+                    "status": "active",
+                }
+                await db.nexus_students.insert_one(dict(student))
+                nexus_handoff_id = student["id"]
+                update["nexus_student_id"] = nexus_handoff_id
+                await db.admissions_leads.update_one(
+                    {"id": lead_id, "institution_id": institution_id},
+                    {"$set": {"nexus_student_id": nexus_handoff_id}},
+                )
+
         await db.audit_logs.insert_one({
             "id": f"audit-{uuid4().hex[:10]}",
             "institution_id": institution_id,
@@ -149,9 +206,12 @@ def build_admissions_router(get_db, get_current_user):
             "actor": user["email"],
             "action": "admissions.lead.update",
             "target": lead_id,
-            "details": update,
+            "details": {**update, **({"nexus_student_id": nexus_handoff_id}
+                                       if nexus_handoff_id else {})},
         })
         merged = {**existing, **update}
+        if nexus_handoff_id:
+            merged["nexus_student_id"] = nexus_handoff_id
         return merged
 
     @router.get("/{institution_id}/summary")

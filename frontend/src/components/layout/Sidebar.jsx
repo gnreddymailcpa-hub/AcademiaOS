@@ -21,6 +21,10 @@ import {
   FileText,
   UserPlus,
   SlidersHorizontal,
+  Database,
+  Award,
+  Briefcase,
+  Command,
   X,
 } from "lucide-react";
 import { useLang } from "../../context/LanguageContext";
@@ -58,6 +62,16 @@ const NAV_GROUPS = [
     ],
   },
   {
+    label: "Campus Operations",
+    testid: "sidebar-group-campus-ops",
+    items: [
+      { to: "/nexus", icon: Database, key: "nav.nexus", testid: "sidebar-nav-nexus",
+        module: "NEXUS", label: "NEXUS · Campus ERP" },
+      { to: "/placements", icon: Briefcase, key: "nav.placements", testid: "sidebar-nav-placements",
+        module: "PATHFINDER", label: "Placements · PATHFINDER" },
+    ],
+  },
+  {
     label: "AI Modules",
     testid: "sidebar-group-ai-modules",
     items: [
@@ -74,6 +88,8 @@ const NAV_GROUPS = [
     testid: "sidebar-group-operations",
     items: [
       { to: "/analytics", icon: BarChart3, key: "nav.analytics", testid: "sidebar-nav-analytics", module: "COMMAND" },
+      { to: "/command", icon: Command, key: "nav.command", testid: "sidebar-nav-command",
+        module: "COMMAND", label: "Command · COMMAND" },
       { to: "/workflows", icon: Workflow, key: "nav.workflows", testid: "sidebar-nav-workflows" },
     ],
   },
@@ -90,6 +106,9 @@ const NAV_GROUPS = [
         label: "AI Governance",
       },
       { to: "/compliance", icon: ShieldCheck, key: "nav.compliance", testid: "sidebar-nav-compliance", module: "COMPASS" },
+      { to: "/compass-aqar", icon: Award, key: "nav.compass_aqar", testid: "sidebar-nav-compass-aqar",
+        module: "COMPASS", label: "NAAC AQAR · COMPASS",
+        roles: ["super_admin", "institution_admin", "compliance_officer", "ai_governance_admin"] },
     ],
   },
   {

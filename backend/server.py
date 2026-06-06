@@ -763,6 +763,11 @@ import routes_analytics
 import routes_workflows
 import routes_messaging
 import routes_modules
+import routes_admissions
+import routes_nexus
+import routes_compass
+import routes_pathfinder
+import routes_command
 from collections import Counter
 from ai_service import chunk_text, _tokens
 
@@ -979,6 +984,11 @@ app.include_router(routes_workflows.build_audit_router(lambda: db, get_current_u
 app.include_router(routes_messaging.build_notifications_router(lambda: db, get_current_user))
 app.include_router(routes_messaging.build_tickets_router(lambda: db, get_current_user))
 app.include_router(routes_modules.build_modules_router(lambda: db, get_current_user))
+app.include_router(routes_admissions.build_admissions_router(lambda: db, get_current_user))
+app.include_router(routes_nexus.build_nexus_router(lambda: db, get_current_user))
+app.include_router(routes_compass.build_compass_router(lambda: db, get_current_user))
+app.include_router(routes_pathfinder.build_pathfinder_router(lambda: db, get_current_user))
+app.include_router(routes_command.build_command_router(lambda: db, get_current_user))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

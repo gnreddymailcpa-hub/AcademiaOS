@@ -1,0 +1,48 @@
+{
+  "summary": "Phase 14 — ARISE persistence + NEXUS (Campus ERP) + COMPASS (NAAC AQAR) + PATHFINDER (Placements) + COMMAND (Executive Centre). Backend: 13/14 pytest cases PASS (one expectation-vs-implementation mismatch on PATHFINDER resume-score band — see backend_issues.minor). Frontend: all 4 new pages render with required testids, sidebar shows Campus Operations group + 4 new entries, COMPASS freeze produces toast 'AQAR aqar-* frozen · projected grade A', NEXUS attendance data visible end-to-end (2 sessions / 50% pct), cross-tenant security enforced on all 5 routers.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "POST /api/placements/{vce}/resume-score",
+        "issue": "Brief inputs (skills=[python,aws,system design,docker], projects=3, internships=1, cgpa=8.7) yield total=69, band='Good'. Brief expected total>=70 and band='Strong'. Math: skill_kw=8+8+9+6=31 (capped 40) + completeness (projects≥2→10, internships≥1→12)=22 + cgpa(8.7→16) = 69. To meet the brief either (a) lower Strong threshold from 75→65, or (b) add a +1 in cgpa table for 8.5-8.9, or (c) widen the completeness table so 3 projects awards an extra few pts. Currently band 'Strong' requires total>=75 which this profile cannot reach without certifications/leadership/publications."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_phase14_platforms.py",
+    "/app/test_reports/pytest/pytest_phase14.xml"
+  ],
+  "action_items": [
+    "PATHFINDER resume-score: align scoring formula with Phase-1 brief expectation. Either drop Strong threshold from 75 to 65 in routes_pathfinder.py:_resume_score, or boost CGPA weighting (e.g. 8.5-8.9 → 18 instead of 16). Without one of these, the documented sample profile (4 skills + 3 projects + 1 internship + CGPA 8.7) cannot hit 'Strong'.",
+    "(Nit) COMPASS history list uses a single 'compass-history-list' container testid (no per-row testid). For automated regression on history-row count, consider adding 'compass-hist-row-{id}' on each snapshot card."
+  ],
+  "critical_code_review_comments": [
+    "routes_admissions.py / routes_nexus.py / routes_compass.py / routes_pathfinder.py / routes_command.py — all 5 routers consistently apply _guard(user, institution_id) on every endpoint and exclude {_id: 0} from Mongo reads. Clean.",
+    "routes_nexus.py:verify is correctly public (no Depends(get_current_user)) — matches the brief's recruiter-verification use case. Returns minimal info (student_name, cert_type, issued_at, verify_code) so it is safe to expose.",
+    "routes_compass.py:freeze_aqar reuses preview_aqar(institution_id, user) — neat DRY. Side note: it relies on the await on a coroutine — works only because preview is itself an async route handler invoked directly. Acceptable inside FastAPI.",
+    "routes_compass.py:preview_aqar awaits db.list_collection_names() on every preview call (line 46) — for tenants with many collections this is an O(n) chatty call to Mongo. Replace with try/except or hoist into a startup cache.",
+    "routes_pathfinder.py:apply_drive correctly returns 400 for branch ineligibility, 409 for duplicate apply, 404 for missing drive — distinct status codes are good.",
+    "routes_command.py:forecast synthesizes history from a single 'learners' metric with hard-coded deltas [-0.18..0.0]. For Phase-2 wire to a real enrolment_cycles collection; current implementation always produces 'growth' trend on positive-base tenants which makes the brief-required check trivially pass.",
+    "routes_command.py:readiness — outreach formula `min(alumni_network/500, 100)` produces 60% at 30000 alumni which is correct numerically; consider exposing the formula in /readiness response for transparency.",
+    "routes_pathfinder.py:_resume_score band threshold (Strong>=75) is tighter than the Phase-1 brief implies. See backend_issues.minor."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_phase14_platforms.py (NEW — 14 tests across 6 classes)"
+  ],
+  "success_rate": {
+    "backend": "93% (13/14 Phase 14 tests; one expectation mismatch on resume-score band)",
+    "frontend": "100% (all 4 new pages render with required testids; COMPASS freeze toast verified end-to-end; NEXUS attendance data flow live; cross-tenant security enforced)"
+  },
+  "test_credentials": "principal@vaagdevi.edu.in / Demo@2026, manikanta.cse@vaagdevi.edu.in / Demo@2026, rajiv.admin@isb.edu / Demo@2026 (cross-tenant probe). All from /app/memory/test_credentials.md.",
+  "seed_data_creation": "Created via backend test run: 1 ARISE lead 'Phase1 Test' (+91 99999 22222, AIML, rank 8200, score 87, then patched to stage=counseled); 2 NEXUS attendance sessions (cohort-vce-cse-25 / course-cse-ml on 2026-01-20); 1 NEXUS fee (Mani, AY 2025-26 Sem 1, ₹85000, fully paid); 1 NEXUS bonafide certificate for Manikanta with verify_code; 1 PATHFINDER drive (Microsoft SDE 18 LPA, scheduled 2026-04-10) with 1 applicant; 1 COMPASS AQAR snapshot frozen at score 68 / grade A.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Phase 14 routers mount at /api/admissions, /api/nexus, /api/compass, /api/placements, /api/command. NEXUS verify endpoint /api/nexus/verify/{code} is intentionally public. Frontend testid map: NEXUS uses 'nexus-page','nexus-tabs','nexus-tab-{attendance|fees|certificates}','nexus-att-new','nexus-att-list','nexus-att-kpi-{sessions|marks|pct}','nexus-att-panel'. COMPASS uses 'compass-aqar-page','compass-kpi-{score|grade|programmes|audit}','compass-freeze-panel','compass-freeze-btn','compass-crit-{C1..C7}','compass-history-panel','compass-history-list' (no per-row testid — see action_items). PATHFINDER uses 'placements-page','placements-tabs','placements-tab-{drives|resume}'. COMMAND uses 'command-page','cmd-forecast-panel','cmd-anomalies-panel','cmd-readiness-panel'. Sidebar has new group 'CAMPUS OPERATIONS' with 'sidebar-nav-nexus','sidebar-nav-placements','sidebar-nav-command','sidebar-nav-compass-aqar'. Resume-score band threshold discrepancy is the only outstanding behavioural issue.",
+  "rca of the issue": "PATHFINDER resume-score band='Good' when brief expects 'Strong': root cause is the additive scoring scheme in routes_pathfinder.py:_resume_score where skill_keywords (cap 40) + completeness (max 22 without certs/leadership/publications) + cgpa (max 20) cannot exceed 82 for the brief's sample input, and the Strong band requires >=75. With the sample's component scores (31+22+16=69) the total falls into 'Good' (>=55). Mitigation: either lower Strong threshold (75→65) OR raise the cgpa table for 8.5-8.9 from 16 to 18 OR award an extra +5 in completeness when projects>=3."
+}

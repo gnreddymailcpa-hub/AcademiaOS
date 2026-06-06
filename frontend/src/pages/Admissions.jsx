@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-  UserPlus, TrendingUp, Phone, MessageSquare, ClipboardCheck,
-  Sparkles, Calculator, ArrowRight, Briefcase, Mail, Smartphone,
+  UserPlus, TrendingUp, Phone, MessageSquare,
+  Sparkles, Calculator, Mail, Smartphone,
 } from "lucide-react";
 import { PageHeader } from "../components/layout/Shell";
 import { Badge } from "../components/ui/badge";
@@ -13,6 +13,7 @@ import {
 } from "../components/ui/select";
 import { toast } from "sonner";
 import { useInstitution } from "../context/InstitutionContext";
+import { api, formatApiError } from "../lib/api";
 import { Kpi, Panel, ItemList, MiniBar } from "../components/dashboards/widgets";
 
 /**
@@ -40,24 +41,6 @@ const BRANCHES_BY_RANK = [
   { code: "MECH", name: "B.Tech Mechanical",              openRank: 18000, closeRank: 55000 },
 ];
 
-function scoreLead(lead) {
-  // Transparent heuristic — replaceable by XGBoost without UI changes
-  let score = 50;
-  const rank = parseInt(lead.eapcet_rank, 10) || 999999;
-  if (rank < 5000) score += 25;
-  else if (rank < 15000) score += 15;
-  else if (rank < 30000) score += 5;
-  else score -= 10;
-
-  if (lead.budget_lakhs && parseFloat(lead.budget_lakhs) >= 3) score += 8;
-  if (lead.preferred_branch === "CSE" || lead.preferred_branch === "AIML") score += 7;
-  if (lead.source === "EAPCET counselling") score += 12;
-  if (lead.source === "Reference / Alumni") score += 10;
-  if (lead.source === "Walk-in") score += 6;
-  if (lead.phone && lead.email) score += 4;
-  return Math.max(0, Math.min(100, score));
-}
-
 function predictBranch(rank) {
   const r = parseInt(rank, 10);
   if (!r || r < 1) return [];
@@ -76,23 +59,13 @@ function predictBranch(rank) {
   }).sort((a, b) => b.probability - a.probability);
 }
 
-// Seeded demo leads (would come from `/api/admissions/leads` in production)
-const SEED_LEADS = [
-  { id: "ld-1", name: "Akhil Reddy",     phone: "+91 98xx xx1212", email: "akhil@ex.com",     branch: "CSE",  rank: 3450,  source: "EAPCET counselling", stage: "counseled", score: 92 },
-  { id: "ld-2", name: "Priya Sharma",    phone: "+91 99xx xx4521", email: "priya@ex.com",     branch: "AIML", rank: 8120,  source: "Reference / Alumni", stage: "applied",   score: 88 },
-  { id: "ld-3", name: "Manikanta T.",    phone: "+91 90xx xx0987", email: "mani@ex.com",      branch: "CSE",  rank: 1240,  source: "Walk-in",            stage: "enrolled",  score: 96 },
-  { id: "ld-4", name: "Aravind K.",      phone: "+91 87xx xx5544", email: "arav@ex.com",      branch: "ECE",  rank: 11400, source: "Online inquiry",     stage: "counseled", score: 71 },
-  { id: "ld-5", name: "Lakshmi P.",      phone: "+91 80xx xx7676", email: "lak@ex.com",       branch: "DS",   rank: 6700,  source: "EAPCET counselling", stage: "applied",   score: 84 },
-  { id: "ld-6", name: "Sai Kumar",       phone: "+91 70xx xx9999", email: "sai@ex.com",       branch: "MECH", rank: 28900, source: "Online inquiry",     stage: "new",       score: 58 },
-  { id: "ld-7", name: "Sneha R.",        phone: "+91 88xx xx1010", email: "sneha@ex.com",     branch: "EEE",  rank: 19500, source: "Walk-in",            stage: "new",       score: 64 },
-  { id: "ld-8", name: "Bhavana N.",      phone: "+91 89xx xx2020", email: "bhav@ex.com",      branch: "AIML", rank: 9100,  source: "Reference / Alumni", stage: "counseled", score: 79 },
-];
-
+// Stages mirrored server-side (routes_admissions.py STAGES tuple)
 const STAGES = ["new", "counseled", "applied", "enrolled"];
 
 export default function Admissions() {
   const { current } = useInstitution();
-  const [leads, setLeads] = useState(SEED_LEADS);
+  const [leads, setLeads] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState({
     name: "", phone: "", email: "",
     preferred_branch: "CSE", eapcet_rank: "",
@@ -100,48 +73,70 @@ export default function Admissions() {
   });
   const [rankInput, setRankInput] = useState("");
 
+  const refresh = async () => {
+    if (!current?.id) return;
+    setLoading(true);
+    try {
+      const r = await api.get(`/admissions/${current.id}/leads`);
+      setLeads(r.data || []);
+    } catch (e) {
+      toast.error(formatApiError(e?.response?.data?.detail) || "Could not load leads");
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => { refresh(); /* eslint-disable-next-line */ }, [current?.id]);
+
   const stats = useMemo(() => ({
     total: leads.length,
     enrolled: leads.filter((l) => l.stage === "enrolled").length,
     applied: leads.filter((l) => l.stage === "applied").length,
     counseled: leads.filter((l) => l.stage === "counseled").length,
     new: leads.filter((l) => l.stage === "new").length,
-    avgScore: Math.round(leads.reduce((a, l) => a + l.score, 0) / Math.max(leads.length, 1)),
+    avgScore: Math.round(leads.reduce((a, l) => a + (l.score || 0), 0) / Math.max(leads.length, 1)),
   }), [leads]);
 
   const conv = stats.enrolled / Math.max(stats.total, 1) * 100;
 
   const predictions = useMemo(() => predictBranch(rankInput), [rankInput]);
 
-  const submit = () => {
+  const submit = async () => {
     if (!draft.name || !draft.phone) {
       toast.error("Name and phone are required");
       return;
     }
-    const score = scoreLead(draft);
-    const lead = {
-      id: `ld-${Date.now()}`,
-      name: draft.name,
-      phone: draft.phone,
-      email: draft.email,
-      branch: draft.preferred_branch,
-      rank: parseInt(draft.eapcet_rank, 10) || null,
-      source: draft.source,
-      stage: "new",
-      score,
-    };
-    setLeads([lead, ...leads]);
-    toast.success(`${draft.name} captured · score ${score}/100 · drip campaign triggered`);
-    setDraft({ name: "", phone: "", email: "", preferred_branch: "CSE", eapcet_rank: "", budget_lakhs: "", source: "Online inquiry" });
+    try {
+      const payload = {
+        name: draft.name,
+        phone: draft.phone,
+        email: draft.email || "",
+        preferred_branch: draft.preferred_branch,
+        eapcet_rank: draft.eapcet_rank ? parseInt(draft.eapcet_rank, 10) : null,
+        budget_lakhs: draft.budget_lakhs ? parseFloat(draft.budget_lakhs) : null,
+        source: draft.source,
+      };
+      const r = await api.post(`/admissions/${current.id}/leads`, payload);
+      toast.success(`${r.data.name} captured · score ${r.data.score}/100 · drip campaign triggered`);
+      setDraft({ name: "", phone: "", email: "", preferred_branch: "CSE", eapcet_rank: "", budget_lakhs: "", source: "Online inquiry" });
+      refresh();
+    } catch (e) {
+      toast.error(formatApiError(e?.response?.data?.detail) || "Could not capture lead");
+    }
   };
 
-  const moveStage = (id, dir) => {
-    setLeads((ls) => ls.map((l) => {
-      if (l.id !== id) return l;
-      const idx = STAGES.indexOf(l.stage);
-      const next = STAGES[Math.max(0, Math.min(STAGES.length - 1, idx + dir))];
-      return { ...l, stage: next };
-    }));
+  const moveStage = async (id, dir) => {
+    const lead = leads.find((l) => l.id === id);
+    if (!lead) return;
+    const idx = STAGES.indexOf(lead.stage);
+    const next = STAGES[Math.max(0, Math.min(STAGES.length - 1, idx + dir))];
+    if (next === lead.stage) return;
+    try {
+      await api.patch(`/admissions/${current.id}/leads/${id}`, { stage: next });
+      // Optimistic local update
+      setLeads((ls) => ls.map((l) => (l.id === id ? { ...l, stage: next } : l)));
+    } catch (e) {
+      toast.error(formatApiError(e?.response?.data?.detail) || "Could not update stage");
+    }
   };
 
   if (!current) return null;
@@ -309,8 +304,8 @@ export default function Admissions() {
                           </Badge>
                         </div>
                         <div className="mt-1 flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                          <span className="font-mono">{l.branch}</span>
-                          {l.rank && <span>· rank {l.rank.toLocaleString()}</span>}
+                          <span className="font-mono">{l.preferred_branch || l.branch}</span>
+                          {l.eapcet_rank && <span>· rank {l.eapcet_rank.toLocaleString()}</span>}
                         </div>
                         <div className="mt-2 flex items-center justify-between">
                           <span className="text-[10px] text-muted-foreground truncate">{l.source}</span>
@@ -365,8 +360,8 @@ export default function Admissions() {
                 .slice(0, 6)
                 .map((l) => ({
                   id: l.id,
-                  title: `${l.name} · ${l.branch}`,
-                  meta: `${l.source} · rank ${l.rank ? l.rank.toLocaleString() : "—"}`,
+                  title: `${l.name} · ${l.preferred_branch || l.branch}`,
+                  meta: `${l.source} · rank ${l.eapcet_rank ? l.eapcet_rank.toLocaleString() : "—"}`,
                   right: `${l.score}/100`,
                 }))}
             />

@@ -33,6 +33,10 @@ import AdminGuide from "./pages/AdminGuide";
 import ProductBrief from "./pages/ProductBrief";
 import Admissions from "./pages/Admissions";
 import PlatformModules from "./pages/PlatformModules";
+import Nexus from "./pages/Nexus";
+import CompassAQAR from "./pages/CompassAQAR";
+import Placements from "./pages/Placements";
+import CommandCentre from "./pages/CommandCentre";
 import AuthCallback from "./pages/AuthCallback";
 import ModuleGate from "./components/layout/ModuleGate";
 
@@ -65,6 +69,10 @@ function ShellRoutes() {
         <Route path="/admin-guide" element={<AdminGuide />} />
         <Route path="/product-brief" element={<ProductBrief />} />
         <Route path="/admissions" element={<ModuleGate module="ARISE"><Admissions /></ModuleGate>} />
+        <Route path="/nexus" element={<ModuleGate module="NEXUS"><Nexus /></ModuleGate>} />
+        <Route path="/compass-aqar" element={<ModuleGate module="COMPASS"><CompassAQAR /></ModuleGate>} />
+        <Route path="/placements" element={<ModuleGate module="PATHFINDER"><Placements /></ModuleGate>} />
+        <Route path="/command" element={<ModuleGate module="COMMAND"><CommandCentre /></ModuleGate>} />
         <Route path="/admin/modules" element={<PlatformModules />} />
         <Route path="/compliance" element={<ModuleGate module="COMPASS"><Compliance /></ModuleGate>} />
         <Route path="*" element={<Navigate to="/" replace />} />

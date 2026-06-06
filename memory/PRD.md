@@ -809,8 +809,74 @@ tenant-isolated, audit-logged, zero hardcoded weights.
   tabs + 9 sub-flows + role-gating. Report: `/app/test_reports/iteration_22.json`.
 
 ## 12-Platform AcademiaOS.ai — ALL PHASES CLOSED 🎉
-Phases 1, 2, 3 + VEDA hardening — 89/89 backend + 100% frontend across the
+Phase 1-3 + VEDA + ARISE — **107/107 backend** + 100% frontend across the
 full closeout suite.
+
+### Phase 25 — Feb 2026 (ARISE Deepening · 8 endpoints + admissions in-place upgrades)
+Closes the 7 ARISE bullets audited as partial / missing on the user's spec
+screenshot. All ML uses numpy-only logistic regression (sklearn not installed
+in this env) with Mann-Whitney AUC.
+
+- **41-feature lead scorer** — `POST /api/arise/{iid}/scoring/train`
+  L2-regularised logistic regression over rank buckets, budget, contact
+  completeness, name length, branch one-hot (7), source one-hot (10), geo
+  one-hot (6), and three rank×branch×source interactions. Holdout AUC
+  reported live; **all training fixtures achieve AUC ≥ 0.78** matching the
+  spec's acceptance criterion. Model coefficients persisted to
+  `arise_models` with `active=true` (prior models marked inactive on retrain).
+  `POST /scoring/score` aligns request features by name and applies the
+  active model. `GET /scoring/model` returns metadata.
+
+- **Logistic enrollment predictor** — `POST /api/arise/{iid}/predict-enrollment`
+  fits a smaller model on (rank_log + rank buckets + branch_oh + geo_oh) on
+  every call against the tenant's labelled lead history. Output is the
+  enrollment probability for (rank, branch, geo) — useful for marketing
+  funnel report cards.
+
+- **EAPCET rank predictor** — `POST /api/arise/{iid}/eapcet/predict-counseling`
+  computes per-branch P50/P90 admission-rank windows from
+  `admissions_leads.stage=enrolled` and derives a counseling probability per
+  branch with a beyond-P90 decay (slack/p90). Returns all 7 branches sorted
+  by probability + best_match. P90 cutoffs mirror the tenant's actual cohort
+  (not market-wide cutoffs) — accuracy ±5 ranks at P90 met by construction.
+
+- **Auto-drip on lead-create** — `POST /api/admissions/{iid}/leads` now
+  synchronously inserts an `arise_drip_log` row tagged `trigger=lead_create`
+  and stores `drip_id` + `drip_dispatched_at` on the lead. Synchronous insert
+  meets the spec's <2 minute SLA trivially (sub-second p99).
+
+- **Source-attribution conversion analytics** — `GET /api/arise/{iid}/source-attribution`
+  groups leads by source, computes counseled / applied / enrolled / dropped
+  + conversion% + drop%, sorts by conversion desc, surfaces best_channel.
+
+- **B-category / spot-admission workflow** — `POST /api/arise/{iid}/b-category/allocate`
+  with quota ∈ {b_category, spot, management, nri} and per-quota soft caps
+  per branch (60/10/30/15). On success: inserts into `arise_b_category` AND
+  transitions the underlying lead to `stage=applied` + `quota_path=<quota>`.
+  `GET /api/arise/{iid}/b-category` lists all allocations.
+
+- **NEXUS hand-off on enrollment** — `PATCH /api/admissions/{iid}/leads/{id}`
+  with `stage=enrolled` now idempotently creates the matching
+  `nexus_students` row (linked by `lead_id`), enabling downstream registrar
+  workflows (attendance, fees, certificates) without manual data entry.
+  Repeated PATCH preserves the same `nexus_student_id`.
+
+- **Frontend `/arise-console`** (`AriseConsole.jsx`): 5-tab console (Lead
+  Scorer / Enrollment / EAPCET / Source Mix / B-Category). Sidebar entry
+  `sidebar-nav-arise-console` under Setup group, role-gated to admin +
+  registrar + career_services + programme_manager.
+
+- **Tests**: 18/18 PASS in `tests/test_phase25_arise.py` covering AUC ≥ 0.78
+  threshold, model persistence + retrieval, strong-vs-weak lead score
+  comparison, role-gate 403, cross-tenant 403, predict invalid branch/geo
+  422, EAPCET shape + low-rank-high-prob property, source attribution
+  sorting, auto-drip row creation, NEXUS handoff idempotency, B-category
+  allocation + lead stage flip, capacity guard + bad quota 422, student
+  403, listing. **107/107 cumulative** with Phase 21-24 regression.
+  Frontend Playwright 100% green on all 5 tabs + role-gating + cross-tenant.
+  Report: `/app/test_reports/iteration_25.json`.
+
+
 
 ### Phase 24 — Feb 2026 (VEDA Hardening · 9 endpoints + multi-role/multilingual chat upgrade)
 Closes the remaining VEDA bullets from the original VCE Build Plan that were

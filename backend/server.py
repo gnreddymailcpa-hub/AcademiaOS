@@ -772,6 +772,7 @@ import routes_illuminate
 import routes_prism
 import routes_alumni
 import routes_faculty
+import routes_guardian
 from collections import Counter
 from ai_service import chunk_text, _tokens
 
@@ -999,6 +1000,7 @@ app.include_router(routes_illuminate.build_illuminate_router(lambda: db, get_cur
 app.include_router(routes_prism.build_prism_router(lambda: db, get_current_user))
 app.include_router(routes_alumni.build_alumni_router(lambda: db, get_current_user))
 app.include_router(routes_faculty.build_faculty_router(lambda: db, get_current_user))
+app.include_router(routes_guardian.build_guardian_router(lambda: db, get_current_user))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

@@ -64,7 +64,7 @@ PLATFORM_CATALOG = [
     {"code": "GUARDIAN",   "phase": 2, "domain": "Campus Safety",
      "name": "Campus Safety & Smart Infrastructure",
      "tagline": "YOLOv8 CCTV, NFC access, ANPR, predictive maintenance.",
-     "route": None, "default_status": "coming_soon",
+     "route": "/guardian", "default_status": "active",
      "depends_on": ["NEXUS"], "icon": "Shield"},
     {"code": "ALUMNI360",  "phase": 2, "domain": "Alumni",
      "name": "Alumni Engagement & Network",

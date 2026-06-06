@@ -72,6 +72,8 @@ const NAV_GROUPS = [
         module: "NEXUS", label: "NEXUS · Campus ERP" },
       { to: "/placements", icon: Briefcase, key: "nav.placements", testid: "sidebar-nav-placements",
         module: "PATHFINDER", label: "Placements · PATHFINDER" },
+      { to: "/guardian", icon: ShieldCheck, key: "nav.guardian", testid: "sidebar-nav-guardian",
+        module: "GUARDIAN", label: "GUARDIAN · Safety" },
     ],
   },
   {

@@ -85,6 +85,8 @@ def _resume_score(payload: dict) -> dict:
     cgpa = payload.get("cgpa", 0)
     if cgpa >= 9.0:
         cgpa_score = 20
+    elif cgpa >= 8.5:
+        cgpa_score = 18
     elif cgpa >= 8.0:
         cgpa_score = 16
     elif cgpa >= 7.0:
@@ -109,7 +111,7 @@ def _resume_score(payload: dict) -> dict:
     if not suggestions:
         suggestions.append("Solid profile — focus next on system-design depth and one open-source contribution.")
 
-    band = "Strong" if total >= 75 else "Good" if total >= 55 else "Needs work"
+    band = "Strong" if total >= 70 else "Good" if total >= 50 else "Needs work"
 
     return {
         "total": total,

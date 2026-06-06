@@ -374,6 +374,57 @@ corporate academy, or online education platform end-to-end — without code.
 - 9/9 Phase 13 backend tests pass (`/app/backend/tests/test_phase13_platform_modules.py`);
   13/13 critical frontend flows verified in `/app/test_reports/iteration_14.json`.
 
+### Phase 15 — Feb 2026 (12-Platform · Phase 1 COMPLETE — NEXUS · COMPASS · PATHFINDER · COMMAND go live + ARISE persisted)
+All six Phase-1 platforms (VEDA · ARISE · NEXUS · COMPASS · PATHFINDER · COMMAND)
+are now live, tenant-isolated, audit-logged and admin-configurable per tenant.
+
+- **ARISE — Mongo-persisted admissions** (`routes_admissions.py`): in-memory
+  demo data replaced by `admissions_leads` collection. Server-side scoring
+  (transparent heuristic, swappable for XGBoost), stage transitions,
+  `/leads` CRUD + `/summary` aggregates, audit on every mutation.
+
+- **NEXUS — Campus ERP** (`routes_nexus.py` + `/nexus` page):
+  - **Attendance**: daily marking + per-course % rollup (`nexus_attendance`).
+  - **Fees**: ledger with create / pay / collection% / overdue auto-flag (`nexus_fees`).
+  - **Certificates**: bonafide / transfer / conduct / study with a 12-char
+    verify code and a **public** `/api/nexus/verify/{code}` endpoint for
+    recruiter verification (no auth — minimal-info response).
+
+- **COMPASS — NAAC AQAR auto-generator** (`routes_compass.py` + `/compass-aqar`):
+  builds a 7-criterion AQAR draft from live tenant counts (programmes,
+  departments, AI sessions, audit volume, approved sources, placement KPIs),
+  computes a composite 0-100 score and projected grade (A++ / A+ / A / B+),
+  with a `freeze` action that snapshots the draft into `compass_aqar` for
+  IQAC submission. Role-gated to super_admin / institution_admin /
+  compliance_officer / ai_governance_admin.
+
+- **PATHFINDER — Placement Intelligence** (`routes_pathfinder.py` + `/placements`):
+  - **Drives**: T&P creates a drive with eligibility filter (branches +
+    CGPA cut-off); students apply via `/drives/{id}/apply` with eligibility
+    enforced (400 not-eligible, 409 already-applied).
+  - **Resume scoring**: heuristic 0-100 (skill keywords / completeness /
+    CGPA) with band Strong ≥ 70 / Good ≥ 50, transparent component
+    breakdown + auto-generated suggestions. Calibrated so the brief's
+    sample profile (4 skills + 3 projects + 1 internship + 8.7 CGPA)
+    correctly scores 71 → "Strong".
+
+- **COMMAND — Executive Command Centre** (`routes_command.py` + `/command`):
+  - **Forecast**: 5-cycle history → linear regression → 3-cycle projection.
+  - **Anomalies**: threshold checks across placement_rate, at_risk ratio,
+    audit_events volume, HITL backlog. Severities high / medium / low / info.
+  - **Readiness**: NIRF-style composite across 5 weighted dimensions
+    (Teaching 30 · Placement 25 · Research 20 · Outreach 10 · Perception 15)
+    with grade projection.
+
+- **Sidebar new group "CAMPUS OPERATIONS"** + new "Operations" entry
+  (`Sidebar.jsx`): adds 4 nav items wired to the new modules, all gated by
+  `useTenantModules` (hidden when disabled, `Soon` pill when coming_soon).
+
+- **Backend tests**: 14/14 PASS in `tests/test_phase14_platforms.py` covering
+  CRUD, scoring, eligibility, cross-tenant 403, public verify endpoint and
+  audit-log writes. Frontend: 100% pass in `/app/test_reports/iteration_15.json`.
+
+
 
 
 ### Phase 12 — Feb 2026 (Tenant-controlled locale + Admin SOP)

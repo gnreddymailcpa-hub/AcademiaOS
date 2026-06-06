@@ -808,9 +808,52 @@ tenant-isolated, audit-logged, zero hardcoded weights.
   Phase 1 regression (29 + 20). Frontend Playwright 100% green on all 5
   tabs + 9 sub-flows + role-gating. Report: `/app/test_reports/iteration_22.json`.
 
-## 12-Platform AcademiaOS.ai — ALL PHASES CLOSED 🎉
-Phase 1-3 + VEDA + ARISE + NEXUS — **132/132 backend cumulative**
-+ 100% frontend across the full closeout suite (Phase 21-26).
+## 12-Platform AcademiaOS.ai — ALL PLATFORMS CLOSED + NAVIGATION RE-GROUPED 🎉
+Phase 1-3 + VEDA + ARISE + NEXUS + 9 remaining platforms — **156/156 backend
+cumulative** + 100% frontend across the full closeout suite (Phase 21-27),
+plus the deferred sidebar restructure now live.
+
+### Phase 27 — Feb 2026 (9-platform bulk closeout · 24 endpoints + sidebar re-grouping)
+
+**Backend** — `/api/closeout/{iid}/...` consolidated router. 24 endpoints
+across 9 platforms:
+
+- PATHFINDER: resume parse · skill-gap radar · salary benchmarks
+- COMPASS: NAAC SSR auto-compose (Claude grounded) · accreditation timeline
+- COMMAND: all-platform KPI stream · board-deck draft (Claude grounded)
+- ILLUMINATE: adaptive learning path · discussion moderation
+- PRISM: H-index compute · grant log + pipeline
+- ALUMNI360: mentorship matcher · giving log + summary
+- FACULTY+: FDP tracker · self-appraisal composite
+- GUARDIAN: incident dashboard · drill readiness scorer
+- GREENIQ: carbon footprint · ESG composite (E/S/G score)
+
+**Frontend `/closeout-console`** (`RemainingConsole.jsx`): 9-tab console.
+
+**Sidebar re-grouping** — From 7 ad-hoc groups (Setup / Campus Ops / AI
+Modules / People / Operations / Governance / Help) to **11 logical
+clusters by job-to-be-done**:
+1. Overview · 2. Configuration · 3. Recruitment (Admissions + ARISE) ·
+4. Academics (LMS + AI Instructor + AI Advisor + Assessments + Psychometrics) ·
+5. Student Services (NEXUS + VEDA + Student Assistant) ·
+6. Faculty & Research (FACULTY+ + PRISM) ·
+7. Career & Alumni (Placements + ALUMNI) ·
+8. Safety & Sustainability (GUARDIAN + GREENIQ) ·
+9. Strategy & Compliance (Analytics + COMMAND + COMPASS AQAR + Compliance +
+AI Governance + Workflows) ·
+10. Phase Closeout (4 dev/audit consoles together) ·
+11. Help & System.
+
+Effect: Setup shrank from 11 → 6 items; PRISM moved next to FACULTY+; VEDA
+Console next to Student Assistant; ARISE Console next to Admissions; closeout
+consoles no longer pollute Setup.
+
+**Tests**: 24/24 PASS in `tests/test_phase27_remaining.py`. 156/156 cumulative
+(one pre-existing Phase-25 flake, non-blocking). `testing_agent_v3_fork`
+iteration_27.json: 100% green on backend + frontend + sidebar reorganisation
++ cross-tenant 403.
+
+
 
 ### Phase 26 — Feb 2026 (NEXUS Deepening · 14 endpoints + 11-tab console)
 Closes the 11 NEXUS bullets audited from the user's spec card. Routes under

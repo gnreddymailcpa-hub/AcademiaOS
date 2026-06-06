@@ -540,3 +540,44 @@ are now live, tenant-isolated, audit-logged and admin-configurable per tenant.
 
 ## Test credentials
 See `/app/memory/test_credentials.md`.
+
+
+### Phase 16 — Feb 2026 (12-Platform · Phase 2 LIVE — ILLUMINATE · PRISM · ALUMNI360 · FACULTY+)
+Four of the five Phase-2 platforms are activated. GUARDIAN (Phase 2) and
+GREENIQ (Phase 3) remain `coming_soon`.
+
+- **ILLUMINATE — Intelligent LMS** (`routes_illuminate.py` + `/illuminate`):
+  Course catalog, OBE-aligned assignments, learner progress (idempotent upsert
+  by tenant + course + student key), and a summary endpoint computing
+  `avg_completion_pct` across all active learners.
+
+- **PRISM — Research & Innovation** (`routes_prism.py` + `/prism`):
+  Publications, patents (filed / granted / abandoned), grants (active /
+  completed / proposed) with PI attribution. Summary computes total citations,
+  **h-index proxy**, granted-patent count, active grant value (₹L) and a
+  5-year publication trend.
+
+- **ALUMNI360 — Engagement Network** (`routes_alumni.py` + `/alumni`):
+  Directory with search/filter; mentorship pairing that validates the mentor
+  is `available_for_mentorship` (400 not-available, 404 missing); donations
+  with campaign tagging + auto-aggregated leaderboard.
+
+- **FACULTY+ — Faculty Excellence** (`routes_faculty.py` + `/faculty-plus`):
+  Profiles, FDP enrollment tracking with hours rollup, and **CAS-weighted
+  appraisal cycle** (Teaching .40 + Research .30 + Service .15 + Feedback .15)
+  computing a composite score and band (Exceeds≥85 / Meets≥65 / Below).
+
+- **Module registry update** (`routes_modules.py`): catalog `default_status`
+  flipped from `coming_soon` → `active` for ILLUMINATE / PRISM / ALUMNI360 /
+  FACULTY. Routes now point at the new endpoints (`/illuminate`, `/prism`,
+  `/alumni`, `/faculty-plus`). VCE seed updated to seed Phase-1 *and* Phase-2
+  modules active out-of-the-box.
+
+- **Sidebar refresh**: ILLUMINATE added at the top of "AI Modules"; PRISM
+  added to "Governance"; new **People & Engagement** group between AI Modules
+  and Operations housing FACULTY+ and ALUMNI360.
+
+- **Tests**: 23/23 PASS in `tests/test_phase16_platforms.py` covering CRUD,
+  role-gating, cross-tenant denial, upsert idempotency, h-index calculation,
+  mentor-availability validation, and CAS-weighted appraisal math across all
+  three bands. 100% frontend pass in `iteration_16.json`.

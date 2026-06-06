@@ -776,6 +776,7 @@ import routes_guardian
 import routes_greeniq
 import routes_exec
 import routes_phase1_complete
+import routes_phase2_complete
 from collections import Counter
 from ai_service import chunk_text, _tokens
 
@@ -1011,6 +1012,7 @@ app.include_router(routes_guardian.build_guardian_router(lambda: db, get_current
 app.include_router(routes_greeniq.build_greeniq_router(lambda: db, get_current_user))
 app.include_router(routes_exec.build_exec_router(lambda: db, get_current_user))
 app.include_router(routes_phase1_complete.build_phase1_router(lambda: db, get_current_user))
+app.include_router(routes_phase2_complete.build_phase2_router(lambda: db, get_current_user))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

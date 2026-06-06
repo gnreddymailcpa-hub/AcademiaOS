@@ -41,6 +41,7 @@ import {
   FacultyDashboard,
   StudentDashboard,
 } from "../components/dashboards/variants-strategic";
+import { EngineeringCollegeDashboard } from "../components/dashboards/variant-engineering";
 
 function Kpi({ label, value, hint, icon: Icon, trend, testid }) {
   return (
@@ -113,6 +114,17 @@ export default function Dashboard() {
     return <FacultyDashboard inst={current} m={m} />;
   if (role === "student")
     return <StudentDashboard inst={current} user={user} />;
+
+  // Engineering College institutions (e.g. Vaagdevi) get a placement-first
+  // dashboard for the leadership / admin personas instead of the canonical
+  // admin layout.
+  const isEngColl = current.type === "Engineering College";
+  if (
+    isEngColl &&
+    ["super_admin", "institution_admin", "dean", "executive_leadership"].includes(role)
+  ) {
+    return <EngineeringCollegeDashboard inst={current} m={m} user={user} />;
+  }
 
   // Default admin/dean/super_admin view (existing canonical layout)
   const isGov = current.type === "Government Academy";

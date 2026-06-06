@@ -126,22 +126,33 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       className={`sidebar-rail flex flex-col ${isOpen ? "is-open" : ""}`}
       data-testid="sidebar"
     >
-      <div className="flex h-16 items-center gap-3 px-5 border-b border-border">
-        <div
-          className="flex h-9 w-9 items-center justify-center rounded-md font-semibold"
-          style={{
-            background: "hsl(var(--primary))",
-            color: "hsl(var(--primary-foreground))",
-            fontFamily: "var(--font-heading)",
-          }}
-          data-testid="brand-mark"
-        >
-          A
-        </div>
+      <div className="flex h-16 items-center gap-3 px-5 border-b border-border" data-testid="sidebar-brand">
+        {current?.logo_url ? (
+          <img
+            src={current.logo_url}
+            alt={current.short_name || "Tenant logo"}
+            className="h-9 w-9 rounded-md object-contain bg-white border border-border"
+            data-testid="sidebar-tenant-logo"
+          />
+        ) : (
+          <div
+            className="flex h-9 w-9 items-center justify-center rounded-md font-semibold"
+            style={{
+              background: "hsl(var(--primary))",
+              color: "hsl(var(--primary-foreground))",
+              fontFamily: "var(--font-heading)",
+            }}
+            data-testid="sidebar-brand-mark"
+          >
+            {current?.short_name?.[0] || "A"}
+          </div>
+        )}
         <div className="leading-tight flex-1 min-w-0">
-          <div className="text-sm font-semibold tracking-tight text-foreground">AcademiaOS</div>
+          <div className="text-sm font-semibold tracking-tight text-foreground truncate">
+            {current?.short_name || "AcademiaOS"}
+          </div>
           <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            {current?.short_name || "Platform"} · Tenant
+            Powered by AcademiaOS
           </div>
         </div>
         <button

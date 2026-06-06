@@ -809,7 +809,70 @@ tenant-isolated, audit-logged, zero hardcoded weights.
   tabs + 9 sub-flows + role-gating. Report: `/app/test_reports/iteration_22.json`.
 
 ## 12-Platform AcademiaOS.ai — ALL PHASES CLOSED 🎉
-Phases 1, 2 and 3 closeout sprints all green — 65/65 backend + 100% frontend.
+Phases 1, 2, 3 + VEDA hardening — 89/89 backend + 100% frontend across the
+full closeout suite.
+
+### Phase 24 — Feb 2026 (VEDA Hardening · 9 endpoints + multi-role/multilingual chat upgrade)
+Closes the remaining VEDA bullets from the original VCE Build Plan that were
+audited as partial / missing.
+
+- **Multi-role chat personas** — `/api/ai/assistant/message` now adapts the
+  system prompt to the caller's role via a `_ROLE_TO_PERSONA` map covering
+  student / faculty / admin / parent. Explicit `role_override` payload field
+  for parents using a guardian's logged-in session. Response includes
+  `persona`, `language`, `grounding` for auditability.
+
+- **RAG-grounded chat** — `ai_service.retrieve()` (TF-cosine over
+  `content_chunks`) is wired into `/assistant/message`. Top-4 passages
+  embedded in a `<KNOWLEDGE_BASE>` block; the LLM is instructed to cite
+  `[Doc N]` inline and fall back to the static FAQ only when no passages match.
+  Response carries `grounding="rag"|"faq"` + `citations` array.
+
+- **Multilingual** — Languages extended from {en, ar} to `{en, hi, te, ar}`
+  with explicit code-switch instruction (`"mirror the user's language;
+  preserve their code-switched style"`).
+
+- **Rolling 20-turn cap** — `ai_service.chat_send` now slices the replayed
+  history to `last 20 USER turns` (default, override per call). Prevents
+  unbounded prompt growth across long conversations.
+
+- **Intent classifier (61 types across 8 categories)** —
+  `POST /api/veda/{iid}/intent-classify` runs a transparent keyword catalog
+  first (word-boundary regex + optional `s|es` suffix so "exam date" catches
+  "exam dates" but "fee" does NOT match inside "feeling"), then falls back to
+  Claude constrained to the catalog vocabulary. Persists per turn into
+  `veda_intents`. `GET /intent-catalog` exposes the full taxonomy for UI
+  coverage stats.
+
+- **Whisper voice transcription** — `POST /api/veda/{iid}/voice/transcribe`
+  accepts multipart audio (mp3/mp4/m4a/wav/webm/mpeg/mpga ≤ 25 MB) +
+  `language` form field (en/hi/te/ar). Lazy-imports
+  `emergentintegrations.llm.openai.OpenAISpeechToText`, calls `whisper-1`,
+  persists transcript into `veda_voice_transcripts`.
+
+- **Nightly KB ingestion pipeline** — `POST /api/veda/{iid}/kb/ingest-run`
+  picks `content_sources` where `approved=true AND (ingestion_status missing
+  OR == 'pending')`, deletes old chunks, re-chunks via
+  `ai_service.chunk_text`, re-tokenises, and marks the source as
+  `ingested` with `last_ingested_at`. Designed to be cron-driven nightly.
+  `GET /kb/status` returns total / ingested / pending / chunks_total +
+  last_run snapshot.
+
+- **Frontend `/veda-console`** (`VedaConsole.jsx`): 3-tab console
+  (Intent / Voice / KB). Sidebar entry `sidebar-nav-veda-console` under
+  Setup group, role-gated to admin + faculty + registrar + career_services +
+  compliance + ai_gov + programme_manager (student excluded).
+
+- **Tests**: 24/24 PASS in `tests/test_phase24_veda.py` covering keyword
+  classify across 8 categories (including the "feeling" / "fee" boundary
+  trap), LLM fallback, persistence + listing, voice 422 boundaries (bad
+  language, bad extension), KB incremental run idempotency (second
+  only-pending run = 0 sources), KB admin-only 403, multi-role chat persona
+  inference for student/admin/parent, Telugu language passthrough, catalog ≥ 60.
+  **89/89 cumulative** with Phase 1/2/3 regression. Frontend Playwright
+  100% green. Report: `/app/test_reports/iteration_24.json`.
+
+
 
 ### Phase 23 — Feb 2026 (Phase-3 Closeout · GREENIQ · 6 endpoints)
 The final Phase-3 platform now has its full bullet list closed.

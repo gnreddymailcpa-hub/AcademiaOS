@@ -773,6 +773,7 @@ import routes_prism
 import routes_alumni
 import routes_faculty
 import routes_guardian
+import routes_greeniq
 from collections import Counter
 from ai_service import chunk_text, _tokens
 
@@ -894,14 +895,13 @@ async def seed_database():
                 ])
     logger.info("Seeded %d knowledge documents", len(SEED_DOCUMENTS))
 
-    # Platform module status — pre-activate all Phase-1 AND Phase-2 modules for
+    # Platform module status — pre-activate ALL Phase-1, 2, 3 modules for
     # VCE (the showcase tenant). Other tenants fall back to catalog
-    # default_status (Phase-1 active; Phase-2 ILLUMINATE/PRISM/ALUMNI360/FACULTY
-    # active by default after Phase 16; GUARDIAN + GREENIQ remain coming_soon).
+    # default_status (all 12 active by default post-Phase 18).
     from routes_modules import PLATFORM_CATALOG  # local import to avoid cycles
     from seed_data import VCE_ID
-    phase12_codes = [p["code"] for p in PLATFORM_CATALOG if p["phase"] in (1, 2)]
-    for code in phase12_codes:
+    all_codes = [p["code"] for p in PLATFORM_CATALOG]
+    for code in all_codes:
         await db.platform_modules.update_one(
             {"institution_id": VCE_ID, "code": code},
             {"$setOnInsert": {
@@ -913,7 +913,7 @@ async def seed_database():
             }},
             upsert=True,
         )
-    logger.info("Seeded VCE Phase 1+2 modules: %s", phase12_codes)
+    logger.info("Seeded VCE all 12 modules: %s", all_codes)
 
     # Skill frameworks
     for inst_id, fw in SEED_SKILL_FRAMEWORK.items():
@@ -1001,6 +1001,7 @@ app.include_router(routes_prism.build_prism_router(lambda: db, get_current_user)
 app.include_router(routes_alumni.build_alumni_router(lambda: db, get_current_user))
 app.include_router(routes_faculty.build_faculty_router(lambda: db, get_current_user))
 app.include_router(routes_guardian.build_guardian_router(lambda: db, get_current_user))
+app.include_router(routes_greeniq.build_greeniq_router(lambda: db, get_current_user))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

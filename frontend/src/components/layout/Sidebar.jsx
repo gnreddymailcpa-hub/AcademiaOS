@@ -28,6 +28,7 @@ import {
   BookOpen,
   Search,
   HeartHandshake,
+  Leaf,
   X,
 } from "lucide-react";
 import { useLang } from "../../context/LanguageContext";
@@ -74,6 +75,8 @@ const NAV_GROUPS = [
         module: "PATHFINDER", label: "Placements · PATHFINDER" },
       { to: "/guardian", icon: ShieldCheck, key: "nav.guardian", testid: "sidebar-nav-guardian",
         module: "GUARDIAN", label: "GUARDIAN · Safety" },
+      { to: "/greeniq", icon: Leaf, key: "nav.greeniq", testid: "sidebar-nav-greeniq",
+        module: "GREENIQ", label: "GREENIQ · Sustainability" },
     ],
   },
   {

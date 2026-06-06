@@ -23,7 +23,7 @@ import { useInstitution } from "../context/InstitutionContext";
 import { useLang } from "../context/LanguageContext";
 import { api } from "../lib/api";
 import { toast } from "sonner";
-import { MessageSquareText, Send, Loader2, LifeBuoy, Clock, CheckCircle2 } from "lucide-react";
+import { MessageSquareText, Send, Loader2, LifeBuoy, Clock, CheckCircle2, AlertCircle } from "lucide-react";
 
 const SUGGESTED = {
   en: [
@@ -88,6 +88,38 @@ export default function StudentAssistant() {
     } catch (e) {
       toast.error("Could not open ticket");
     }
+  };
+
+  /**
+   * Escalate the conversation pair (latest user question + assistant reply)
+   * into a pre-filled ticket draft and pop the dialog.
+   */
+  const escalate = (assistantIdx) => {
+    // Look backward from the assistant message for the closest user question
+    let userText = "";
+    for (let i = assistantIdx - 1; i >= 0; i -= 1) {
+      if (messages[i].role === "user") {
+        userText = messages[i].text;
+        break;
+      }
+    }
+    const assistantText = messages[assistantIdx]?.text || "";
+    const subject = userText.length > 80 ? userText.slice(0, 77) + "…" : (userText || "Help needed");
+    const body = [
+      `Original question:\n${userText || "(not captured)"}`,
+      "",
+      `Assistant reply:\n${assistantText}`,
+      "",
+      "Why I still need help:",
+      "(please describe what was missing or incorrect)",
+    ].join("\n");
+    setDraft({
+      subject,
+      body,
+      category: "general",
+      severity: "normal",
+    });
+    setOpenTicketDialog(true);
   };
 
   useEffect(() => {
@@ -165,7 +197,7 @@ export default function StudentAssistant() {
               </div>
             )}
             {messages.map((m, i) => (
-              <Msg key={i} m={m} />
+              <Msg key={i} m={m} idx={i} onEscalate={escalate} />
             ))}
             {busy && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -321,7 +353,7 @@ export default function StudentAssistant() {
   );
 }
 
-function Msg({ m }) {
+function Msg({ m, idx, onEscalate }) {
   if (m.role === "user") {
     return (
       <div className="flex justify-end" data-testid="assistant-msg-user">
@@ -335,10 +367,24 @@ function Msg({ m }) {
         <MessageSquareText className="h-4 w-4" />
       </div>
       <div className="flex-1">
-        <div className="rounded-2xl border border-border bg-background px-4 py-3 text-sm whitespace-pre-wrap leading-relaxed">
+        <div className={`rounded-2xl border px-4 py-3 text-sm whitespace-pre-wrap leading-relaxed ${
+          m.error ? "border-rose-200 bg-rose-500/5" : "border-border bg-background"
+        }`}>
           {m.text}
         </div>
-        {m.model && <div className="mt-1 text-[10px] text-muted-foreground font-mono">{m.model}</div>}
+        <div className="mt-1 flex items-center justify-between gap-2">
+          <div className="text-[10px] text-muted-foreground font-mono">{m.model || ""}</div>
+          {onEscalate && (
+            <button
+              type="button"
+              onClick={() => onEscalate(idx)}
+              className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-primary transition"
+              data-testid={`assistant-escalate-${idx}`}
+            >
+              <AlertCircle className="h-3 w-3" /> Didn't help? Escalate to ticket
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,0 +1,37 @@
+{
+  "summary": "Phase 18 - GREENIQ (Sustainability) + Student Assistant escalation tested end-to-end. 11/11 backend pytest cases pass on /app/backend/tests/test_phase18_greeniq.py (energy emission factors, water, carbon scope validation, ESG composite/grade, role-gating, cross-tenant 403, all-12-modules-active registry regression). Frontend GREENIQ cockpit (4 KPIs, ESG panel with 5 dimension bars + B+ grade badge, 3 tabs) renders correctly; energy + water + carbon submissions all succeed via UI with toast 'Emission recorded' and list updates. Student Assistant escalation: 'Didn't help? Escalate to ticket' button renders on each assistant reply, opens prefilled dialog (subject=original Q, body=Original/Assistant/Why blocks), creates ticket with open badge in tickets-list, persists after page refresh.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "GREENIQ dialogs", "issues": ["DialogContent missing aria-describedby (Radix Dialog warning logged in console - accessibility lint, non-blocking)"]},
+      {"screen": "GREENIQ carbon scope select", "issues": ["React hydration warning: native <select> renders dynamic <option> children with extra <span> wrappers from instrumentation - benign but pollutes console with 'In HTML, <span> cannot be a child of <option>' error. Suggest using radix Select like other modules, or strip dynamic option wrappers."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_phase18_greeniq.py",
+    "/app/test_reports/pytest/pytest_phase18.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "ESG composite computation in routes_greeniq.py uses static base offsets (e_dim = renewable_pct + 50, w_dim = recycled_pct + 30, s_dim = 40 + mentorships*6) that bias scores upward independent of true sustainability. Acceptable as MVP placeholder; production should plumb in normalised KPIs vs targets.",
+    "Carbon scope is validated server-side (Pydantic ge=1, le=3) returning 422, but client-side <select> in GreenIQ.jsx only offers 1/2/3 so user can never pick out-of-range. OK by design.",
+    "GREENIQ writer guard checks role in (super_admin, institution_admin, facilities_admin, sustainability_admin, registrar). Student/faculty correctly blocked with 403. ESG GET is open to all tenant members (verified student 200).",
+    "ESG energy_trend only returns last 6 sorted periods; works but lexical sort assumes 'YYYY-MM' / 'YYYY-Www' format - mixing formats can mis-order. Acceptable since field is free-text and current usage is consistent.",
+    "Module catalog now lists all 12 platforms with default_status='active'; new tenants automatically get every platform on. The dependency check on PATCH (cannot activate if dep is not active) still works correctly."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_phase18_greeniq.py (new)"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "principal@vaagdevi.edu.in / Demo@2026 (institution_admin), manikanta.cse@vaagdevi.edu.in / Demo@2026 (student for 403 probes + escalation flow). ISB cross-tenant probed by POSTing to ISB tenant id with VCE principal token -> 403 on energy/water/carbon.",
+  "seed_data_creation": "GREENIQ: 3 energy rows (M-BL1 grid 12000 kWh 2026-02 -> 9.84 tCO2e, M-SOLAR solar 4500 kWh 2026-02 -> 0.18 tCO2e, M-OLD grid 1000 kWh 2026-01, plus M-TEST solar 2000 kWh 2026-03 -> 0.08 tCO2e from UI). 1 water row (W-BORE-01 borewell 250kL + W-TEST recycled 100kL from UI). 3 carbon rows (Diesel generator scope1 3.5 tCO2e x2 + Purchased electricity scope1 1.2 from UI). 1 support ticket from student assistant escalation (subject='How do I get my migration certificate?').",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All 12 platforms are now active by default for new tenants. GREENIQ testids confirmed: sidebar-nav-greeniq (CAMPUS OPERATIONS group, Leaf icon), greeniq-page, greeniq-kpi-{composite,grade,renew,carbon}, greeniq-esg-{panel,grade}, greeniq-tab-{energy,water,carbon}, greeniq-en-{new,meter,loc,kwh,source,period,submit,list}, greeniq-wa-{new,source,loc,kl,type,period,submit,list}, greeniq-co-{new,scope,activity,tco2e,period,submit,list}. GreenIQ uses native HTML <select> (not Radix) for source/type/scope dropdowns - use page.select_option(testid, value) instead of clicking options. Student Assistant escalate testid pattern: assistant-escalate-{idx} where idx is the message index in the conversation array. Ticket dialog reuses existing ticket-{subject,body,category,severity,submit} testids - escalate() in StudentAssistant.jsx prefills draft and opens setOpen(true) automatically.",
+  "rca of the issue": "No functional bugs. Two cosmetic React/Radix warnings: (a) DialogContent missing aria-describedby - add <DialogDescription> in GreenIQ dialogs; (b) native <select> options receive runtime span wrappers from the build instrumentation causing hydration warnings - switch to shadcn Select component to silence. Both are non-blocking and tests passed regardless."
+}

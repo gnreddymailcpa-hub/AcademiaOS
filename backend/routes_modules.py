@@ -79,7 +79,7 @@ PLATFORM_CATALOG = [
     {"code": "GREENIQ",    "phase": 3, "domain": "Sustainability",
      "name": "Energy & Sustainability Intelligence",
      "tagline": "Real-time energy, solar yield, carbon footprint, NAAC green.",
-     "route": None, "default_status": "coming_soon",
+     "route": "/greeniq", "default_status": "active",
      "depends_on": ["GUARDIAN"], "icon": "Leaf"},
 ]
 

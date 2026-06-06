@@ -42,6 +42,7 @@ import Prism from "./pages/Prism";
 import Alumni from "./pages/Alumni";
 import FacultyPlus from "./pages/FacultyPlus";
 import Guardian from "./pages/Guardian";
+import GreenIQ from "./pages/GreenIQ";
 import AuthCallback from "./pages/AuthCallback";
 import ModuleGate from "./components/layout/ModuleGate";
 
@@ -83,6 +84,7 @@ function ShellRoutes() {
         <Route path="/alumni" element={<ModuleGate module="ALUMNI360"><Alumni /></ModuleGate>} />
         <Route path="/faculty-plus" element={<ModuleGate module="FACULTY"><FacultyPlus /></ModuleGate>} />
         <Route path="/guardian" element={<ModuleGate module="GUARDIAN"><Guardian /></ModuleGate>} />
+        <Route path="/greeniq" element={<ModuleGate module="GREENIQ"><GreenIQ /></ModuleGate>} />
         <Route path="/admin/modules" element={<PlatformModules />} />
         <Route path="/compliance" element={<ModuleGate module="COMPASS"><Compliance /></ModuleGate>} />
         <Route path="*" element={<Navigate to="/" replace />} />

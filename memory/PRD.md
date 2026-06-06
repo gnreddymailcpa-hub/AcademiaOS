@@ -655,3 +655,51 @@ shipped end-to-end (VEDA · ARISE · NEXUS · COMPASS · PATHFINDER · COMMAND
 | 2 | FACULTY | Faculty Excellence | /faculty-plus | active |
 | 2 | GUARDIAN | Campus Safety | /guardian | active |
 | 3 | GREENIQ | Sustainability | /greeniq | active |
+
+### Phase 19 — Feb 2026 (Cross-platform glue · PRISM↔FACULTY+ · ALUMNI360↔Student Assistant · COMPASS↔PRISM+PATHFINDER+GREENIQ)
+Now that all 12 platforms are active, three high-leverage cross-platform
+integrations stitch them together.
+
+- **PRISM publications in FACULTY+ profile cards**:
+  - New endpoint `GET /api/prism/{tenant}/publications-by-author?author=…`
+    with a token-split heuristic that drops academic stopwords (`dr`, `prof`,
+    `mr`, `mrs`, `ms`, `the`, `and`, `of`) and tokens < 3 chars (filters out
+    initials). Case-insensitive substring match on any author entry. Empty /
+    only-stopword queries return `[]` cleanly.
+  - New `<FacultyRow>` component on `/faculty-plus` Profiles tab — each card
+    has a "Show publications" toggle that lazy-fetches matching PRISM
+    publications and inlines the top 8 with citation counts. Toggle text
+    reflects the count.
+
+- **ALUMNI mentors in Student Assistant**:
+  - New endpoint `GET /api/alumni/{tenant}/mentor-match?branch=&role=&limit=`
+    returning available alumni mentors with a transparent `match_score`:
+    `+50` exact branch · `+30` role-or-company substring · `+0.5/year`
+    experience capped at `+10`. Sorted descending.
+  - New `<MentorRecommendations>` component in the Student Assistant aside
+    above the tickets panel. Persists `branch` + `role` selections to
+    `localStorage` so a student doesn't re-type. Shows top 3 matches.
+
+- **COMPASS AQAR live cross-platform totals**:
+  - `preview_aqar` now pulls live data from `prism_publications`,
+    `prism_patents`, `prism_grants`, `placement_drives`, `greeniq_energy`
+    and `greeniq_carbon` collections.
+  - **C3 (Research)** metrics rewritten to publications · citations ·
+    h-index · patents_granted · active_grants_value.
+  - **C5 (Student Support)** metrics extended with placement_drives_total ·
+    applications_total · selected_total alongside the existing package KPIs.
+  - **C7 (Best Practices)** metrics extended with renewable_energy_share +
+    carbon_footprint.
+  - Composite score gets `+5` if ≥5 publications and `+5` if renewable
+    share ≥ 20% (governance baseline reduced from 15→10 to preserve max=100).
+    VCE now scores **75 → A+** (was B+).
+  - `totals` block extended with 12 new cross-platform live fields for the
+    front-end to render without further fetches.
+
+- **Tests**: 15/15 PASS in `tests/test_phase19_integration.py` covering
+  PRISM token-split (basic, Dr-stopword drop, empty/only-stopword,
+  cross-tenant 403), ALUMNI mentor-match scoring (branch+role, AIML/ML
+  availability filter, limit, cross-tenant 403) and COMPASS preview
+  (C3/C5/C7 keys, totals extension, A+ band score, freeze persistence).
+  100% frontend pass in `iteration_19.json`.
+

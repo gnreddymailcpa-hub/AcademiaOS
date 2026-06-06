@@ -29,6 +29,7 @@ import {
   Search,
   HeartHandshake,
   Leaf,
+  Rocket,
   X,
 } from "lucide-react";
 import { useLang } from "../../context/LanguageContext";
@@ -57,6 +58,9 @@ const NAV_GROUPS = [
       { to: "/admin/modules", icon: SlidersHorizontal, key: "nav.platform_modules",
         testid: "sidebar-nav-platform-modules",
         roles: ["super_admin", "institution_admin"], label: "Platform Modules" },
+      { to: "/onboarding", icon: Rocket, key: "nav.onboarding",
+        testid: "sidebar-nav-onboarding",
+        roles: ["super_admin", "institution_admin"], label: "Onboarding Wizard" },
       { to: "/institution-setup", icon: Building2, key: "nav.institution_setup", testid: "sidebar-nav-institution-setup" },
       { to: "/academic-structure", icon: Network, key: "nav.academic_structure", testid: "sidebar-nav-academic-structure", module: "NEXUS" },
       { to: "/users-roles", icon: Users, key: "nav.users_roles", testid: "sidebar-nav-users-roles" },

@@ -774,6 +774,7 @@ import routes_alumni
 import routes_faculty
 import routes_guardian
 import routes_greeniq
+import routes_exec
 from collections import Counter
 from ai_service import chunk_text, _tokens
 
@@ -915,6 +916,11 @@ async def seed_database():
         )
     logger.info("Seeded VCE all 12 modules: %s", all_codes)
 
+    # Phase-2 cross-platform demo data — diverse alumni, PRISM pubs,
+    # placement drives, GREENIQ energy readings. Idempotent.
+    from seed_phase2 import seed_phase2_demo
+    await seed_phase2_demo(db, VCE_ID, logger)
+
     # Skill frameworks
     for inst_id, fw in SEED_SKILL_FRAMEWORK.items():
         await db.skill_frameworks.update_one(
@@ -1002,6 +1008,7 @@ app.include_router(routes_alumni.build_alumni_router(lambda: db, get_current_use
 app.include_router(routes_faculty.build_faculty_router(lambda: db, get_current_user))
 app.include_router(routes_guardian.build_guardian_router(lambda: db, get_current_user))
 app.include_router(routes_greeniq.build_greeniq_router(lambda: db, get_current_user))
+app.include_router(routes_exec.build_exec_router(lambda: db, get_current_user))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

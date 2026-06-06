@@ -20,8 +20,11 @@ import {
   AlertTriangle,
   Sparkles,
   ArrowUpRight,
+  FileText,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { PageHeader } from "../components/layout/Shell";
+import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { useInstitution } from "../context/InstitutionContext";
 import { useAuth } from "../context/AuthContext";
@@ -157,6 +160,11 @@ export default function Dashboard() {
               {m.ai_sessions?.toLocaleString() || 0} AI sessions
             </Badge>
             <Badge className="bg-primary text-primary-foreground">{current.type}</Badge>
+            <Link to="/exec-briefing">
+              <Button size="sm" variant="outline" className="gap-1.5" data-testid="exec-briefing-btn">
+                <FileText className="h-3.5 w-3.5" /> Executive briefing
+              </Button>
+            </Link>
           </>
         }
       />

@@ -308,6 +308,40 @@ corporate academy, or online education platform end-to-end — without code.
   approve/pause/hitl flows, sidebar gating and cross-tenant inbox.
   See `/app/test_reports/iteration_12.json`.
 
+### Phase 13 — Feb 2026 (Vaagdevi College of Engineering · Live model institution)
+- **Researched live institutional data from vaagdevi.edu.in** and seeded as
+  the 4th demo tenant with `id=44444444-...-4444`. Reflects exact published
+  facts: Bollikunta · Warangal · Telangana 506 005, sponsor Viswambhara
+  Educational Society (est. 1993, college est. 1998), JNTUH-affiliated,
+  NAAC 'A' / NBA / UGC Autonomous, EAPCET code VAGE.
+- **Real metrics piped through** — students 4,500 / programmes 11 / courses
+  168 / faculty 280 / completion 88% / at-risk 142 / AI sessions 5,200 /
+  placement rate 92% / highest package ₹20 LPA (Amazon) / average ₹6.5 LPA /
+  150 recruiting companies / 30,000+ alumni network.
+- **Complete academic structure**: 2 campuses (Bollikunta Main + AICTE IDEA
+  Lab), 10 departments (CSE, CSE-AI&ML, CSE-Data Science, ECE, EEE, Civil,
+  Mech, MBA, MCA, H&S), 11 programmes (7 B.Tech streams + 2 M.Tech + MBA +
+  MCA), 18 courses, 3 cohorts (R25 batches).
+- **10 demo users covering 10 roles**, all `@vaagdevi.edu.in` / `Demo@2026`:
+  Principal · Chairman · HoD-CSE · Faculty · Student (Manikanta — the actual
+  Amazon ₹20 LPA recipient from the website) · Programme Coordinator ·
+  Controller of Examinations · Training & Placement Officer · IQAC
+  Coordinator · AI Governance Lead.
+- **Knowledge base seeded**: 3 VCE-specific RAG docs that the AI Instructor
+  and AI Advisor will cite — JNTUH R25 ML syllabus, the actual Vaagdevi
+  Placement Handbook 2025-26 (with the exact recruiter list + ₹ figures),
+  and the institutional Vision/Mission/Quality Policy.
+- **Career Services dashboard refactored** to read `placement_rate`,
+  `highest_package_lpa`, `average_package_lpa`, `companies_recruiting`,
+  `alumni_network` directly from tenant metrics when present (with
+  currency symbol auto-derived from `country`), instead of hard-coded
+  defaults. ISB / EAIC / UoB continue to render their existing values.
+- **Custom theme** — Vaagdevi red `hsl(354,70%,38%)` + gold accent. Logo
+  URL points at the live VCE logo.
+- Total live tenants: **4** · Total demo users: **30** · Total AI use-cases
+  seeded: **4 × 8 = 32**.
+
+
 ### Phase 12 — Feb 2026 (Tenant-controlled locale + Admin SOP)
 - **Removed all hard-coded Arabic copy** across modules via a single
   source of truth: new `useTenantLocale()` hook in

@@ -3,7 +3,7 @@ Seed data for AI Use Cases (8 modules) + sample knowledge documents +
 skill framework + advisor target roles per institution.
 """
 
-from seed_data import ISB_ID, EAIC_ID, UOB_ID
+from seed_data import ISB_ID, EAIC_ID, UOB_ID, VCE_ID
 
 
 # 8 modules — match the Hawiaty / AcademiaOS RFP structure
@@ -98,6 +98,7 @@ SEED_USE_CASES = {
     ISB_ID: use_cases_for("openai", "gpt-4o"),
     EAIC_ID: use_cases_for("anthropic", "claude-sonnet-4-6"),
     UOB_ID: use_cases_for("anthropic", "claude-sonnet-4-6"),
+    VCE_ID: use_cases_for("openai", "gpt-4o-mini"),
 }
 
 
@@ -225,6 +226,85 @@ SEED_DOCUMENTS = [
             "models overfit. Regularisation techniques such as L1 (Lasso) and L2 (Ridge) penalise "
             "large coefficients and reduce overfitting. Cross-validation provides a more robust "
             "estimate of generalisation error than a single train-test split."
+        ),
+    },
+    # ---- VCE: B.Tech CSE — Machine Learning Foundations ----
+    {
+        "id": "doc-vce-ml-1",
+        "institution_id": VCE_ID,
+        "course_id": "vce-course-7",
+        "programme_id": "vce-prog-btech-cse",
+        "title": "Machine Learning Foundations · JNTUH R25 Syllabus",
+        "kind": "lecture_notes",
+        "approved": True,
+        "uploaded_by": "Dr. Praveen Kumar",
+        "text": (
+            "Machine Learning Foundations for B.Tech CSE under JNTUH R25 regulation. Course "
+            "outcomes (COs): CO1 understand supervised, unsupervised, and reinforcement learning "
+            "paradigms; CO2 implement and evaluate linear and logistic regression, decision trees, "
+            "and k-nearest neighbours; CO3 apply regularisation, cross-validation, and "
+            "hyper-parameter tuning to manage the bias-variance trade-off; CO4 build neural "
+            "networks from first principles using NumPy and then PyTorch; CO5 reason about "
+            "fairness, explainability and responsible AI as per AICTE model curriculum. "
+            "Assessment: 30 marks internal (mid-I + mid-II + assignments), 70 marks external "
+            "semester-end exam. Lab: 8 experiments mapped to COs. Recommended text: Mitchell, "
+            "Bishop; reference text: Goodfellow, Ng (Coursera). Prerequisite: Probability & "
+            "Statistics (B.Tech II year, JNTUH R25)."
+        ),
+    },
+    # ---- VCE: Placement Handbook · Training & Placement Cell ----
+    {
+        "id": "doc-vce-placement-1",
+        "institution_id": VCE_ID,
+        "course_id": None,
+        "programme_id": "vce-prog-btech-cse",
+        "title": "Vaagdevi Placement Handbook 2025–26",
+        "kind": "policy_doc",
+        "approved": True,
+        "uploaded_by": "Anil Kumar Reddy · Training & Placement Officer",
+        "text": (
+            "Vaagdevi Training & Placement Cell · 2025–26 Handbook. Vaagdevi College of "
+            "Engineering, Bollikunta, Warangal achieved a 92 percent placement rate for the "
+            "graduating batch of 2025–26 across all seven B.Tech branches and the MBA programme. "
+            "Highlights: highest package — Amazon at ₹20 LPA awarded to a B.Tech CSE student "
+            "(Manikanta T.); RealPage extended ₹10.08 LPA offers across the CSE and AI&ML "
+            "streams; average package across branches stood at ₹6.5 LPA. Over 150 companies "
+            "recruited on campus including Infosys, HCL, TCS, Tech Mahindra, Wipro, Cognizant, "
+            "FactSet and Celonis. The Celonis Rising Star certification programme produced 465 "
+            "certified graduates this academic year. The alumni network now exceeds 30,000 "
+            "professionals across the globe since the founding batch of 2002. Placement "
+            "preparation includes the four-pillar SEEK programme: skill assessment, "
+            "communication training, mock interviews, and aptitude bootcamps — mandatory for "
+            "B.Tech V and VI semester students. Eligibility: minimum 60 percent aggregate, no "
+            "active backlogs, attendance ≥ 75 percent."
+        ),
+    },
+    # ---- VCE: Vision, Mission & IQAC Quality Policy ----
+    {
+        "id": "doc-vce-policy-1",
+        "institution_id": VCE_ID,
+        "course_id": None,
+        "programme_id": None,
+        "title": "Vaagdevi Vision, Mission & IQAC Quality Policy",
+        "kind": "policy_doc",
+        "approved": True,
+        "uploaded_by": "Dr. Sunita Sharma · IQAC Coordinator",
+        "text": (
+            "Vaagdevi College of Engineering · Institutional Vision, Mission and Quality Policy. "
+            "Vision — Striving continuously for global recognition through academic excellence "
+            "in higher education for the betterment of society. Mission — (1) To produce "
+            "technically competent and socially responsible engineers with ethical values "
+            "through innovative teaching-learning process; (2) To promote research and "
+            "entrepreneurship culture among faculty and students. Quality Policy — To ensure "
+            "high standards to educate, enrich and excel in imparting professional education by "
+            "top-quality faculty who endeavour to mould students into socially responsible "
+            "professionals through creative teamwork, innovation and research. Accreditation: "
+            "UGC Recognised Autonomous Institution, NAAC 'A' grade, NBA accredited at programme "
+            "level (CSE, ECE, EEE, Mech, Civil), affiliated to Jawaharlal Nehru Technological "
+            "University Hyderabad (JNTUH). Sponsoring body: Viswambhara Educational Society, "
+            "established 1993; college established 1998 at Bollikunta, Warangal Urban district, "
+            "Telangana — 506 005. AICTE IDEA Lab, Institution Innovation Council (IIC) and "
+            "Internal Quality Assurance Cell (IQAC) drive continuous improvement."
         ),
     },
 ]

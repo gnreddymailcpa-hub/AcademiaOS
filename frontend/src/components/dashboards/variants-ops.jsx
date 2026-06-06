@@ -186,20 +186,34 @@ export function RegistrarDashboard({ inst, m }) {
 // Career Services — placement & employer engagement
 // ---------------------------------------------------------------------------
 export function CareerServicesDashboard({ inst, m }) {
+  // Prefer real per-tenant placement metrics when present (e.g. VCE).
+  const placementRate = m.placement_rate ?? 91;
+  const highestPkg = m.highest_package_lpa ?? null;
+  const avgPkg = m.average_package_lpa ?? null;
+  const employers = m.companies_recruiting ?? 138;
+  const alumni = m.alumni_network ?? null;
+  const currency = inst.country === "India" ? "₹" : "US$";
+  const offerLabel = highestPkg
+    ? `${currency}${highestPkg} LPA`
+    : `${currency}${avgPkg ?? 28.4}`;
+  const offerEyebrow = highestPkg ? "Highest package" : "Median offer";
+
   return (
     <div data-testid="dashboard-career-services">
       <PageHeader
         eyebrow="Placement & Outcomes"
         title={`${inst.short_name} · Career Services`}
-        description="Employer pipeline, placement progress and learner readiness."
+        description={alumni
+          ? `${employers}+ recruiters this cycle · ${alumni.toLocaleString()} alumni network · ${placementRate}% placement rate.`
+          : "Employer pipeline, placement progress and learner readiness."}
         actions={<Badge className="bg-primary text-primary-foreground">Career Services</Badge>}
       />
       <div className="p-6 lg:p-8 space-y-8">
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Kpi label="Placement rate" value="91%" icon={Briefcase} trend="+4.6%" testid="cs-kpi-placement" />
-          <Kpi label="Active employers" value="138" icon={Users2} trend="+12" testid="cs-kpi-employers" />
-          <Kpi label="Median offer (LPA)" value="₹28.4" icon={TrendingUp} trend="+8.2%" testid="cs-kpi-offer" />
-          <Kpi label="Open roles" value="412" icon={ClipboardList} trend="+34" testid="cs-kpi-roles" />
+          <Kpi label="Placement rate" value={`${placementRate}%`} icon={Briefcase} trend="+4.6%" testid="cs-kpi-placement" />
+          <Kpi label="Active employers" value={employers} icon={Users2} trend="+12" testid="cs-kpi-employers" />
+          <Kpi label={offerEyebrow} value={offerLabel} hint={avgPkg ? `Average ${currency}${avgPkg} LPA` : undefined} icon={TrendingUp} trend="+8.2%" testid="cs-kpi-offer" />
+          <Kpi label="Open roles" value={highestPkg ? "412" : "412"} icon={ClipboardList} trend="+34" testid="cs-kpi-roles" />
         </section>
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <Panel eyebrow="Pipeline" title="Active placement funnel" testid="cs-funnel" className="lg:col-span-2">

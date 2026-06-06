@@ -1,5 +1,5 @@
 """
-Seed data for 3 demo institutions: ISB India, EAIC UAE, University of Bradford UK.
+Seed data for 4 demo institutions: ISB India, EAIC UAE, University of Bradford UK, Vaagdevi CoE India.
 All IDs are deterministic UUIDs so seed is idempotent.
 """
 import uuid
@@ -7,6 +7,7 @@ import uuid
 ISB_ID = "11111111-1111-1111-1111-111111111111"
 EAIC_ID = "22222222-2222-2222-2222-222222222222"
 UOB_ID = "33333333-3333-3333-3333-333333333333"
+VCE_ID = "44444444-4444-4444-4444-444444444444"
 
 
 SEED_INSTITUTIONS = [
@@ -118,6 +119,65 @@ SEED_INSTITUTIONS = [
             "workforce_readiness": 78,
         },
     },
+    {
+        "id": VCE_ID,
+        "name": "Vaagdevi College of Engineering",
+        "short_name": "VCE",
+        "type": "Engineering College",
+        "country": "India",
+        "primary_language": "en",
+        "secondary_language": "te",
+        "locale_arabic_enabled": False,
+        "timezone": "Asia/Kolkata",
+        "data_residency": "India",
+        "compliance_framework": "AICTE · UGC Autonomous · NAAC 'A' · NBA · JNTUH",
+        "logo_url": "https://www.vaagdevi.edu.in/wp-content/uploads/2021/05/VCE-Logo.png",
+        "theme_key": "vce-theme",
+        "theme": {
+            "primary": "hsl(354, 70%, 38%)",
+            "primary_foreground": "hsl(0, 0%, 100%)",
+            "accent": "hsl(45, 93%, 47%)",
+            "accent_foreground": "hsl(354, 70%, 18%)",
+            "background": "hsl(40, 30%, 98%)",
+            "surface": "hsl(0, 0%, 100%)",
+            "border": "hsl(354, 20%, 90%)",
+            "ring": "hsl(354, 70%, 38%)",
+        },
+        "description": "Autonomous engineering college affiliated to JNTUH · NAAC 'A' · NBA accredited · Bollikunta, Warangal · Sponsored by Viswambhara Educational Society (est. 1993, college est. 1998).",
+        "vision": "Striving continuously for global recognition through academic excellence in higher education for the betterment of society.",
+        "mission": [
+            "To produce technically competent and socially responsible engineers with ethical values through innovative teaching-learning process.",
+            "To promote research and entrepreneurship culture among faculty and students.",
+        ],
+        "contact": {
+            "address": "Bollikunta, Khila Warangal (Mandal), Warangal Urban (Dist.), Telangana – 506 005",
+            "phone": "+91-8886536969",
+            "email": "info@vaagdevi.edu.in",
+            "eapcet_code": "VAGE",
+        },
+        "accreditation": [
+            "NAAC 'A' Grade",
+            "NBA Accredited (programme level)",
+            "UGC Recognised Autonomous Institution",
+            "Affiliated to JNTUH, Hyderabad",
+            "AICTE approved",
+        ],
+        "metrics": {
+            "students": 4500,
+            "programmes": 11,
+            "courses": 168,
+            "faculty": 280,
+            "completion_rate": 88,
+            "at_risk": 142,
+            "ai_sessions": 5200,
+            "placement_rate": 92,
+            "highest_package_lpa": 20,
+            "average_package_lpa": 6.5,
+            "companies_recruiting": 150,
+            "alumni_network": 30000,
+            "workforce_readiness": 86,
+        },
+    },
 ]
 
 
@@ -224,6 +284,37 @@ SEED_USERS = [
     {"id": "u-uob-faculty", "email": "james.faculty@bradford.ac.uk", "password": "Demo@2026",
      "name": "Dr. James Holloway", "title": "Senior Lecturer · Analytics", "role": "faculty",
      "institution_id": UOB_ID, "avatar_url": None},
+    # Vaagdevi College of Engineering — full role coverage
+    {"id": "u-vce-principal", "email": "principal@vaagdevi.edu.in", "password": "Demo@2026",
+     "name": "Dr. Ramachandra Murthy", "title": "Principal · Vaagdevi College of Engineering", "role": "institution_admin",
+     "institution_id": VCE_ID, "avatar_url": None},
+    {"id": "u-vce-exec", "email": "chairman@vaagdevi.edu.in", "password": "Demo@2026",
+     "name": "Sri C. Raghupathi Rao", "title": "Chairman · Viswambhara Educational Society", "role": "executive_leadership",
+     "institution_id": VCE_ID, "avatar_url": None},
+    {"id": "u-vce-dean", "email": "hod.cse@vaagdevi.edu.in", "password": "Demo@2026",
+     "name": "Dr. Suresh Pabboju", "title": "HoD · Computer Science & Engineering", "role": "dean",
+     "institution_id": VCE_ID, "avatar_url": None},
+    {"id": "u-vce-faculty", "email": "prof.suresh@vaagdevi.edu.in", "password": "Demo@2026",
+     "name": "Prof. Suresh Reddy", "title": "Associate Professor · CSE (AI & ML)", "role": "faculty",
+     "institution_id": VCE_ID, "avatar_url": None},
+    {"id": "u-vce-student", "email": "manikanta.cse@vaagdevi.edu.in", "password": "Demo@2026",
+     "name": "Manikanta T.", "title": "B.Tech CSE · Final year · Amazon offer ₹20 LPA", "role": "student",
+     "institution_id": VCE_ID, "avatar_url": None},
+    {"id": "u-vce-pm", "email": "programme.btech@vaagdevi.edu.in", "password": "Demo@2026",
+     "name": "Dr. Latha Kandula", "title": "Programme Coordinator · B.Tech CSE", "role": "programme_manager",
+     "institution_id": VCE_ID, "avatar_url": None},
+    {"id": "u-vce-registrar", "email": "examcell@vaagdevi.edu.in", "password": "Demo@2026",
+     "name": "Sri P. Venkatesh", "title": "Controller of Examinations", "role": "registrar",
+     "institution_id": VCE_ID, "avatar_url": None},
+    {"id": "u-vce-careers", "email": "placement@vaagdevi.edu.in", "password": "Demo@2026",
+     "name": "Mr. Anil Kumar Reddy", "title": "Training & Placement Officer", "role": "career_services",
+     "institution_id": VCE_ID, "avatar_url": None},
+    {"id": "u-vce-iqac", "email": "iqac@vaagdevi.edu.in", "password": "Demo@2026",
+     "name": "Dr. Sunita Sharma", "title": "IQAC Coordinator · Compliance", "role": "compliance_officer",
+     "institution_id": VCE_ID, "avatar_url": None},
+    {"id": "u-vce-aigov", "email": "aigov@vaagdevi.edu.in", "password": "Demo@2026",
+     "name": "Dr. Praveen Kumar", "title": "AI Governance Lead · IDEA Lab", "role": "ai_governance_admin",
+     "institution_id": VCE_ID, "avatar_url": None},
 ]
 
 
@@ -372,6 +463,93 @@ SEED_ACADEMIC = {
         "cohorts": [
             {"id": "uob-cohort-mba26", "institution_id": UOB_ID, "programme_id": "uob-prog-mba",
              "name": "EMBA 2026", "start_date": "2025-09-15", "end_date": "2027-09-15", "size": 220},
+        ],
+    },
+    VCE_ID: {
+        "campuses": [
+            {"id": "vce-camp-1", "institution_id": VCE_ID, "name": "Bollikunta Main Campus", "city": "Warangal", "country": "India"},
+            {"id": "vce-camp-2", "institution_id": VCE_ID, "name": "AICTE IDEA Lab · Innovation Wing", "city": "Warangal", "country": "India"},
+        ],
+        "departments": [
+            {"id": f"vce-dept-{k}", "institution_id": VCE_ID, "name": n, "head": h}
+            for k, (n, h) in enumerate([
+                ("Computer Science & Engineering (CSE)", "Dr. Suresh Pabboju"),
+                ("CSE — AI & Machine Learning", "Dr. Praveen Kumar"),
+                ("CSE — Data Science", "Dr. K. Sridevi"),
+                ("Electronics & Communication Engineering (ECE)", "Dr. M. Venkateswara Rao"),
+                ("Electrical & Electronics Engineering (EEE)", "Dr. A. Srinivas"),
+                ("Civil Engineering", "Dr. R. Bhavani"),
+                ("Mechanical Engineering", "Dr. K. Madhu Mohan"),
+                ("Management Studies (MBA)", "Dr. P. Lakshmi"),
+                ("Computer Applications (MCA)", "Dr. G. Ramesh"),
+                ("Basic Sciences & Humanities", "Dr. V. Sharada"),
+            ], start=1)
+        ],
+        "programmes": [
+            {"id": "vce-prog-btech-cse", "institution_id": VCE_ID, "name": "B.Tech Computer Science & Engineering", "code": "B.Tech-CSE",
+             "duration": "4 years (8 semesters)", "department_id": "vce-dept-1", "enrolled": 720, "completion_rate": 90},
+            {"id": "vce-prog-btech-aiml", "institution_id": VCE_ID, "name": "B.Tech CSE (AI & ML)", "code": "B.Tech-AIML",
+             "duration": "4 years (8 semesters)", "department_id": "vce-dept-2", "enrolled": 480, "completion_rate": 92},
+            {"id": "vce-prog-btech-ds", "institution_id": VCE_ID, "name": "B.Tech CSE (Data Science)", "code": "B.Tech-DS",
+             "duration": "4 years (8 semesters)", "department_id": "vce-dept-3", "enrolled": 360, "completion_rate": 90},
+            {"id": "vce-prog-btech-ece", "institution_id": VCE_ID, "name": "B.Tech Electronics & Communication", "code": "B.Tech-ECE",
+             "duration": "4 years (8 semesters)", "department_id": "vce-dept-4", "enrolled": 480, "completion_rate": 88},
+            {"id": "vce-prog-btech-eee", "institution_id": VCE_ID, "name": "B.Tech Electrical & Electronics", "code": "B.Tech-EEE",
+             "duration": "4 years (8 semesters)", "department_id": "vce-dept-5", "enrolled": 240, "completion_rate": 86},
+            {"id": "vce-prog-btech-civ", "institution_id": VCE_ID, "name": "B.Tech Civil Engineering", "code": "B.Tech-CIV",
+             "duration": "4 years (8 semesters)", "department_id": "vce-dept-6", "enrolled": 240, "completion_rate": 84},
+            {"id": "vce-prog-btech-mech", "institution_id": VCE_ID, "name": "B.Tech Mechanical Engineering", "code": "B.Tech-MECH",
+             "duration": "4 years (8 semesters)", "department_id": "vce-dept-7", "enrolled": 240, "completion_rate": 84},
+            {"id": "vce-prog-mtech-cse", "institution_id": VCE_ID, "name": "M.Tech Computer Science & Engineering", "code": "M.Tech-CSE",
+             "duration": "2 years (4 semesters)", "department_id": "vce-dept-1", "enrolled": 60, "completion_rate": 92},
+            {"id": "vce-prog-mtech-vlsi", "institution_id": VCE_ID, "name": "M.Tech VLSI & Embedded Systems", "code": "M.Tech-VLSI",
+             "duration": "2 years (4 semesters)", "department_id": "vce-dept-4", "enrolled": 36, "completion_rate": 90},
+            {"id": "vce-prog-mba", "institution_id": VCE_ID, "name": "Master of Business Administration", "code": "MBA",
+             "duration": "2 years (4 semesters)", "department_id": "vce-dept-8", "enrolled": 180, "completion_rate": 88},
+            {"id": "vce-prog-mca", "institution_id": VCE_ID, "name": "Master of Computer Applications", "code": "MCA",
+             "duration": "2 years (4 semesters)", "department_id": "vce-dept-9", "enrolled": 120, "completion_rate": 90},
+        ],
+        "courses": [
+            {"id": f"vce-course-{i}", "institution_id": VCE_ID, "programme_id": "vce-prog-btech-cse",
+             "code": f"CSE-{200+i}", "title": t, "credits": 4, "faculty": f, "modules": m}
+            for i, (t, f, m) in enumerate([
+                ("Data Structures & Algorithms", "Prof. Suresh Reddy", 8),
+                ("Database Management Systems", "Dr. K. Sridevi", 8),
+                ("Operating Systems", "Dr. Suresh Pabboju", 7),
+                ("Computer Networks", "Prof. A. Naresh", 8),
+                ("Object-Oriented Programming (Java)", "Prof. Suresh Reddy", 9),
+                ("Software Engineering", "Dr. P. Lakshmi Sirisha", 6),
+                ("Machine Learning Foundations", "Dr. Praveen Kumar", 10),
+                ("Web Technologies & Cloud", "Prof. M. Anil Kumar", 8),
+            ], start=1)
+        ] + [
+            {"id": f"vce-course-aiml-{i}", "institution_id": VCE_ID, "programme_id": "vce-prog-btech-aiml",
+             "code": f"AIML-{300+i}", "title": t, "credits": 4, "faculty": "Dr. Praveen Kumar", "modules": m}
+            for i, (t, m) in enumerate([
+                ("Python for AI & Data Science", 8),
+                ("Deep Learning with TensorFlow", 10),
+                ("Natural Language Processing", 9),
+                ("Computer Vision", 9),
+                ("Reinforcement Learning", 8),
+                ("Responsible & Explainable AI", 6),
+            ], start=1)
+        ] + [
+            {"id": f"vce-course-mba-{i}", "institution_id": VCE_ID, "programme_id": "vce-prog-mba",
+             "code": f"MBA-{400+i}", "title": t, "credits": 3, "faculty": "Dr. P. Lakshmi", "modules": m}
+            for i, (t, m) in enumerate([
+                ("Strategic Management", 7),
+                ("Financial Accounting & Analysis", 8),
+                ("Marketing Analytics", 7),
+                ("Organisational Behaviour", 6),
+            ], start=1)
+        ],
+        "cohorts": [
+            {"id": "vce-cohort-cse-r25", "institution_id": VCE_ID, "programme_id": "vce-prog-btech-cse",
+             "name": "B.Tech CSE · R25 Batch (2025–29)", "start_date": "2025-08-01", "end_date": "2029-05-30", "size": 180},
+            {"id": "vce-cohort-aiml-r25", "institution_id": VCE_ID, "programme_id": "vce-prog-btech-aiml",
+             "name": "B.Tech CSE-AI&ML · R25 Batch (2025–29)", "start_date": "2025-08-01", "end_date": "2029-05-30", "size": 120},
+            {"id": "vce-cohort-mba-26", "institution_id": VCE_ID, "programme_id": "vce-prog-mba",
+             "name": "MBA Co'26 (2025–27)", "start_date": "2025-09-15", "end_date": "2027-05-30", "size": 120},
         ],
     },
 }

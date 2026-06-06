@@ -703,3 +703,46 @@ integrations stitch them together.
   (C3/C5/C7 keys, totals extension, A+ band score, freeze persistence).
   100% frontend pass in `iteration_19.json`.
 
+
+### Phase 20 — Feb 2026 (P3 polish · diverse alumni · Executive Briefing · Onboarding wizard)
+Three substantive P3 deliverables landed. Skipped: (a) ML-calibrated scorers
+(no labelled outcomes yet) and (b) routes_*.py package refactor (high churn,
+zero functional value — deferred).
+
+- **Diversified Phase-2 demo seed** (`seed_phase2.py`): idempotent module
+  called at startup that ensures the showcase tenant (VCE) has 12 alumni
+  spread across 6 branches (CSE/AIML/ECE/EEE/MECH/CIV/DS) with 8 marked as
+  available_for_mentorship, 7 PRISM publications across 5 venues, 4
+  placement drives spanning 5 branches, and 7 GREENIQ energy readings
+  across 3 months. Idempotency guards per collection (alumni by email,
+  pubs by title, drives by (company, role, date), energy by
+  (meter_id, period)) — backend restart re-runs cleanly.
+
+- **Executive Briefing** (`routes_exec.py` + `/exec-briefing`): single
+  `GET /api/exec/briefing/{tenant}` aggregates KPIs from every platform
+  (ARISE leads / NEXUS fees + certs / PRISM h-index + grants / PATHFINDER
+  drives + packages / ALUMNI360 mentors + giving / FACULTY+ FDP + composite
+  / GUARDIAN open incidents / GREENIQ renewable + carbon) plus a composite
+  readiness score & grade. Frontend `/exec-briefing` page renders an
+  8-section board document with a print stylesheet that hides app chrome —
+  users hit "Print / Save as PDF" for an offline briefing without a
+  server-side PDF dependency. Linked from Dashboard PageHeader.
+
+- **Onboarding Wizard** (`/onboarding`): 3-step flow for admin users.
+  Step 1 = welcome + phase overview; Step 2 = phase-grouped module
+  toggles with "All / None" per-phase shortcuts; Step 3 = success state
+  with deep-link tiles to each activated module. The launch step diffs
+  current vs selected and only PATCHes changed modules. Role-gated to
+  super_admin / institution_admin (`onboarding-not-allowed` block for
+  students). Sidebar entry under Setup group.
+
+- **Tests**: 12/12 PASS in `tests/test_phase20_p3.py` covering seed
+  diversity + idempotency, mentor-match score elevation post-seed
+  (Aditya AIML scores 83, Karthik ECE scores 84), Exec Briefing shape +
+  cross-tenant 403, and Onboarding step transitions. 100% frontend pass
+  in `iteration_20.json`.
+
+## 12-Platform AcademiaOS.ai — DELIVERY COMPLETE 🎉
+All 12 platforms live with cross-platform glue, Executive Briefing, and
+guided Onboarding. The Build Plan + polish layer are shipped end-to-end.
+

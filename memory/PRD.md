@@ -341,6 +341,40 @@ corporate academy, or online education platform end-to-end — without code.
 - Total live tenants: **4** · Total demo users: **30** · Total AI use-cases
   seeded: **4 × 8 = 32**.
 
+### Phase 14 — Feb 2026 (12-Platform Registry · Phase 1 — ARISE Admissions + admin module activation)
+- **Platform Module Registry** (`/app/backend/routes_modules.py`): catalog of
+  the 12 build-plan platforms (VEDA · ARISE · NEXUS · COMPASS · PATHFINDER ·
+  COMMAND · ILLUMINATE · PRISM · GUARDIAN · ALUMNI360 · FACULTY · GREENIQ)
+  with phase, domain, dependencies, default status and the route each maps to.
+  `GET /api/modules/catalog`, `GET /api/modules/{tenant}` and `PATCH
+  /api/modules/{tenant}/{code}` with dependency validation (409 on activating
+  a module whose `depends_on` is not active), tenant isolation (403), admin
+  role gate (403), and full `audit_logs` writes on every state change.
+- **VCE seeded with all 6 Phase-1 modules active**; other tenants fall back to
+  catalog defaults (Phase 1 active, Phase 2 + 3 coming_soon).
+- **Admin UI `/admin/modules`** (`PlatformModules.jsx`): 4-KPI strip (active /
+  coming-soon / disabled / phase-1 progress), 12-row catalog with phase + status
+  badges, dependency chips, per-row status dropdown (active / coming_soon /
+  disabled). Role-gated to super_admin + institution_admin only — students see
+  the page in read-only mode (no dropdowns).
+- **ARISE Admissions module `/admissions`** (`Admissions.jsx`): lead capture
+  form with transparent heuristic scoring (0–100) ready to swap for XGBoost,
+  EAPCET rank → branch allotment probability predictor across 7 B.Tech streams,
+  4-column CRM pipeline (new → counseled → applied → enrolled) with ← →
+  movement, source-attribution mini-bars and a counselor priority queue sorted
+  by score.
+- **Sidebar module-gating** (`lib/useTenantModules.js` + `Sidebar.jsx`): every
+  nav item declares its `module`; entries whose module is `disabled` for the
+  active tenant disappear, entries whose module is `coming_soon` render with a
+  visible `Soon` pill. Tenant switch refetches `/api/modules/{tenant}`.
+- **Route-level `ModuleGate`** (`components/layout/ModuleGate.jsx`): any
+  user with a bookmark to a disabled / coming-soon route hits a graceful
+  "Module not enabled" panel with a one-click CTA to open Platform Modules
+  (admins) or back to dashboard (non-admins).
+- 9/9 Phase 13 backend tests pass (`/app/backend/tests/test_phase13_platform_modules.py`);
+  13/13 critical frontend flows verified in `/app/test_reports/iteration_14.json`.
+
+
 
 ### Phase 12 — Feb 2026 (Tenant-controlled locale + Admin SOP)
 - **Removed all hard-coded Arabic copy** across modules via a single

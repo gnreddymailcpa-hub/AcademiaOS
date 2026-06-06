@@ -581,3 +581,31 @@ GREENIQ (Phase 3) remain `coming_soon`.
   role-gating, cross-tenant denial, upsert idempotency, h-index calculation,
   mentor-availability validation, and CAS-weighted appraisal math across all
   three bands. 100% frontend pass in `iteration_16.json`.
+
+
+### Phase 17 — Feb 2026 (12-Platform · GUARDIAN goes live · Phase 2 COMPLETE)
+With GUARDIAN activated, **11 of the 12 platforms are now live**. Only GREENIQ
+(Phase 3 · Sustainability) remains `coming_soon`.
+
+- **GUARDIAN — Campus Safety & Smart Infrastructure** (`routes_guardian.py` +
+  `/guardian`): 4 event-ingestion streams + monitoring rollup.
+  - **Incidents** (CCTV / YOLOv8): camera_id, location, detection_type
+    (intrusion/crowd/fire/fall/weapon/loitering/other), severity, confidence,
+    `resolve` action. Writer-guarded to security/facilities/admin/registrar.
+  - **Access events** (NFC): card_id, user_name, zone, direction. Open
+    ingestion (any authenticated tenant user) — every event captures
+    `captured_by` for the audit trail.
+  - **Vehicles** (ANPR): plate (auto-normalised to UPPERCASE, no spaces),
+    type, direction, gate. Open ingestion.
+  - **Assets** (predictive maintenance): asset_id (upsert key), type,
+    location, health_score 0-100 → auto-derived status
+    (≥80 operational · ≥60 warning · >0 critical · 0 down).
+  - **Summary**: open-incident count, today's count, by-severity distribution,
+    `people_inside_now` (computed as net IN/OUT per user_name from access log),
+    vehicles-in-today, asset status rollup, assets-needing-attention.
+- **Module registry**: GUARDIAN catalog `default_status` flipped
+  `coming_soon → active` with route `/guardian`.
+- **Sidebar**: GUARDIAN · Safety added to the CAMPUS OPERATIONS group.
+- **Tests**: 12/12 PASS in `tests/test_phase17_guardian.py` covering all 4
+  endpoint families, plate normalisation, status thresholds, role guards,
+  cross-tenant denial and resolve audit. 100% frontend in `iteration_17.json`.

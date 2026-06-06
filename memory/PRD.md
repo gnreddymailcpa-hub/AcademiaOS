@@ -742,6 +742,72 @@ zero functional value — deferred).
   cross-tenant 403, and Onboarding step transitions. 100% frontend pass
   in `iteration_20.json`.
 
+### Phase 22 — Feb 2026 (Phase-2 Closeout · 12 endpoints across 5 platforms)
+Closes the remaining feature bullets for the five Phase-2 platforms with
+**live external integrations** where appropriate (OpenAlex + CrossRef + Claude)
+and transparent heuristics where labelled outcomes don't yet exist. All routes
+tenant-isolated, audit-logged, zero hardcoded weights.
+
+- **ILLUMINATE — AI quiz generator (RAG-grounded) + at-risk heuristic**
+  `POST /api/phase2/{iid}/illuminate/quiz-gen` calls Claude (per-tenant model
+  resolved via `ai_service.resolve_model`) and returns OBE-tagged MCQs grounded
+  in approved Content Studio sources. Defensive JSON parse + option-count +
+  correct_index sanitisation. `GET /api/phase2/{iid}/illuminate/at-risk` is a
+  transparent multi-signal scorer over `learner_progress`:
+  `score = (1-comp%)·40 + (1-min(sessions,5)/5)·25 + min(days_idle/30,1)·25 +
+  blank_subs·10`, bands at ≥60 / ≥35 / <35. Designed as a stand-in for a future
+  LSTM once labelled drop-out outcomes exist.
+
+- **PRISM — OpenAlex sync + CrossRef DOI lookup**
+  `POST /api/phase2/{iid}/prism/openalex-sync` hits **api.openalex.org** (free,
+  no auth) for an author search → works list, idempotently upserts into
+  `prism_publications` keyed by `openalex_id` (re-sync updates citation counts,
+  zero duplicates). `POST /api/phase2/{iid}/prism/doi-lookup` hits
+  **api.crossref.org** for any DOI and normalises title / authors / year /
+  venue / publisher / citations. Verified live against
+  `10.1038/nature12373` (Nature 2013) and the Hinton / LeCun corpora.
+
+- **ALUMNI360 — Profile enrichment + UTM tracking**
+  `POST /api/phase2/{iid}/alumni/enrich-profile` runs a **deterministic
+  heuristic** over `current_role` + `current_company` + `graduation_year`
+  inferring industries (tech / finance / consult / research / startup /
+  industry), seniority (early / mid / senior by years-of-experience + title
+  keywords) and a skill catalog. Idempotent upsert into `alumni_enrichment`.
+  `POST /api/phase2/{iid}/alumni/utm-click` + `GET …/utm-summary` give a
+  full campaign / source aggregation funnel for outreach analytics.
+
+- **FACULTY+ — Workload optimiser + 360° peer review**
+  `POST /api/phase2/{iid}/faculty/workload-optimise` accepts a list of
+  `{faculty_id, name, hours_assigned}` + target_hours_per_week and returns a
+  cohort_avg + variance + per-faculty band (`overloaded` >115% / `balanced` /
+  `underloaded` <85% of target) — heaviest-first. `POST /faculty/peer-review`
+  captures 1–5 ratings across teaching/research/mentorship/collaboration with
+  reviewer_role (peer/hod/student/self) and `GET .../peer-review/{faculty_id}`
+  rolls up overall_composite + by-dimension averages + by-role bands.
+
+- **GUARDIAN — YOLOv8 detection webhook**
+  `POST /api/phase2/{iid}/guardian/yolov8-detect` is the open ingestion
+  endpoint for any external YOLO worker. **Auto-escalates** the event into
+  `guardian_incidents` only when `severity ∈ {medium, high, critical}` AND
+  `confidence ≥ 0.6` — otherwise stored to `guardian_yolo_events` for audit
+  only. Boundary verified across 3 scenarios (high+0.92 escalates, high+0.4
+  doesn't, low+0.99 doesn't).
+
+- **Frontend `/phase2-complete`** (`Phase2Complete.jsx`): 5-tab console with
+  the same Panel + Kpi + ItemList pattern as Phase 1. Sidebar entry
+  `sidebar-nav-phase2-complete` under Setup group, role-gated to admin +
+  faculty + registrar + career_services + compliance + ai_gov + programme_mgr
+  + training_mgr tiers (student excluded).
+
+- **Tests**: 20/20 PASS in `tests/test_phase22_phase2_complete.py` covering
+  live Claude quiz-gen, CrossRef DOI lookup (year/citations validation),
+  OpenAlex upsert idempotency (re-sync inserted=0/updated>0), deterministic
+  enrichment + idempotency, UTM source aggregation, workload bands +
+  variance, peer-review composite math + range validation, YOLO auto-escalation
+  boundary, cross-tenant 403, student write 403. **49/49 cumulative** with
+  Phase 1 regression (29 + 20). Frontend Playwright 100% green on all 5
+  tabs + 9 sub-flows + role-gating. Report: `/app/test_reports/iteration_22.json`.
+
 ## 12-Platform AcademiaOS.ai — DELIVERY COMPLETE 🎉
 All 12 platforms live with cross-platform glue, Executive Briefing, and
 guided Onboarding. The Build Plan + polish layer are shipped end-to-end.

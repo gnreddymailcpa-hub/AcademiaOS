@@ -1,0 +1,50 @@
+{
+  "summary": "Frontend-only end-to-end test of Phase-29 Cmd-K Command Palette ACTIONS as principal@vaagdevi.edu.in / Demo@2026. All 10 verb-first actions verified live against backend APIs and the full Phase-28 navigation/recent behaviour remains green. Result: 100% pass on every requirement in the review request including the slow LLM action.",
+  "phase29_action_results": {
+    "kpi-stream":              {"status": "PASS", "toast": "Show all-platform KPI stream · 154 students · 28 pubs · 1 open grv", "navigated_to": "/closeout-console"},
+    "attendance-sweep":        {"status": "PASS", "toast": "Run attendance alert sweep · 0 alerts emitted", "navigated_to": "/nexus-console"},
+    "carbon-footprint":        {"status": "PASS", "toast": "Show carbon footprint · Net 59.632t CO₂e · solar 30745 kWh", "navigated_to": "/closeout-console"},
+    "kb-status":               {"status": "PASS", "toast": "Show VEDA KB status · 3/3 ingested · 8 chunks", "navigated_to": "/veda-console"},
+    "incident-dashboard":      {"status": "PASS", "toast": "Show GUARDIAN incidents · 12 open of 15 total", "navigated_to": "/closeout-console"},
+    "esg-composite":           {"status": "PASS", "toast": "Compute ESG composite · ESG 46.2 · lagging", "navigated_to": "/closeout-console"},
+    "scan-defaulters":         {"status": "PASS", "toast": "Scan defaulters (14d) · 2 at-risk students", "navigated_to": "/nexus-console"},
+    "veda-kb-ingest":          {"status": "PASS", "toast": "Run VEDA KB ingestion · 0 sources · 0 chunks", "navigated_to": "/veda-console"},
+    "accreditation-timeline":  {"status": "PASS", "toast": "Show accreditation deadlines · 0 urgent/overdue out of 5", "navigated_to": "/closeout-console"},
+    "generate-aqar":           {"status": "PASS", "running_suffix_seen": true, "running_label": "Compose NAAC SSR section · running…", "elapsed_to_toast_s": 15, "toast": "Compose NAAC SSR section · Drafted: Curricular Aspects", "navigated_to": "/closeout-console"}
+  },
+  "phase28_regression": {
+    "fab_visible_md_plus": "PASS — [data-testid='cmdk-trigger'] visible at 1920x1080",
+    "ctrl_k_toggle": "PASS — palette opens on Ctrl+K",
+    "actions_group_position": "PASS — group order: Recent → Actions → Overview → Configuration → … (Actions before destination groups, after Recent when present)",
+    "ten_actions_with_lightning_icon": "PASS — all 10 cmdk-action-* present, each has an inner <svg> (Zap icon) and 'action' suffix tag",
+    "fuzzy_filter_kpi": "PASS — typing 'kpi' narrows visible actions to ['cmdk-action-kpi-stream'] only",
+    "recent_persisted": "PASS — after kpi-stream click, /closeout-console appears under Recent group on reopen (localStorage key 'academiaos.cmdk.recent')",
+    "escape_closes_palette": "PASS — Escape removes cmdk-input from DOM",
+    "globally_mounted": "PASS — palette / FAB available on /nexus-console, /veda-console, /closeout-console, dashboard"
+  },
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "CommandPalette.jsx (335 LOC) is clean, self-contained, single-source-of-truth for DESTINATIONS and ACTIONS — easy to extend.",
+    "runAction correctly: (a) guards on missing iid with toast.error, (b) sets busy state for the disabled+'running…' affordance, (c) catches errors and surfaces formatApiError(err.response.data.detail) | label-fallback, (d) only navigates on success, (e) always clears busy in finally — race-free.",
+    "Action item value strings include keywords (e.g. 'naac aqar compass accreditation') so cmdk fuzzy search hits across synonyms. Verified: typing 'kpi' filters to kpi-stream only.",
+    "Recent push happens for BOTH plain destinations (go) AND action navigations (runAction.out.path) — consistent UX.",
+    "The 'running…' affordance was visible for ~15s while Claude generated the SSR section before the success toast resolved. Good UX.",
+    "Minor nit (carry-over from Phase-28, not a regression): data-testid for destinations is still `cmdk-item${path.replace(/\\//g,'-')}` producing `cmdk-item-` for '/' and double dashes for recent IDs — selectors with [^=] still match, but cleaner concatenation (e.g. cmdk-item-dashboard) would aid readability. Phase-29 testids `cmdk-action-<id>` are clean and consistent.",
+    "Backend endpoints exercised by the 10 actions all returned 200 (observed via network panel): /api/nexus2/{iid}/fees/predict-defaulters, /api/closeout/{iid}/command/kpi-stream, /api/closeout/{iid}/compass/ssr-compose, /api/closeout/{iid}/greeniq/esg-composite, /api/closeout/{iid}/greeniq/carbon-footprint, /api/nexus2/{iid}/attendance/auto-alert, /api/veda/{iid}/kb/ingest-run, /api/veda/{iid}/kb/status, /api/closeout/{iid}/guardian/incident-dashboard, /api/closeout/{iid}/compass/accreditation-timeline."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped per request — but all 10 underlying endpoints returned 200 via the UI)", "frontend": "100% (10/10 actions + 8/8 Phase-28 regression assertions)"},
+  "test_credentials": "principal@vaagdevi.edu.in / Demo@2026 (institution_id 44444444-…) per /app/memory/test_credentials.md",
+  "seed_data_creation": "None.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Phase-29 ACTIONS in CommandPalette.jsx fully working. To replay: login → click [data-testid='cmdk-trigger'] (FAB, md+) or press Ctrl+K → click any cmdk-action-<id>. Toast and navigation behavior verified for all 10. generate-aqar takes ~15s (LLM) and correctly shows 'running…' suffix while pending. Recent group surfaces last navigation (incl. action-driven nav) on reopen. To capture toasts robustly when actions also navigate the page, install a MutationObserver before clicking — sonner toasts persist across route changes but the original DOM node may be detached during navigation snapshotting.",
+  "rca_of_the_issue": "Not applicable — no defects."
+}

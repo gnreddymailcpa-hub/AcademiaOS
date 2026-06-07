@@ -1873,3 +1873,47 @@ in a single sprint.
 - Frontend webpack: compiled cleanly with all 4 file edits.
 - Testing agent iteration 39 already covered Launch flows top-to-bottom.
 
+
+---
+
+## Phase 41 — "Preview as Tenant" Mode for Super Admin — Feb 2026
+
+**Scope**: Super admin can now switch the entire UI to any tenant's
+branding without logging out. Single-click demo flow for sales calls.
+
+### Backend
+- New endpoint `GET /api/v1/tenants/{tenant_id}/config` — super-admin
+  only, returns any tenant's resolved config payload (same shape as
+  `/me/config`). Reuses the existing `get_tenant_config` helper.
+- Returns **403** for any non-super-admin caller (covered by tests).
+
+### Frontend
+- `TenantConfigContext.jsx` now manages a `previewTenantId` state
+  persisted in `localStorage` under key `claros-preview-tenant`. When
+  set AND the user is a super_admin, `refresh()` fetches the previewed
+  tenant's config instead of `/me/config`. New helpers exposed from
+  the context: `isPreviewing`, `previewTenantId`, `setPreviewTenantId`,
+  `isSuperAdmin`. Auto-clears the preview if the target tenant goes
+  away (e.g. deleted).
+- New component `TenantPreviewSwitcher.jsx` exposes:
+  - A **topbar dropdown** (`tenant-preview-switcher-btn`) that lists
+    all institutions, marks the active preview, and offers an
+    "Exit preview mode" item. Renders nothing for non-super-admins.
+  - A **persistent violet banner** (`tenant-preview-banner`) pinned
+    above the main content while previewing — keeps the super admin
+    from forgetting they're seeing someone else's view. One-click
+    "Exit preview" link.
+- Wired into `TopBar.jsx` (left of the AI status badge) and
+  `Shell.jsx` (above the mobile menu strip).
+
+### Validation
+- Curl verified:
+  - super_admin GET `/tenants/{VCE}/config` → "VCE Intelligent Campus"
+    + claros-ai → "VEDA".
+  - super_admin GET `/tenants/{ISB}/config` → "ISB Digital Campus"
+    + claros-ai → "Claros AI".
+  - student GET `/tenants/{ISB}/config` → **HTTP 403**.
+- Frontend hot-reload compiled cleanly.
+- Preview state survives navigation (localStorage-backed) and is
+  cleared automatically if the previewed tenant is deleted.
+

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Search, Bell, LogOut, ShieldCheck, ChevronDown, Inbox } from "lucide-react";
 import InstitutionSwitcher from "./InstitutionSwitcher";
 import LanguageSwitcher from "./LanguageSwitcher";
+import TenantPreviewSwitcher from "./TenantPreviewSwitcher";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -92,6 +93,7 @@ export default function TopBar() {
         </div>
 
         <div className="ms-auto flex items-center gap-2 md:gap-3 min-w-0">
+          <TenantPreviewSwitcher />
           <Badge
             variant="outline"
             className="hidden lg:flex items-center gap-1.5 border-emerald-200 bg-emerald-50 text-emerald-700"

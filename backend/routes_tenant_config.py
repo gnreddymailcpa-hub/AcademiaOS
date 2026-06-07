@@ -189,6 +189,17 @@ def build_tenant_config_router(get_db, get_current_user):
         """Public canonical catalogue — useful for docs & admin UIs."""
         return CANONICAL_MODULES
 
+    @r.get("/{tenant_id}/config")
+    async def any_tenant_config(tenant_id: str,
+                                 user: dict = Depends(get_current_user)):
+        """Super-admin-only: read any tenant's resolved config. Used for
+        'Preview as Tenant' mode where a super admin demos how a tenant
+        sees the platform without logging out."""
+        if user["role"] != "super_admin":
+            raise HTTPException(403, "Super admin only")
+        db = get_db()
+        return await get_tenant_config(db, tenant_id)
+
     @r.get("/me/config")
     async def my_config(user: dict = Depends(get_current_user)):
         db = get_db()

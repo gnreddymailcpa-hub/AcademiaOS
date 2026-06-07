@@ -21,21 +21,44 @@ const CANONICAL_FALLBACKS = {
   "claros-insights": { display_name: "Claros Insights", short_name: "Insights" },
 };
 
+const PREVIEW_KEY = "claros-preview-tenant";
+
 export function TenantConfigProvider({ children }) {
   const { user } = useAuth();
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [previewTenantId, setPreviewTenantIdState] = useState(() => {
+    try { return localStorage.getItem(PREVIEW_KEY) || null; }
+    catch { return null; }
+  });
+
+  const isSuperAdmin = user?.role === "super_admin";
+  const effectivePreview = isSuperAdmin ? previewTenantId : null;
+  const isPreviewing = !!effectivePreview;
+
+  const setPreviewTenantId = useCallback((id) => {
+    try {
+      if (id) localStorage.setItem(PREVIEW_KEY, id);
+      else localStorage.removeItem(PREVIEW_KEY);
+    } catch { /* ignored */ }
+    setPreviewTenantIdState(id);
+  }, []);
 
   const refresh = useCallback(async () => {
     if (!user) { setConfig(null); setLoading(false); return; }
     setLoading(true);
     try {
-      const r = await api.get("/v1/tenants/me/config");
+      const url = effectivePreview
+        ? `/v1/tenants/${effectivePreview}/config`
+        : "/v1/tenants/me/config";
+      const r = await api.get(url);
       setConfig(r.data);
     } catch {
+      // If preview fails (deleted tenant etc.), drop the preview and retry
+      if (effectivePreview) setPreviewTenantId(null);
       setConfig(null);
     } finally { setLoading(false); }
-  }, [user]);
+  }, [user, effectivePreview, setPreviewTenantId]);
 
   useEffect(() => { refresh(); }, [refresh]);
 
@@ -87,8 +110,11 @@ export function TenantConfigProvider({ children }) {
     window.dispatchEvent(new Event("claros:tenant-config-changed"));
   }, []);
 
-  const value = useMemo(() => ({ config, loading, refresh, isOverridden, notifyChanged }),
-    [config, loading, refresh, isOverridden, notifyChanged]);
+  const value = useMemo(() => ({
+    config, loading, refresh, isOverridden, notifyChanged,
+    isPreviewing, previewTenantId: effectivePreview, setPreviewTenantId, isSuperAdmin,
+  }), [config, loading, refresh, isOverridden, notifyChanged,
+       isPreviewing, effectivePreview, setPreviewTenantId, isSuperAdmin]);
 
   return (
     <TenantConfigContext.Provider value={value}>

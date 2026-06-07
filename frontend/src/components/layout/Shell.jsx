@@ -4,6 +4,7 @@ import { Menu, X } from "lucide-react";
 import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
 import CommandPalette from "./CommandPalette";
+import { TenantPreviewBanner } from "./TenantPreviewSwitcher";
 
 export default function Shell({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -24,6 +25,7 @@ export default function Shell({ children }) {
         />
       )}
       <div className="flex min-w-0 flex-col">
+        <TenantPreviewBanner />
         <div className="flex items-center gap-2 border-b border-border bg-card/60 px-3 py-2 md:hidden">
           <button
             onClick={() => setMobileOpen(true)}

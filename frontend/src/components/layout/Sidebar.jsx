@@ -97,8 +97,10 @@ const NAV_GROUPS = [
     label: "Academics",
     testid: "sidebar-group-academics",
     items: [
+      { to: "/learn", icon: GraduationCap, key: "nav.learn", testid: "sidebar-nav-learn",
+        module: "ILLUMINATE", label: "Claros Learn · LMS" },
       { to: "/illuminate", icon: BookOpen, key: "nav.illuminate", testid: "sidebar-nav-illuminate",
-        module: "ILLUMINATE", label: "ILLUMINATE · LMS" },
+        module: "ILLUMINATE", label: "ILLUMINATE · Legacy" },
       { to: "/content-studio", icon: FileStack, key: "nav.content_studio", testid: "sidebar-nav-content-studio", module: "ILLUMINATE" },
       { to: "/assessments", icon: ClipboardCheck, key: "nav.assessments", testid: "sidebar-nav-assessments", module: "ILLUMINATE" },
       { to: "/ai-instructor", icon: GraduationCap, key: "nav.ai_instructor", testid: "sidebar-nav-ai-instructor", module: "VEDA" },

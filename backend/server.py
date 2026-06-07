@@ -799,6 +799,7 @@ import routes_enroll
 import routes_comply
 import routes_launch
 import routes_insights
+import routes_learn
 from collections import Counter
 from ai_service import chunk_text, _tokens
 
@@ -1027,6 +1028,13 @@ async def seed_database():
     except Exception as e:
         logger.error("Claros Insights seed failed: %s", e)
 
+    # Claros Learn (LMS) — course enrollments + content + quizzes
+    from seed_claros_learn import seed_claros_learn
+    try:
+        await seed_claros_learn(db, logger)
+    except Exception as e:
+        logger.error("Claros Learn seed failed: %s", e)
+
 
 @app.on_event("startup")
 async def startup():
@@ -1082,6 +1090,7 @@ app.include_router(routes_enroll.build_claros_enroll_router(lambda: db, get_curr
 app.include_router(routes_comply.build_claros_comply_router(lambda: db, get_current_user))
 app.include_router(routes_launch.build_claros_launch_router(lambda: db, get_current_user))
 app.include_router(routes_insights.build_claros_insights_router(lambda: db, get_current_user))
+app.include_router(routes_learn.build_claros_learn_router(lambda: db, get_current_user))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

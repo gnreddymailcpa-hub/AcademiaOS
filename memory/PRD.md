@@ -1486,3 +1486,77 @@ counseling script generator.
 the spec-compliant status + source distributions; full-name samples vary
 appropriately per tenant locale.
 
+
+### Phase 34 — Feb 2026 (Claros Comply · NAAC accreditation intelligence)
+
+**Scope chosen by user** (same pattern as Phase 31/32/33): rebrand
+COMPASS → Claros Comply keeping legacy `/api/compass/*` endpoints intact,
+ADD 7 new collections + 12 new `/api/v1/comply/*` endpoints + 3 new
+`/comply/*` React pages. Seed across the 2 Indian-aligned tenants
+(VCE + ISB) — EAIC and UoB get just the 7 NAAC criterion stubs (NAAC
+is India-specific accreditation, so no metrics/evidence for foreign tenants).
+
+**New backend** (`routes_comply.py` + `seed_claros_comply.py`):
+- 7 new collections: `naac_criteria` (seeded with 7 canonical criteria),
+  `naac_metrics`, `evidence_documents`, `obe_program_outcomes`,
+  `obe_course_outcomes`, `obe_co_po_mapping`, `accreditation_readiness`.
+- 12 endpoints under `/api/v1/comply/*`:
+  - `GET /dashboard` — 7 criterion cards with current/max score + readiness %
+  - `GET /readiness` — overall + per-criterion + projected grade
+    (≥90→A++, ≥80→A+, ≥65→A, ≥55→B++, ≥45→B+, ≥35→B, else C)
+  - `GET /criteria`, `GET /criteria/{id}` — full detail + metrics + evidence
+  - `GET /metrics` (filter by criterion), `PUT /metrics/{id}` (admin/IQAC only)
+  - `POST /evidence/upload` (multipart), `GET /evidence`,
+    `DELETE /evidence/{id}` (admin only)
+  - `POST /aqar/generate` — Claude composes a formal 500-word AQAR section
+    using metrics + evidence; deterministic fallback if LLM unavailable
+  - `GET /obe/programs`, `GET /obe/{program_id}/outcomes`,
+    `POST /obe/mapping` (upsert)
+- Readiness formula: per-criterion = avg(current/target ratio capped at 1) ×
+  max_score; +5% of max boost when evidence_count ≥ 3.
+
+**Seed** (`seed_claros_comply.py`):
+- 7 canonical NAAC criteria (codes 1..7) auto-inserted on startup
+- VCE + ISB only: 12 metrics each (criterion 1/3/5 × 4 metrics) +
+  5 sample evidence docs + 12 AICTE PO1..PO12 for BTECH-CSE +
+  15 COs (5 courses × 3 COs each)
+- VCE current readiness ≈ 32.1% → Grade C projection (reflects
+  partially-seeded criteria; intentional for demo realism)
+
+**New frontend pages**:
+- `ClarosComplyDashboard.jsx` (`/comply`) — circular SVG readiness gauge
+  with grade projection text, 4-tile KPI summary, 7-card criterion grid
+  with green/amber/red colour bands by readiness % tier
+- `ClarosComplyCriterion.jsx` (`/comply/criteria/:id`) — score card +
+  editable metrics table (inline pencil → input → save) + evidence list
+  with upload form + delete + AQAR Generate button (modal with copy)
+- `ClarosComplyOBE.jsx` (`/comply/obe`) — program dropdown +
+  3-tab view (Program Outcomes / Course Outcomes / interactive CO-PO
+  matrix with click-to-cycle 0→1→2→3 levels)
+
+**Sidebar entries** (4 new under Strategy & Compliance cluster):
+- Claros Comply · NAAC Dashboard (`/comply`)
+- Claros Comply · OBE Framework (`/comply/obe`)
+- Claros Comply · Legacy AQAR (`/compass-aqar` — backward compat)
+- Claros Comply · Legacy Compliance (`/compliance` — backward compat)
+
+**Testing** (`/app/test_reports/iteration_33.json`):
+- **Backend: 27/27 PASS** (`tests/test_phase34_claros_comply.py`) — all 12
+  endpoints + 6 authorisation cases + multi-tenant seed restriction
+  verification + regression across Phases 31-33 + legacy COMPASS.
+- **Frontend: 100% PASS** — all critical testids verified, metric edit
+  flow works end-to-end, AQAR Claude integration returned 3486-char
+  text containing tenant name + academic year, CO-PO matrix
+  click-cycle fires POST /obe/mapping correctly.
+- Post-test cleanup: reset VCE metric 1.2.1 to seed value (95.0)
+  after testing bumped it to 99.
+
+**Pre-shipped fix**: SVG gauge text was using Tailwind classes
+(text-3xl) which don't render font-size in SVG `<text>` consistently →
+switched to inline `style={{ fontSize: '30px', fontWeight: 600 }}`.
+
+**Multi-tenant restriction**: NAAC seed is intentionally limited to
+VCE + ISB. EAIC and UoB receive the 7 canonical criterion stubs but
+0 metrics / 0 evidence — NAAC is India-specific accreditation. The
+endpoints respond 200 for foreign tenants with empty arrays.
+

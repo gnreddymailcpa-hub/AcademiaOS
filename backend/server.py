@@ -797,6 +797,7 @@ import routes_closeout
 import routes_core
 import routes_enroll
 import routes_comply
+import routes_launch
 from collections import Counter
 from ai_service import chunk_text, _tokens
 
@@ -1011,6 +1012,13 @@ async def seed_database():
     except Exception as e:
         logger.error("Claros Comply seed failed: %s", e)
 
+    # Claros Launch (placement intelligence) — companies + drives + skills
+    from seed_claros_launch import seed_claros_launch
+    try:
+        await seed_claros_launch(db, logger)
+    except Exception as e:
+        logger.error("Claros Launch seed failed: %s", e)
+
 
 @app.on_event("startup")
 async def startup():
@@ -1064,6 +1072,7 @@ app.include_router(routes_closeout.build_closeout_router(lambda: db, get_current
 app.include_router(routes_core.build_claros_core_router(lambda: db, get_current_user))
 app.include_router(routes_enroll.build_claros_enroll_router(lambda: db, get_current_user, get_optional_user))
 app.include_router(routes_comply.build_claros_comply_router(lambda: db, get_current_user))
+app.include_router(routes_launch.build_claros_launch_router(lambda: db, get_current_user))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

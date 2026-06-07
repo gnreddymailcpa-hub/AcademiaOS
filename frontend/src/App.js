@@ -67,6 +67,11 @@ import ClarosEnrollAnalytics from "./pages/ClarosEnrollAnalytics";
 import ClarosComplyDashboard from "./pages/ClarosComplyDashboard";
 import ClarosComplyCriterion from "./pages/ClarosComplyCriterion";
 import ClarosComplyOBE from "./pages/ClarosComplyOBE";
+import ClarosLaunchDashboard from "./pages/ClarosLaunchDashboard";
+import ClarosLaunchDrives from "./pages/ClarosLaunchDrives";
+import ClarosLaunchSkills from "./pages/ClarosLaunchSkills";
+import ClarosLaunchInterview from "./pages/ClarosLaunchInterview";
+import ClarosLaunchAdmin from "./pages/ClarosLaunchAdmin";
 import AuthCallback from "./pages/AuthCallback";
 import ModuleGate from "./components/layout/ModuleGate";
 
@@ -106,6 +111,11 @@ function ShellRoutes() {
         <Route path="/comply" element={<ModuleGate module="COMPASS"><ClarosComplyDashboard /></ModuleGate>} />
         <Route path="/comply/criteria/:id" element={<ModuleGate module="COMPASS"><ClarosComplyCriterion /></ModuleGate>} />
         <Route path="/comply/obe" element={<ModuleGate module="COMPASS"><ClarosComplyOBE /></ModuleGate>} />
+        <Route path="/launch" element={<ModuleGate module="ALUMNI360"><ClarosLaunchDashboard /></ModuleGate>} />
+        <Route path="/launch/drives" element={<ModuleGate module="ALUMNI360"><ClarosLaunchDrives /></ModuleGate>} />
+        <Route path="/launch/skills" element={<ModuleGate module="ALUMNI360"><ClarosLaunchSkills /></ModuleGate>} />
+        <Route path="/launch/interview" element={<ModuleGate module="ALUMNI360"><ClarosLaunchInterview /></ModuleGate>} />
+        <Route path="/launch/admin" element={<ModuleGate module="ALUMNI360"><ClarosLaunchAdmin /></ModuleGate>} />
         <Route path="/assessments" element={<ModuleGate module="ILLUMINATE"><Assessments /></ModuleGate>} />
         <Route path="/psychometrics" element={<Psychometrics />} />
         <Route path="/analytics" element={<ModuleGate module="COMMAND"><Analytics /></ModuleGate>} />

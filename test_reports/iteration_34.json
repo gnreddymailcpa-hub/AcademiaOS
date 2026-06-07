@@ -1,0 +1,48 @@
+{
+  "summary": "Phase 35 — Claros Launch (Career & Placement Intelligence) end-to-end testing. Backend: 28/28 pytest cases PASS covering all 14 /api/v1/launch/* endpoints (companies/drives/eligible/apply/applications/skills CRUD/skill-gaps/interview question+evaluate+history/readiness-score/admin stats) + authorisation (non-student blocked from apply/skills/interview/readiness 403; student blocked from /stats 403; VCE principal blocked from cross-tenant ISB 403) + idempotency (apply twice returns same row) + multi-tenant (VCE+ISB have 15 companies + 8 drives; EAIC/UoB have 15 companies + 0 drives by design) + regression (legacy /api/alumni/{iid}/directory + /api/placements/{iid}/summary + Phase 32 /v1/core/stats + Phase 33 /v1/enroll/leads + Phase 34 /v1/comply/dashboard). Frontend (Playwright): /launch dashboard renders readiness ring (67) + 4-tile breakdown (cgpa cell present) + 3 cards (drives/apps/gaps). /launch/drives renders 4 tabs (UPCOMING/ONGOING/COMPLETED/ALL); UPCOMING shows 5 cards with 5 Apply buttons; clicking Apply showed 'Applied to Accenture' toast. /launch/skills renders 8 seeded skills grouped (PROGRAMMING/TECHNICAL/TOOL/SOFT); 'Analyse Gaps' triggered Claude → AI gaps panel with 5 gap cards (HIGH:System Design~12w, HIGH:DSA~16w, HIGH:OOP~6w, MEDIUM:AWS~8w, MEDIUM:C++~10w). /launch/interview full flow: Get Question generated a bracket-validation TECHNICAL question → submitted DP-based answer → Claude feedback rendered with score 2/10 (real critique), strengths bullet, 6 improvement bullets, and 8-item history list. /launch/admin (principal) renders 4 KPI tiles (placed=9, placement%=45%, avg=₹4L, max=₹4.25L) + top recruiters horizontal bars (Wipro/Cognizant/HCL, 3 each).",
+  "backend_results": {
+    "total": 28,
+    "passed": 28,
+    "failed": 0,
+    "file": "/app/backend/tests/test_phase35_claros_launch.py",
+    "junit_xml": "/app/test_reports/pytest/pytest_phase35.xml"
+  },
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/v1/launch/drives/{id}/apply", "issue": "FIXED by testing agent — was returning 500 because insert_one mutates doc with non-serialisable ObjectId _id; added doc.pop('_id', None) before return."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/launch/admin top recruiters", "issues": ["Recharts emits console warnings 'width(-1)/height(-1)' on first render — chart still draws bars correctly after layout settles. Cosmetic; consider wrapping in ResponsiveContainer with explicit minHeight."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_phase35_claros_launch.py",
+    "/app/test_reports/pytest/pytest_phase35.xml"
+  ],
+  "action_items": [
+    "[OPTIONAL] Wrap admin top-recruiters chart in a sized ResponsiveContainer to silence Recharts width/height(-1) console warnings.",
+    "[NICE-TO-HAVE] The Claude interview evaluator returned a 2/10 because the seeded TECHNICAL question on bracket validation didn't match the DP-based answer — this is correct AI behaviour, not a bug. Confirm product expectation that mismatched answers should score low."
+  ],
+  "critical_code_review_comments": [
+    "routes_launch.py apply_to_drive used to return a doc still carrying MongoDB _id ObjectId → 500. Pattern repeats in other routes already-fixed elsewhere — review evaluate_answer (also does pop) and any future inserts to ensure _id is removed before returning.",
+    "_coerce_iid is invoked with c['tenant_id'] (already a string) inside get_company — works but slightly confusing; usually iid arg is meant to be the *requested* param.",
+    "skill_gaps prompt does not include the student's program code, only program name — could be more targeted.",
+    "No pagination on /companies (limit 200) or /drives (limit 200) — fine for current scale but flag for future."
+  ],
+  "updated_files": [
+    "/app/backend/routes_launch.py (added doc.pop('_id', None) before return in apply_to_drive to fix 500)",
+    "/app/backend/tests/test_phase35_claros_launch.py (new — 28 test cases)"
+  ],
+  "success_rate": {"backend": "100% (28/28)", "frontend": "100% (5/5 screens, all testids verified, AI integrations live)"},
+  "test_credentials": "All from /app/memory/test_credentials.md — VCE student manikanta.cse@vaagdevi.edu.in / Demo@2026; VCE admin principal@vaagdevi.edu.in; ISB shankar.dean@isb.edu; EAIC khalid.exec@eaic.gov.ae; UoB emma.admin@bradford.ac.uk — all Demo@2026.",
+  "seed_data_creation": "None added by tester. Used existing seeds: 15 companies × 4 tenants, 8 drives × VCE+ISB, 8 skills + 5 mock interviews for Manikanta, 9 placements per tenant (VCE+ISB) from 3 completed drives × 3 students. One TEST_React skill was created then deleted during testing.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Phase 35 Claros Launch — 28/28 backend PASS, all 5 frontend pages PASS with live AI integrations. One bug fixed in /apply (ObjectId serialisation). All 14 endpoints under /api/v1/launch/* are operational. Note legacy placements endpoint is /api/placements/{iid}/summary (not /dashboard as review-request text implied).",
+  "rca_of_issue_fixed": "POST /api/v1/launch/drives/{id}/apply returned 500 with TypeError: 'ObjectId' object is not iterable. Root cause: motor's insert_one mutates the input dict by adding the BSON _id field; the route returned this mutated dict, and FastAPI's jsonable_encoder cannot serialise ObjectId. Reproduction: any student POST /apply (fresh, not idempotent path). Mitigation: doc.pop('_id', None) immediately after insert_one — applied in /app/backend/routes_launch.py line ~154."
+}

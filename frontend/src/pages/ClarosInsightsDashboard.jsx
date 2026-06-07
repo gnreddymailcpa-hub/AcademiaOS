@@ -236,6 +236,7 @@ export default function ClarosInsightsDashboard() {
     <div className="space-y-8" data-testid="insights-dashboard">
       <PageHeader
         eyebrow="Claros Insights"
+        moduleId="claros-insights"
         title="Executive Command Center"
         description={`Live KPIs, trends, alerts and AI-generated board reports · ${current?.short_name || ""}`}
         actions={

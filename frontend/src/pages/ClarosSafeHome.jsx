@@ -174,7 +174,7 @@ export default function ClarosSafeHome() {
 
   return (
     <div className="space-y-6" data-testid="safe-page">
-      <PageHeader eyebrow="Claros Safe" title="Campus Safety"
+      <PageHeader eyebrow="Claros Safe" moduleId="claros-safe" title="Campus Safety"
         description="Visitor management and incident response." />
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

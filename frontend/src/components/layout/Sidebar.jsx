@@ -18,6 +18,7 @@ import {
   Scale,
   BookOpenCheck,
   Settings as SettingsIcon,
+  Palette,
   FileText,
   UserPlus,
   SlidersHorizontal,
@@ -42,6 +43,18 @@ import { useLang } from "../../context/LanguageContext";
 import { useInstitution } from "../../context/InstitutionContext";
 import { useAuth } from "../../context/AuthContext";
 import { useTenantModules } from "../../lib/useTenantModules";
+import { useModuleName } from "../../context/TenantConfigContext";
+
+// Per-item label resolver — uses the tenant-configured display name when the
+// item carries a canonical Claros module id.
+function SidebarItemLabel({ item, fallbackLabel }) {
+  const resolved = useModuleName(item.canonicalId || "");
+  if (item.canonicalId) {
+    // Trim the "Claros " prefix from canonical fallback for sidebar density.
+    return <span className="truncate flex-1">{resolved.replace(/^Claros\s+/, "")}</span>;
+  }
+  return <span className="truncate flex-1">{fallbackLabel}</span>;
+}
 
 /**
  * Sidebar nav is grouped into logical sections to scale to 17+ destinations
@@ -64,6 +77,10 @@ const NAV_GROUPS = [
       { to: "/admin/modules", icon: SlidersHorizontal, key: "nav.platform_modules",
         testid: "sidebar-nav-platform-modules",
         roles: ["super_admin", "institution_admin"], label: "Platform Modules" },
+      { to: "/admin/tenant-config", icon: Palette, key: "nav.tenant_config",
+        testid: "sidebar-nav-tenant-config",
+        roles: ["super_admin", "institution_admin"],
+        label: "Branding & Module Names" },
       { to: "/institution-setup", icon: Building2, key: "nav.institution_setup", testid: "sidebar-nav-institution-setup" },
       { to: "/academic-structure", icon: Network, key: "nav.academic_structure", testid: "sidebar-nav-academic-structure", module: "NEXUS" },
       { to: "/users-roles", icon: Users, key: "nav.users_roles", testid: "sidebar-nav-users-roles" },
@@ -98,6 +115,7 @@ const NAV_GROUPS = [
     testid: "sidebar-group-academics",
     items: [
       { to: "/learn", icon: GraduationCap, key: "nav.learn", testid: "sidebar-nav-learn",
+        canonicalId: "claros-learn",
         module: "ILLUMINATE", label: "Claros Learn · LMS" },
       { to: "/illuminate", icon: BookOpen, key: "nav.illuminate", testid: "sidebar-nav-illuminate",
         module: "ILLUMINATE", label: "ILLUMINATE · Legacy" },
@@ -161,8 +179,10 @@ const NAV_GROUPS = [
     testid: "sidebar-group-faculty-research",
     items: [
       { to: "/research", icon: Search, key: "nav.research", testid: "sidebar-nav-research",
+        canonicalId: "claros-research",
         module: "PRISM", label: "Claros Research" },
       { to: "/people", icon: GraduationCap, key: "nav.people", testid: "sidebar-nav-people",
+        canonicalId: "claros-people",
         module: "FACULTY", label: "Claros People · Faculty Dev" },
       { to: "/faculty-plus", icon: GraduationCap, key: "nav.faculty_plus", testid: "sidebar-nav-faculty-plus",
         module: "FACULTY", label: "FACULTY+ · Legacy" },
@@ -195,6 +215,7 @@ const NAV_GROUPS = [
       { to: "/alumni", icon: HeartHandshake, key: "nav.alumni", testid: "sidebar-nav-alumni",
         module: "ALUMNI360", label: "Claros Launch · Alumni Network" },
       { to: "/alumni-network", icon: Users, key: "nav.alumni_network", testid: "sidebar-nav-alumni-network",
+        canonicalId: "claros-alumni",
         module: "ALUMNI360", label: "Claros Alumni · Network" },
     ],
   },
@@ -203,8 +224,10 @@ const NAV_GROUPS = [
     testid: "sidebar-group-safety-sustainability",
     items: [
       { to: "/safe", icon: ShieldCheck, key: "nav.safe", testid: "sidebar-nav-safe",
+        canonicalId: "claros-safe",
         module: "GUARDIAN", label: "Claros Safe · Visitors & Incidents" },
       { to: "/green", icon: Leaf, key: "nav.green", testid: "sidebar-nav-green",
+        canonicalId: "claros-green",
         module: "GREENIQ", label: "Claros Green · Sustainability" },
       { to: "/guardian", icon: ShieldCheck, key: "nav.guardian", testid: "sidebar-nav-guardian",
         module: "GUARDIAN", label: "GUARDIAN · Legacy" },
@@ -218,6 +241,7 @@ const NAV_GROUPS = [
     items: [
       { to: "/insights", icon: Command, key: "nav.insights",
         testid: "sidebar-nav-insights", module: "COMMAND",
+        canonicalId: "claros-insights",
         roles: ["super_admin", "institution_admin"],
         label: "Claros Insights · Executive Center" },
       { to: "/analytics", icon: BarChart3, key: "nav.analytics", testid: "sidebar-nav-analytics", module: "COMMAND" },
@@ -370,7 +394,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
                           className="h-4 w-4 shrink-0"
                           strokeWidth={isActive ? 2.25 : 1.75}
                         />
-                        <span className="truncate flex-1">{item.label || t(item.key)}</span>
+                        <SidebarItemLabel item={item} fallbackLabel={item.label || t(item.key)} />
                         {item._moduleStatus === "coming_soon" && (
                           <span
                             className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 border border-amber-200"

@@ -179,7 +179,7 @@ export default function ClarosPeopleHome() {
 
   return (
     <div className="space-y-6" data-testid="people-page">
-      <PageHeader eyebrow="Claros People" title="Faculty Development"
+      <PageHeader eyebrow="Claros People" moduleId="claros-people" title="Faculty Development"
         description="API scores, training, AI-generated development plans." />
       <div className="flex flex-wrap gap-2 border-b">
         {tabs.map(t => (

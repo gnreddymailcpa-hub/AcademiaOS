@@ -6,6 +6,8 @@ import { Toaster } from "./components/ui/sonner";
 
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { InstitutionProvider } from "./context/InstitutionContext";
+import { TenantConfigProvider } from "./context/TenantConfigContext";
+import TenantConfigAdmin from "./pages/TenantConfigAdmin";
 import { LanguageProvider } from "./context/LanguageContext";
 
 import ProtectedRoute from "./components/layout/ProtectedRoute";
@@ -136,6 +138,7 @@ function ShellRoutes() {
         <Route path="/alumni-network" element={<ModuleGate module="ALUMNI360"><ClarosAlumniHome /></ModuleGate>} />
         <Route path="/safe" element={<ModuleGate module="GUARDIAN"><ClarosSafeHome /></ModuleGate>} />
         <Route path="/green" element={<ModuleGate module="GREENIQ"><ClarosGreenHome /></ModuleGate>} />
+        <Route path="/admin/tenant-config" element={<TenantConfigAdmin />} />
         <Route path="/assessments" element={<ModuleGate module="ILLUMINATE"><Assessments /></ModuleGate>} />
         <Route path="/psychometrics" element={<Psychometrics />} />
         <Route path="/analytics" element={<ModuleGate module="COMMAND"><Analytics /></ModuleGate>} />
@@ -180,8 +183,10 @@ export default function App() {
         <AuthProvider>
           <LanguageProvider>
             <InstitutionProvider>
-              <AuthCallback />
-              <Toaster position="top-right" richColors />
+              <TenantConfigProvider>
+                <AuthCallback />
+                <Toaster position="top-right" richColors />
+              </TenantConfigProvider>
             </InstitutionProvider>
           </LanguageProvider>
         </AuthProvider>
@@ -193,6 +198,7 @@ export default function App() {
       <AuthProvider>
         <LanguageProvider>
           <InstitutionProvider>
+            <TenantConfigProvider>
             <Routes>
               <Route path="/login" element={<LoginRoute />} />
               <Route
@@ -205,6 +211,7 @@ export default function App() {
               />
             </Routes>
             <Toaster position="top-right" richColors />
+            </TenantConfigProvider>
           </InstitutionProvider>
         </LanguageProvider>
       </AuthProvider>

@@ -74,6 +74,7 @@ export default function ClarosLearnHome() {
     <div className="space-y-6" data-testid="learn-home">
       <PageHeader
         eyebrow="Claros Learn"
+        moduleId="claros-learn"
         title={isFaculty ? "Teaching Dashboard" : "My Courses"}
         description={isFaculty
           ? "Manage course content, assignments and quizzes for the courses you teach."

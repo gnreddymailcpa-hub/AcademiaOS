@@ -1,0 +1,47 @@
+{
+  "summary": "Phase 38 — multi-tenant naming/branding for Claros Platform. Backend pytest suite 16/16 PASS covering GET /tenants/me/config (VCE legacy names + ISB canonical), canonical URL aliases for insights/research/learn/people/safe/green (200 + identical bodies vs legacy), config mutation (PUT rename, 30-char validation, NEVER_DISABLE on claros-ai, non-admin 403), branding PUT/reset, and the /canonical/modules catalogue (12 entries). Frontend smoke tested as VCE student (manikanta) — sidebar shows VEDA/ILLUMINATE/PRISM/FACULTY+/ALUMNI360/GUARDIAN/GREENIQ; page-eyebrow on /research/learn/people/alumni-network/safe/green all resolve to tenant names. /insights eyebrow as VCE admin = COMMAND. Admin gate: VCE student redirected from /admin/tenant-config (no admin UI). Admin /tenant-config renders with 12 tenant-module-row-claros-* + branding inputs prefilled (VCE Intelligent Campus / #1565c0); branding save, module rename, per-module reset, and reset-all all work end-to-end.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/v1/tenants/me/config/modules/{id}/reset", "issue": "Per-module reset removes the override row but does NOT re-apply the seed-time VCE display_name. Spec line: 'claros-ai/reset → claros-ai reverts to VEDA (the original VCE seed)' — actual behaviour: reverts to canonical 'Claros AI'. Either (a) re-seed VCE row inside the endpoint, or (b) update spec wording. Full-tenant reset has the same characteristic (canonical, not seed) which the spec explicitly accepts for that endpoint."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Sidebar.jsx", "issue": "Duplicate sidebar entries for tenant-branded modules: BOTH the canonical entry (e.g. sidebar-nav-learn → 'ILLUMINATE') AND a separate legacy entry (sidebar-nav-illuminate → 'ILLUMINATE · Legacy') appear. Same for research/prism, people/faculty-plus, alumni-network/alumni, safe/guardian, green/greeniq, insights/command, comply/compliance, enroll/admissions. Either drop the *-Legacy duplicates or visually group them under one collapsible header.", "selector": "sidebar-nav-illuminate, sidebar-nav-prism, sidebar-nav-faculty-plus, sidebar-nav-guardian, sidebar-nav-greeniq, sidebar-nav-command", "priority": "MEDIUM"},
+      {"component": "Sidebar tenant header", "issue": "Top-left tenant chip still hard-codes 'VCE / POWERED BY CLAROS' (institution short_name) instead of reading branding.platform_display_name from TenantConfig. Compare with admin /tenant-config which correctly shows 'VCE Intelligent Campus'.", "selector": "sidebar tenant header", "priority": "LOW"},
+      {"component": "Sidebar entry sidebar-nav-command", "issue": "Renders 'Command · COMMAND' (canonical short + tenant name concatenated). For other tenant-branded modules only the tenant name is shown — inconsistent.", "selector": "sidebar-nav-command", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/admin/tenant-config", "issues": ["After branding save, top-left tenant chip is NOT updated live (still shows 'VCE / POWERED BY CLAROS') — would need TenantConfigContext refetch on branding mutation. Page eyebrow does refresh on next navigation."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_phase38_tenant_config.py",
+    "/app/test_reports/pytest/pytest_phase38.xml"
+  ],
+  "action_items": [
+    "Decide on per-module reset behaviour: re-apply VCE seed name OR document that reset always goes to canonical.",
+    "Remove duplicate '<NAME> · Legacy' sidebar entries (or hide them when the same canonical module is already shown).",
+    "Make sidebar tenant header read TenantConfigContext.platform_display_name instead of institution short_name.",
+    "Fix the inconsistent 'Command · COMMAND' label on sidebar-nav-command (use tenant display_name only).",
+    "Have TenantConfigProvider re-fetch on branding PUT so the live UI (tenant chip, --tenant-primary) updates without a hard refresh."
+  ],
+  "critical_code_review_comments": [
+    "routes_tenant_config.update_module: enables setting display_name='' nominally rejected by `1 <= len`, but Pydantic accepts empty string — good. However short_name length=10 may be too loose for sidebar density; consider 8.",
+    "canonical_url_rewrite middleware mutates request.scope path BEFORE auth/cors middleware ordering — verified working but means logs will show the rewritten /api/v1/insights path, hiding the actual canonical URL hit. Consider logging both.",
+    "seed_tenant_config uses $setOnInsert only: after POST /tenants/me/config/reset (admin), the VCE display names are GONE forever until backend restart. Per-module reset has the same property. Recommend a 'restore_to_seed' helper for admin-driven recovery.",
+    "TenantConfigContext (frontend) does not appear to re-fetch after PUT mutations — UI relies on the response body of the mutation only, which works for the admin page but does NOT propagate to the Sidebar tenant chip or other consumers."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_phase38_tenant_config.py (new)"
+  ],
+  "success_rate": {"backend": "100% (16/16)", "frontend": "95% (all data-testids resolve, eyebrows correct, admin gate works; only cosmetic duplicates/branding-chip-stale)"},
+  "test_credentials": "Vaagdevi accounts in /app/memory/test_credentials.md verified working: principal@vaagdevi.edu.in, manikanta.cse@vaagdevi.edu.in, prof.suresh@vaagdevi.edu.in. ISB rajiv.admin@isb.edu / vikram.pgp@isb.edu also verified.",
+  "seed_data_creation": "Tests mutate tenant_module_configs/tenant_branding for the VCE tenant. Both pytest fixtures and a final cleanup script restore the original seed (VEDA/ARISE/NEXUS/ILLUMINATE/PATHFINDER/PRISM/COMPASS/GUARDIAN/ALUMNI360/GREENIQ/FACULTY+/COMMAND + platform_display_name='VCE Intelligent Campus', primary_color='#1565C0'). Verified post-test that VCE config is restored.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend regression: pytest /app/backend/tests/test_phase38_tenant_config.py (~80s). The login fixture for the student account is flaky (occasional 502 'preview environment not responding') — re-run failing tests once before flagging. Front-end uses [data-testid='page-eyebrow'] on Shell-rendered pages and [data-testid='tenant-config-admin'] + 'tenant-module-row-{id}' / 'module-{displayname|shortname|enabled|reset|save}-{id}' / 'branding-{platform-name|primary-color|save-btn}' / 'tenant-reset-all-btn' on /admin/tenant-config. Sidebar entries use 'sidebar-nav-{key}'. The TenantConfigProvider applies CSS var --tenant-primary on document.documentElement.style — can be inspected via getComputedStyle.",
+  "rca_of_the_issue": "Per-module reset returns canonical instead of seed name: routes_tenant_config.reset_module simply does db.tenant_module_configs.delete_one({tenant_id, module_id}). After deletion, get_tenant_config falls back to CANONICAL_MODULES (Claros AI), since the seed only runs on server startup with $setOnInsert. Fix: in reset_module, after delete, look up the VCE_NAMES (or generalised tenant-seed) and re-insert if applicable; OR document that the only way back to VEDA after a reset is a manual PUT or backend restart."
+}

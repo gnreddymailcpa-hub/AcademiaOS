@@ -89,7 +89,7 @@ export default function ClarosGreenHome() {
 
   return (
     <div className="space-y-6" data-testid="green-page">
-      <PageHeader eyebrow="Claros Green" title="Sustainability Dashboard"
+      <PageHeader eyebrow="Claros Green" moduleId="claros-green" title="Sustainability Dashboard"
         description="Energy consumption, solar share, sustainability metrics and AI-generated reports."
         actions={
           <Button onClick={genReport} disabled={generating} data-testid="green-generate-report-btn">

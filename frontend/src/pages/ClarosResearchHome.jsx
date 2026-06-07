@@ -157,7 +157,7 @@ export default function ClarosResearchHome() {
 
   return (
     <div className="space-y-6" data-testid="research-page">
-      <PageHeader eyebrow="Claros Research" title="Research Intelligence"
+      <PageHeader eyebrow="Claros Research" moduleId="claros-research" title="Research Intelligence"
         description="Publications, patents, grants, AI literature review."
       />
       <div className="flex flex-wrap gap-2 border-b">

@@ -805,6 +805,7 @@ import routes_people
 import routes_claros_alumni
 import routes_safe
 import routes_green
+import routes_tenant_config
 from collections import Counter
 from ai_service import chunk_text, _tokens
 
@@ -1068,6 +1069,13 @@ async def seed_database():
     except Exception as e:
         logger.error("Claros Safe+Green seed failed: %s", e)
 
+    # Tenant white-label configuration — module display name overrides + branding
+    from seed_tenant_config import seed_tenant_config
+    try:
+        await seed_tenant_config(db, logger)
+    except Exception as e:
+        logger.error("Tenant config seed failed: %s", e)
+
 
 @app.on_event("startup")
 async def startup():
@@ -1129,6 +1137,44 @@ app.include_router(routes_people.build_claros_people_router(lambda: db, get_curr
 app.include_router(routes_claros_alumni.build_claros_alumni_router(lambda: db, get_current_user))
 app.include_router(routes_safe.build_claros_safe_router(lambda: db, get_current_user))
 app.include_router(routes_green.build_claros_green_router(lambda: db, get_current_user))
+app.include_router(routes_tenant_config.build_tenant_config_router(lambda: db, get_current_user))
+
+
+# ---------------------------------------------------------------------------
+# Canonical-URL middleware (white-label multi-tenant)
+# Rewrites incoming /api/v1/claros-{shortname}/ → /api/v1/{shortname}/ so all
+# Claros modules are reachable under their immutable canonical IDs.
+# Legacy unprefixed URLs continue to work.
+# ---------------------------------------------------------------------------
+CANONICAL_ALIASES = {
+    "claros-ai": "ai",
+    "claros-enroll": "enroll",
+    "claros-core": "core",
+    "claros-learn": "learn",
+    "claros-launch": "launch",
+    "claros-research": "research",
+    "claros-comply": "comply",
+    "claros-safe": "safe",
+    "claros-alumni": "alumni",
+    "claros-green": "green",
+    "claros-people": "people",
+    "claros-insights": "insights",
+}
+
+
+@app.middleware("http")
+async def canonical_url_rewrite(request, call_next):
+    path = request.scope.get("path", "")
+    prefix = "/api/v1/"
+    if path.startswith(prefix):
+        rest = path[len(prefix):]
+        head, _, tail = rest.partition("/")
+        if head in CANONICAL_ALIASES:
+            new_path = f"{prefix}{CANONICAL_ALIASES[head]}/{tail}" if tail \
+                       else f"{prefix}{CANONICAL_ALIASES[head]}"
+            request.scope["path"] = new_path
+            request.scope["raw_path"] = new_path.encode("ascii")
+    return await call_next(request)
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

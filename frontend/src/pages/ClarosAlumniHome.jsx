@@ -187,7 +187,7 @@ export default function ClarosAlumniHome() {
 
   return (
     <div className="space-y-6" data-testid="alumni-page">
-      <PageHeader eyebrow="Claros Alumni" title="Alumni Network"
+      <PageHeader eyebrow="Claros Alumni" moduleId="claros-alumni" title="Alumni Network"
         description="Directory, mentorship, jobs and events." />
       <div className="flex flex-wrap gap-2 border-b">
         {tabs.map(t => (

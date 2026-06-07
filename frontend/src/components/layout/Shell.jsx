@@ -45,11 +45,17 @@ export default function Shell({ children }) {
   );
 }
 
-export function PageHeader({ eyebrow, title, description, actions }) {
+import { useModuleName } from "../../context/TenantConfigContext";
+
+export function PageHeader({ eyebrow, title, description, actions, moduleId }) {
+  const resolvedModuleName = useModuleName(moduleId || "");
+  // If a moduleId is provided, override the eyebrow with the tenant-configured
+  // display name so VCE users see "VEDA", NITW sees "Beacon", etc.
+  const finalEyebrow = moduleId ? resolvedModuleName : eyebrow;
   return (
     <div className="flex flex-col gap-3 border-b border-border bg-card/40 px-4 py-5 md:px-8 md:py-6 md:flex-row md:items-end md:justify-between">
       <div className="min-w-0">
-        {eyebrow && <div className="label-eyebrow mb-2">{eyebrow}</div>}
+        {finalEyebrow && <div className="label-eyebrow mb-2" data-testid="page-eyebrow">{finalEyebrow}</div>}
         <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">
           {title}
         </h1>

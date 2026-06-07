@@ -1,0 +1,83 @@
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { api } from "../lib/api";
+import { useAuth } from "./AuthContext";
+
+const TenantConfigContext = createContext({
+  config: null, loading: true, refresh: () => {}, isOverridden: () => false,
+});
+
+const CANONICAL_FALLBACKS = {
+  "claros-ai": { display_name: "Claros AI", short_name: "AI" },
+  "claros-enroll": { display_name: "Claros Enroll", short_name: "Enroll" },
+  "claros-core": { display_name: "Claros Core", short_name: "Core" },
+  "claros-learn": { display_name: "Claros Learn", short_name: "Learn" },
+  "claros-launch": { display_name: "Claros Launch", short_name: "Launch" },
+  "claros-research": { display_name: "Claros Research", short_name: "Research" },
+  "claros-comply": { display_name: "Claros Comply", short_name: "Comply" },
+  "claros-safe": { display_name: "Claros Safe", short_name: "Safe" },
+  "claros-alumni": { display_name: "Claros Alumni", short_name: "Alumni" },
+  "claros-green": { display_name: "Claros Green", short_name: "Green" },
+  "claros-people": { display_name: "Claros People", short_name: "People" },
+  "claros-insights": { display_name: "Claros Insights", short_name: "Insights" },
+};
+
+export function TenantConfigProvider({ children }) {
+  const { user } = useAuth();
+  const [config, setConfig] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    if (!user) { setConfig(null); setLoading(false); return; }
+    setLoading(true);
+    try {
+      const r = await api.get("/v1/tenants/me/config");
+      setConfig(r.data);
+    } catch {
+      setConfig(null);
+    } finally { setLoading(false); }
+  }, [user]);
+
+  useEffect(() => { refresh(); }, [refresh]);
+
+  // Apply CSS variable for primary brand colour so the whole UI rebrands instantly.
+  useEffect(() => {
+    if (config?.primary_color && typeof document !== "undefined") {
+      document.documentElement.style.setProperty("--tenant-primary", config.primary_color);
+    }
+  }, [config?.primary_color]);
+
+  const isOverridden = useCallback((moduleId) => {
+    return !!config?.modules?.[moduleId]?.is_overridden;
+  }, [config]);
+
+  const value = useMemo(() => ({ config, loading, refresh, isOverridden }),
+    [config, loading, refresh, isOverridden]);
+
+  return (
+    <TenantConfigContext.Provider value={value}>
+      {children}
+    </TenantConfigContext.Provider>
+  );
+}
+
+export function useTenantConfig() {
+  return useContext(TenantConfigContext);
+}
+
+/**
+ * Resolve a Claros canonical module ID to the tenant's display label.
+ * mode = "full" (default) | "short"
+ * Falls back to canonical English label if tenant config is loading or absent.
+ */
+export function useModuleName(canonicalId, mode = "full") {
+  const { config } = useTenantConfig();
+  const mod = config?.modules?.[canonicalId];
+  const fb = CANONICAL_FALLBACKS[canonicalId] || { display_name: canonicalId, short_name: canonicalId };
+  if (!mod) return mode === "short" ? fb.short_name : fb.display_name;
+  return mode === "short" ? (mod.short_name || fb.short_name) : (mod.display_name || fb.display_name);
+}
+
+export function usePlatformName() {
+  const { config } = useTenantConfig();
+  return config?.platform_display_name || "Claros Platform";
+}

@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
+import CommandPalette from "./CommandPalette";
 
 export default function Shell({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -39,6 +40,7 @@ export default function Shell({ children }) {
           {children}
         </main>
       </div>
+      <CommandPalette />
     </div>
   );
 }

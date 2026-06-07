@@ -800,6 +800,11 @@ import routes_comply
 import routes_launch
 import routes_insights
 import routes_learn
+import routes_research
+import routes_people
+import routes_claros_alumni
+import routes_safe
+import routes_green
 from collections import Counter
 from ai_service import chunk_text, _tokens
 
@@ -1035,6 +1040,34 @@ async def seed_database():
     except Exception as e:
         logger.error("Claros Learn seed failed: %s", e)
 
+    # Claros Research — publications, patents, projects, grants
+    from seed_claros_research import seed_claros_research
+    try:
+        await seed_claros_research(db, logger)
+    except Exception as e:
+        logger.error("Claros Research seed failed: %s", e)
+
+    # Claros People — training records + API scores
+    from seed_claros_people import seed_claros_people
+    try:
+        await seed_claros_people(db, logger)
+    except Exception as e:
+        logger.error("Claros People seed failed: %s", e)
+
+    # Claros Alumni — profiles + jobs + events
+    from seed_claros_alumni import seed_claros_alumni
+    try:
+        await seed_claros_alumni(db, logger)
+    except Exception as e:
+        logger.error("Claros Alumni seed failed: %s", e)
+
+    # Claros Safe + Green — visitors, incidents, energy, sustainability metrics
+    from seed_claros_safe_green import seed_claros_safe_and_green
+    try:
+        await seed_claros_safe_and_green(db, logger)
+    except Exception as e:
+        logger.error("Claros Safe+Green seed failed: %s", e)
+
 
 @app.on_event("startup")
 async def startup():
@@ -1091,6 +1124,11 @@ app.include_router(routes_comply.build_claros_comply_router(lambda: db, get_curr
 app.include_router(routes_launch.build_claros_launch_router(lambda: db, get_current_user))
 app.include_router(routes_insights.build_claros_insights_router(lambda: db, get_current_user))
 app.include_router(routes_learn.build_claros_learn_router(lambda: db, get_current_user))
+app.include_router(routes_research.build_claros_research_router(lambda: db, get_current_user))
+app.include_router(routes_people.build_claros_people_router(lambda: db, get_current_user))
+app.include_router(routes_claros_alumni.build_claros_alumni_router(lambda: db, get_current_user))
+app.include_router(routes_safe.build_claros_safe_router(lambda: db, get_current_user))
+app.include_router(routes_green.build_claros_green_router(lambda: db, get_current_user))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

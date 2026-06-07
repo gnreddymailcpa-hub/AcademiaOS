@@ -1,0 +1,47 @@
+{
+  "summary": "Phase 37 — tested 5 new Claros modules (Research, People, Alumni, Safe, Green). Backend pytest suite: 26/26 PASS covering CRUD, AI integrations (literature review, grant match, dev plan, alumni outreach, sustainability report — all via Claude) and RBAC. Frontend smoke-test verified routing + all critical data-testids on /research, /people, /alumni-network, /safe, /green for faculty/student/admin/HOD roles.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/v1/people/training (as student)", "issue": "Returns 403 (STAFF check first) instead of the 400 'faculty_id required' implied by the request spec. Both are acceptable; spec says 'without faculty_id → 400', but code is stricter. Document expected status."},
+      {"endpoint": "GET /api/v1/research/stats", "issue": "Field names are publications_total/patents_total/projects_active/h_index_avg — NOT the stat-pubs/-patents/-projects/-hindex keys mentioned in the request. Frontend reads them correctly; updating spec wording recommended."},
+      {"endpoint": "POST /api/v1/alumni/mentorship/request (alumni not mentor)", "issue": "Returns 400 'Alumni is not available as a mentor' (matches design note in problem statement)."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "ClarosPeopleHome dashboard (HOD/Dean)", "issue": "API gauge renders '0/140' with 'NaN% of maximum' for HOD/Dean role because they have no faculty_profile (faculty/me returns 404). Should hide gauge for non-faculty viewers or guard division-by-zero.", "selector": "api-gauge", "priority": "MEDIUM"},
+      {"component": "ClarosGreenHome chart container", "issue": "Console warns repeatedly: 'The width(-1) and height(-1) of chart should be greater than 0'. Recharts ResponsiveContainer needs explicit minWidth/minHeight or a non-flex parent height.", "selector": "green-chart", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/people (HOD view)", "issues": ["API gauge shows red 'NaN%' bar — broken visual state."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_claros_phase37.py",
+    "/app/test_reports/pytest/pytest_phase37.xml"
+  ],
+  "action_items": [
+    "Guard ClarosPeopleHome api-gauge against missing faculty_profile (HOD/Dean/Admin viewers) — show 'No personal API score' instead of NaN.",
+    "Add minHeight to green-chart ResponsiveContainer to silence width(-1)/height(-1) recharts warnings.",
+    "Consider scoping HOD list_faculty by department_id consistently — currently filtered when role=='hod' but not when role=='dean'."
+  ],
+  "critical_code_review_comments": [
+    "routes_people.py _compute_api: service_score has a hard floor of +20 (min(training*5+20, 30)), so every faculty starts at 20 service points regardless of activity — explains why test_credentials user shows API=100 with no training records. Intentional? Document.",
+    "routes_safe.py report_incident: ANY role (including student) can POST an incident. Spec wanted 'student calling POST /safe/incidents with bad incident_type → 400' which works, but a student with VALID type can also create incidents — verify if intentional (likely yes for anonymous reporting).",
+    "routes_claros_alumni.py post_job: faculty without alumni_profile gets 403 'Only alumni/admin can post jobs' — correct per design note.",
+    "routes_green.py energy_trends: builds 30-day series by issuing 30 sequential DB queries; consider single aggregation pipeline for performance at scale.",
+    "routes_research.py _safe_json: naive brace counter ignores quotes/escapes — may mis-balance on rare Claude outputs containing braces inside strings. Acceptable for now."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_claros_phase37.py (new)"
+  ],
+  "success_rate": {"backend": "100% (26/26)", "frontend": "95% (all primary testids resolve; 2 conditional ones — green-report-copy/-download — only render after report generation; safe-report-incident-btn only on incidents tab)"},
+  "test_credentials": "All Vaagdevi accounts in /app/memory/test_credentials.md valid: prof.suresh, manikanta.cse, hod.cse, principal@vaagdevi.edu.in / Demo@2026.",
+  "seed_data_creation": "Test created and cleaned up: 1 publication, 1 training record, 1 visitor (checked in & out), 1 incident (resolved). A mentorship request from manikanta to the first VCE mentor was created but NOT cleaned (no DELETE endpoint) — expect 1 extra PENDING request per test run.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend regression suite: pytest /app/backend/tests/test_claros_phase37.py (~60s incl. 3 Claude calls). Frontend testids verified: research-tab-{dash,pubs,grants,lit}, stat-{pubs,patents,projects,hindex}, research-pub-row-*, research-add-pub-btn, research-grants-match-btn, lit-{topic-input,generate-btn}; people-tab-{dash,train,plan,admin (HOD only)}, api-gauge; alumni-tab-{home,dir,jobs,ment}, stat-{total,mentors}, alumni-search-input, alumni-request-btn-*, my-request-*; safe-stat-{visitors,checkedin,open,critical}, safe-tab-{vis,inc}, safe-add-visitor-btn, checkin-btn-*; green-stat-{kwh,solar,carbon,delta}, green-chart, green-generate-report-btn. The /people HOD view shows NaN% on api-gauge — main agent should hide gauge for HOD/Dean.",
+  "rca_of_the_issue": "HOD api-gauge NaN: ClarosPeopleHome calls GET /api/v1/people/faculty/me which 404s for HOD (dean role with no faculty_profile in seed). Frontend then computes total_api / 140 with undefined → NaN. Fix: check if facultyMe is null before rendering the gauge, OR fetch HOD's own API score only if they also have a faculty_profile."
+}

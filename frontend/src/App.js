@@ -77,6 +77,11 @@ import ClarosLearnHome from "./pages/ClarosLearnHome";
 import ClarosLearnCourse from "./pages/ClarosLearnCourse";
 import ClarosLearnContent from "./pages/ClarosLearnContent";
 import ClarosLearnFaculty from "./pages/ClarosLearnFaculty";
+import ClarosResearchHome from "./pages/ClarosResearchHome";
+import ClarosPeopleHome from "./pages/ClarosPeopleHome";
+import ClarosAlumniHome from "./pages/ClarosAlumniHome";
+import ClarosSafeHome from "./pages/ClarosSafeHome";
+import ClarosGreenHome from "./pages/ClarosGreenHome";
 import AuthCallback from "./pages/AuthCallback";
 import ModuleGate from "./components/layout/ModuleGate";
 
@@ -126,6 +131,11 @@ function ShellRoutes() {
         <Route path="/learn/courses/:courseId" element={<ModuleGate module="ILLUMINATE"><ClarosLearnCourse /></ModuleGate>} />
         <Route path="/learn/courses/:courseId/content/:contentId" element={<ModuleGate module="ILLUMINATE"><ClarosLearnContent /></ModuleGate>} />
         <Route path="/learn/faculty/:courseId" element={<ModuleGate module="ILLUMINATE"><ClarosLearnFaculty /></ModuleGate>} />
+        <Route path="/research" element={<ModuleGate module="PRISM"><ClarosResearchHome /></ModuleGate>} />
+        <Route path="/people" element={<ModuleGate module="FACULTY"><ClarosPeopleHome /></ModuleGate>} />
+        <Route path="/alumni-network" element={<ModuleGate module="ALUMNI360"><ClarosAlumniHome /></ModuleGate>} />
+        <Route path="/safe" element={<ModuleGate module="GUARDIAN"><ClarosSafeHome /></ModuleGate>} />
+        <Route path="/green" element={<ModuleGate module="GREENIQ"><ClarosGreenHome /></ModuleGate>} />
         <Route path="/assessments" element={<ModuleGate module="ILLUMINATE"><Assessments /></ModuleGate>} />
         <Route path="/psychometrics" element={<Psychometrics />} />
         <Route path="/analytics" element={<ModuleGate module="COMMAND"><Analytics /></ModuleGate>} />

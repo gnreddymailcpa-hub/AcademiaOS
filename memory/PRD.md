@@ -1399,3 +1399,90 @@ via the `/v1/core/stats` endpoint.
 - The "tenant-configurable display name" for the module is hard-coded as
   "Claros Core" today; a `platform_modules.claros_core.display_name`
   per-tenant override is a P2 enhancement.
+
+### Phase 33 — Feb 2026 (Claros Enroll · Admissions CRM rebrand + Kanban + AI counseling)
+
+**Scope chosen by user** (same pattern as Phase 31/32): rebrand ARISE/Admissions
+→ Claros Enroll keeping legacy `/api/admissions/*` endpoints intact for backward
+compatibility, ADD 3 new collections + 11 new `/api/v1/enroll/*` endpoints +
+3 new `/enroll/*` pages on top. Seed 30 leads per tenant across all 4 demo
+tenants. Emergent LLM Key (Claude Sonnet via ai_service) for the AI
+counseling script generator.
+
+**New backend** (`routes_enroll.py` + `seed_claros_enroll.py`):
+- 3 new collections: `leads`, `lead_activities`, `lead_programs`
+- 11 endpoints under `/api/v1/enroll/*`:
+  - `POST /leads` (auth + public unauthed via `get_optional_user` dependency)
+  - `GET /leads` with 7 filters (status / source / program / q / assigned_to / date_from / date_to)
+  - `GET /leads/{id}` returns `{lead, activities, programs}`
+  - `PUT /leads/{id}` — auto-creates `STATUS_CHANGE` activity, recomputes score
+  - `DELETE /leads/{id}` — admin-only; cascades to activities + programs + audit log
+  - `POST /leads/{id}/activity` — bumps last_contacted_at, recomputes score
+  - `GET /leads/{id}/timeline` — descending activity list
+  - `POST /leads/{id}/ai-counsel` — Claude generates 5-point counseling
+    script; falls back to deterministic template if LLM unavailable
+  - `GET /analytics/funnel` — 7-stage current-month funnel + conversion rate
+  - `GET /analytics/sources` — lead count + conversion % per source
+  - `GET /analytics/daily` — 30-day daily new-lead bar chart series
+  - `POST /leads/bulk-import` — CSV upload, columns: name/email/phone/program/rank/source
+- `compute_lead_score` formula matches user spec exactly (rank tiers + source
+  + activity count + status; capped at 100).
+- New `get_optional_user` dependency added to `server.py` for the public-form
+  POST /leads route.
+
+**Seed** (`seed_claros_enroll.py`):
+- Deterministic UUID5 idempotent seed
+- 30 leads × 4 tenants = 120 total leads
+- Status distribution exactly per spec: NEW 8 / CONTACTED 6 / COUNSELED 5 /
+  APPLIED 4 / OFFERED 3 / ENROLLED 3 / DROPPED 1
+- Source distribution exactly per spec: WEBSITE 15 / REFERRAL 7 / EVENT 5 / WALKIN 3
+- Tenant-appropriate first/last name pools (Indian for VCE/ISB, Arabic for
+  EAIC, UK for UoB)
+- 0..5 seed activities per lead based on stage
+
+**New frontend pages**:
+- `ClarosEnrollKanban.jsx` (`/enroll`) — 7-stage Kanban with HTML5
+  drag-and-drop (optimistic updates → server PUT → refresh), Sheet drawer
+  to add a lead with all required form fields, lead score bars with
+  green/amber/red colour tiers, source icon + last-contact date.
+- `ClarosEnrollLeadDetail.jsx` (`/enroll/leads/:id`) — 2-column layout:
+  left = score card + contact + program interests + stage Select with
+  "Move to {next}" CTA + AI Counseling Script card. Right = log-activity
+  form + colour-coded timeline. STATUS_CHANGE entries show "OLD → NEW"
+  inline.
+- `ClarosEnrollAnalytics.jsx` (`/enroll/analytics`) — 4 summary KPI cards
+  + funnel horizontal bar chart + source breakdown rows + 30-day daily
+  bar chart.
+
+**Sidebar entries** (4 new under Recruitment cluster):
+- Claros Enroll · Pipeline (`/enroll`)
+- Claros Enroll · Analytics (`/enroll/analytics`)
+- Claros Enroll · Legacy Admissions (`/admissions` — backward compat)
+- Claros Enroll · Advanced Console (`/arise-console` — backward compat)
+
+**Testing** (`/app/test_reports/iteration_32.json`):
+- **Backend: 34/34 PASS** (`tests/test_phase33_claros_enroll.py`) covering
+  all 11 endpoints + 5 authz 403 cases + lead-score formula (4 parameterised
+  + activity bump + status change) + multi-tenant seed (ISB/EAIC/UoB all 30)
+  + ARISE legacy + Phase-32 Claros Core regression.
+- **Frontend: PASS** — all critical testids + flows; Kanban renders 30
+  cards in correct stage distribution, drag-drop fires PUT correctly,
+  AI counseling button generated 5 personalised Claude bullets (real,
+  not fallback), analytics page renders funnel + sources + 30 daily bars.
+- Post-test fix: added `data-testid="enroll-detail-timeline"` to the
+  wrapper `<div>` (was only on the `<ol>` which is hidden in empty state).
+- Post-test cleanup: removed 19 TEST_* leads created during backend
+  testing (back to 30 clean seed leads).
+
+**Mocked / deferred**:
+- AI counseling falls back to a deterministic 5-bullet template if the
+  Emergent LLM Key call fails (under normal conditions Claude Sonnet
+  generates the actual personalised bullets — verified in production).
+- The tenant-configurable module display name "Claros Enroll" is hard-coded;
+  per-tenant override deferred to P2 alongside same gap for Claros AI
+  and Claros Core.
+
+**Multi-tenant verification**: All 4 tenants have exactly 30 leads with
+the spec-compliant status + source distributions; full-name samples vary
+appropriately per tenant locale.
+

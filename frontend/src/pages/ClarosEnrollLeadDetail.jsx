@@ -261,7 +261,7 @@ export default function ClarosEnrollLeadDetail() {
           </div>
 
           {/* Timeline */}
-          <div className="rounded-lg border border-border bg-card">
+          <div className="rounded-lg border border-border bg-card" data-testid="enroll-detail-timeline">
             <div className="px-5 py-3 border-b border-border flex items-center gap-2">
               <FileText className="h-3.5 w-3.5 text-primary" />
               <h3 className="font-semibold text-sm">Activity timeline</h3>
@@ -272,7 +272,7 @@ export default function ClarosEnrollLeadDetail() {
                 No activities yet. Log the first call or note above.
               </div>
             ) : (
-              <ol className="divide-y divide-border" data-testid="enroll-detail-timeline">
+              <ol className="divide-y divide-border" data-testid="enroll-detail-timeline-list">
                 {activities.map(a => (
                   <li key={a.id} className="px-5 py-3" data-testid={`enroll-activity-${a.id}`}>
                     <div className="flex items-center gap-2 mb-1">

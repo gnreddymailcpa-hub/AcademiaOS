@@ -1,0 +1,52 @@
+{
+  "summary": "E2E validated 'Preview as Tenant' (P2) feature. All 11 happy-path & regression scenarios for super_admin work perfectly. However discovered a CRITICAL REGRESSION: the newly added GET /api/v1/tenants/{tenant_id}/config route is registered BEFORE /me/config in routes_tenant_config.py, so FastAPI matches /api/v1/tenants/me/config against the dynamic path with tenant_id='me' and rejects every non-super-admin user with 403 'Super admin only'. This breaks tenant branding (VEDA, etc.) for ALL non-super-admin users across all 4 tenants.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "GET /api/v1/tenants/me/config",
+        "issue": "Returns 403 'Super admin only' for non-super-admin users. Root cause: /{tenant_id}/config is registered BEFORE /me/config in routes_tenant_config.py (lines 192 then 203). FastAPI tries routes in registration order, so /me/config matches the dynamic route with tenant_id='me', triggering the super-admin gate. Verified with curl as principal@vaagdevi.edu.in: 403. Verified with super_admin: get_tenant_config(db, 'me') returns an empty config (no institution found). Impact: every tenant user (institution_admin, faculty, student, etc.) loses tenant rebranding — sidebar reverts to canonical 'Claros AI', 'Claros Enroll', etc. instead of VCE's seeded 'VEDA', 'ILLUMINATE', etc. Console shows 403 error on every page load for principal user. Confirmed visually in screenshot: VCE Principal sidebar shows 'Claros Enroll · Pipeline' (canonical) instead of the VCE rename.",
+        "priority": "CRITICAL"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Tenant branding for non-super-admin",
+        "issue": "Because /v1/tenants/me/config returns 403, TenantConfigContext.refresh() falls into the catch block, leaving config=null. useModuleName therefore returns CANONICAL_FALLBACKS for every module. Tenant users no longer see their custom labels (VEDA, ILLUMINATE, etc.) or platform_display_name. This is fallout from the backend route-order bug above, not a frontend issue per se.",
+        "affected_selectors": ["sidebar nav labels", "TopBar platform name"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_tenant_preview.py",
+    "/app/test_reports/pytest/pytest_phase40_preview.xml"
+  ],
+  "action_items": [
+    "FIX (1-line): In /app/backend/routes_tenant_config.py move the @r.get('/me/config') decorator block ABOVE @r.get('/{tenant_id}/config'). FastAPI resolves routes in registration order; the static path must be declared first. Alternatively add `if tenant_id == 'me': return await my_config(user)` at the top of any_tenant_config.",
+    "After fix, re-run /app/backend/tests/test_tenant_preview.py — test_me_config_still_works_for_principal should turn green.",
+    "Optional: add explicit unit test asserting that a non-super-admin can still GET /api/v1/tenants/me/config (regression guard)."
+  ],
+  "critical_code_review_comments": [
+    "routes_tenant_config.py — route ordering bug: dynamic /{tenant_id}/config shadows static /me/config. This is a classic FastAPI footgun. Always declare static paths before dynamic ones, OR validate the path param.",
+    "TenantConfigContext.jsx refresh() catch block silently swallows the 403 and sets config=null. Consider distinguishing 401/403 from 5xx and surfacing a toast/log so this kind of regression is louder.",
+    "TenantPreviewSwitcher.jsx choose() calls refresh() but setPreviewTenantIdState is async; refresh closure may still see the old effectivePreview on first paint. In practice it works because refresh is recreated via useCallback when effectivePreview changes and the useEffect re-fires. Minor concern only.",
+    "Toast on exit via the banner button is NOT shown (only the dropdown's exit() emits a toast). UX inconsistency — banner-exit should also show 'Exited preview mode'."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_tenant_preview.py (new)"
+  ],
+  "success_rate": {
+    "backend": "83% (5/6 pytest assertions pass; the failing one IS the bug)",
+    "frontend": "100% for super_admin preview flow; degraded for tenant users due to backend regression"
+  },
+  "test_credentials": "Super Admin: admin@academiaos.ai / Admin@2026 ; VCE Principal: principal@vaagdevi.edu.in / Demo@2026 (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "None. Used existing seeded tenants.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "After main agent fixes the route order in /app/backend/routes_tenant_config.py, simply re-run: pytest /app/backend/tests/test_tenant_preview.py -v. All 6 cases should pass. Frontend retest: log in as principal@vaagdevi.edu.in and verify the sidebar shows the VCE renames (e.g., 'ILLUMINATE' for Learn, 'VEDA' for Claros AI) instead of canonical labels. The super_admin preview flow itself is fully functional — no retest needed there.",
+  "rca of the issue": "ROOT CAUSE: In FastAPI, route resolution is order-dependent within an APIRouter. The new endpoint @r.get('/{tenant_id}/config') at line 192 of routes_tenant_config.py was added BEFORE the pre-existing @r.get('/me/config') at line 203. When any client (frontend or curl) hits GET /api/v1/tenants/me/config, FastAPI matches the dynamic route first (tenant_id='me'), enters any_tenant_config(), fails the `if user['role'] != 'super_admin'` check, and raises 403. REPRODUCTION: `curl -H 'Authorization: Bearer <principal_token>' $BACKEND/api/v1/tenants/me/config` → 403 {\"detail\":\"Super admin only\"}. MITIGATION (one of): (a) Swap the two @r.get decorators so /me/config is registered first; (b) Add `if tenant_id == 'me': return await my_config(user=user)` as the first line of any_tenant_config; (c) Constrain the path param with a regex that excludes 'me', e.g. tenant_id: str = Path(..., regex='^(?!me$).+'). Option (a) or (b) is simplest and lowest risk."
+}

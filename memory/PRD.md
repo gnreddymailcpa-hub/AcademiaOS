@@ -1917,3 +1917,44 @@ branding without logging out. Single-click demo flow for sales calls.
 - Preview state survives navigation (localStorage-backed) and is
   cleared automatically if the previewed tenant is deleted.
 
+
+## Phase 41.1 — Preview Mode E2E Validation + Route-Order Hotfix — Feb 2026
+
+**Scope**: E2E validation of the Phase-41 Tenant Preview feature, plus a
+critical regression fix surfaced by the testing agent.
+
+### Critical fix
+- **Route-order regression** (testing agent iteration_40): the newly added
+  `@r.get("/{tenant_id}/config")` had been registered **before**
+  `@r.get("/me/config")` in `routes_tenant_config.py`. FastAPI resolves
+  routes in registration order, so every call to `/api/v1/tenants/me/config`
+  matched the dynamic route with `tenant_id="me"`, tripped the super-admin
+  gate, and returned **403** to every non-super-admin user — silently
+  reverting tenant branding (VEDA, ILLUMINATE, etc.) to canonical labels
+  across all 4 tenants.
+- **Fix**: swapped the two `@r.get` decorators so the static `/me/config`
+  is declared first. Static-before-dynamic is the standard FastAPI idiom.
+- **UX polish**: `TenantPreviewBanner`'s "Exit preview" link now emits the
+  same `"Exited preview mode"` toast as the dropdown exit — consistency.
+
+### Validation
+- 6/6 pytest assertions green in `test_tenant_preview.py` (was 5/6).
+- Live curl matrix:
+  - principal@vaagdevi `/me/config` → 200, returns "VCE Intelligent Campus"
+    + claros-ai → "VEDA" ✓
+  - super_admin `/me/config` → 403 (no institution_id, expected) ✓
+  - super_admin `/tenants/{vce}/config` → 200 ✓
+  - principal `/tenants/{isb}/config` → 403 ✓
+- Frontend smoke test as `principal@vaagdevi.edu.in`: sidebar renders
+  VEDA + ILLUMINATE (VCE renames), TopBar shows "VCE Intelligent Campus
+  · Powered by Claros", and the `tenant-preview-switcher-btn` is NOT
+  rendered (super-admin only) ✓
+- Phase 41 super_admin preview flow itself remained 100% green throughout
+  (testing agent confirmed all 11 happy-path & regression scenarios).
+
+### Files touched
+- `/app/backend/routes_tenant_config.py` — route re-order
+- `/app/frontend/src/components/layout/TenantPreviewSwitcher.jsx` —
+  banner-exit toast parity
+- `/app/backend/tests/test_tenant_preview.py` (created by testing agent)
+

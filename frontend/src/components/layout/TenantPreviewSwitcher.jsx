@@ -9,7 +9,6 @@ import {
 import { useTenantConfig } from "../../context/TenantConfigContext";
 import { api } from "../../lib/api";
 import { toast } from "sonner";
-
 /**
  * "Preview as Tenant" switcher — visible to super_admin only. Renders
  * nothing for any other role.
@@ -115,6 +114,11 @@ export default function TenantPreviewSwitcher() {
 export function TenantPreviewBanner() {
   const { isPreviewing, config, setPreviewTenantId, refresh } = useTenantConfig();
   if (!isPreviewing) return null;
+  const exit = () => {
+    setPreviewTenantId(null);
+    refresh();
+    toast.success("Exited preview mode");
+  };
   return (
     <div
       className="bg-violet-600 text-white text-xs px-4 py-2 flex items-center justify-between gap-3 sticky top-0 z-50"
@@ -125,7 +129,7 @@ export function TenantPreviewBanner() {
         <span>Previewing as <strong>{config?.tenant_name || config?.platform_display_name}</strong>. All read-only; mutations still target your account's tenant.</span>
       </div>
       <button
-        onClick={() => { setPreviewTenantId(null); refresh(); }}
+        onClick={exit}
         className="underline underline-offset-2 hover:no-underline"
         data-testid="tenant-preview-banner-exit"
       >

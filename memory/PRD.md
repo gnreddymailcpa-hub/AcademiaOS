@@ -2202,3 +2202,59 @@ remained (legacy 12-platform registry vs canonical claros-* IDs) are
 joined only by `LEGACY_TO_CLAROS` map in Onboarding.jsx — no
 duplicate page/route surface area, no duplicate backend handlers,
 no stale tests.
+
+
+## Phase 42 — VEDA 3-Pass Reasoning Pipeline + Resolution-Rate KPI — Feb 2026
+
+**Scope**: Upgraded VEDA (`/api/ai/assistant/message`) from a single-pass
+RAG flow to a **3-pass agentic reasoning chain** with verifier-driven
+retry, automatic escalation to a human support ticket, and a Claros
+Insights KPI to track resolution rate (target 85%+).
+
+### Pipeline (per user message)
+1. **Pass 1 — Intent decomposition**: Claude returns
+   `{intent, sub_questions[], requires_pii}`. Robust JSON parse via
+   `ai_service.generate_json`; falls back to raw query on malformed output.
+2. **Pass 2 — Evidence retrieval**: Runs `retrieve()` once per
+   sub-question (top-3 each), dedupes by `(source_id, text_prefix)`, caps
+   at 8 merged chunks.
+3. **Pass 3 — Generate + Verify**: Claude generates an answer grounded in
+   the merged evidence, then a separate verifier prompt judges
+   `{resolved, missing}`. If `resolved=false`, the missing hint is
+   appended to the sub-question list and the cycle re-runs.
+4. **Cycle cap**: 3 retrieval-and-verify cycles. After the 3rd, if still
+   unresolved the pipeline writes a `support_tickets` row tagged
+   `source="veda_unresolved"`, notifies registrar + institution_admin,
+   and surfaces the ticket id to the client.
+
+### Telemetry
+- New `veda_message_traces` collection (one row per assistant turn):
+  `institution_id · user_id · session_id · query · intent · sub_questions
+  · pass_count · resolved_in_pass · escalated · ticket_id · citations_n · ts`.
+- Chat response payload now includes
+  `pass_count · resolved_in_pass · escalated · ticket_id · intent ·
+  sub_questions` alongside the original `reply / citations`.
+
+### KPI endpoint
+`GET /api/v1/insights/veda/resolution-rate?iid=…&days=30` → returns
+`{ total, resolved, escalated, resolution_rate_pct, target_pct,
+   resolved_by_pass: {"1": n, "2": n, "3": n}, avg_pass_count }`.
+
+### Validation
+- Easy query ("What is the minimum attendance requirement?") →
+  `pass_count=1, resolved_in_pass=1, escalated=False` (single-pass
+  parity with the old flow).
+- Tough/off-topic query ("How does the placement process work?") →
+  `pass_count=3, resolved_in_pass=None, escalated=True,
+  ticket_id=8ddaa…`; ticket persisted with full audit body containing
+  the original query, decomposed intent, last draft, and verifier's
+  "missing" hint; notifications fanned out to registrar + admin.
+- KPI endpoint correctly aggregates: 1 resolved, 1 escalated, 50%
+  resolution rate, avg 2.0 passes.
+
+### Files touched
+- `+ /app/backend/veda_reasoning.py` — new module, `run_pipeline()`
+- `~ /app/backend/routes_ai.py` — `/assistant/message` rewired to
+  `veda_run_pipeline`; legacy single-pass code removed
+- `~ /app/backend/routes_insights.py` — `GET /veda/resolution-rate`
+- New collection `veda_message_traces`

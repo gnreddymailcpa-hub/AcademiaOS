@@ -22,6 +22,7 @@ from ai_service import (
     resolve_model, generate_text, generate_json, get_or_create_session,
     chat_send, retrieve, chunk_text, _tokens, now_iso,
 )
+from veda_reasoning import run_pipeline as veda_run_pipeline
 
 logger = logging.getLogger("academiaos.ai_routes")
 
@@ -809,22 +810,10 @@ def build_router(get_db, get_current_user):
             "respond in the same code-switched style they used."
         ) if req.language != "en" else ""
 
-        # 3) RAG retrieval over approved Content Studio sources
-        passages = []
-        try:
-            passages = await retrieve(
-                db, institution_id=req.institution_id, query=req.text, top_k=4,
-            )
-        except Exception:
-            passages = []
-        rag_block = (
-            "\n\n<KNOWLEDGE_BASE>\n" + "\n\n".join(
-                f"[Doc {i+1} — {p.get('source_title') or 'untitled'}]\n{p.get('text','')[:480]}"
-                for i, p in enumerate(passages)
-            ) + "\n</KNOWLEDGE_BASE>"
-        ) if passages else ""
-
-        sys = (
+        # 3) Build base system message. The KNOWLEDGE_BASE block is appended
+        # inside the reasoning pipeline once per cycle so retries can swap
+        # in newly retrieved chunks without rebuilding the persona/FAQ.
+        base_sys = (
             f"You are Claros AI, the institutional AI assistant for {inst.get('name','this institution')}. "
             f"Respond in {lang_label}. {code_switch}\n\n"
             f"PERSONA: {persona_block}\n\n"
@@ -835,26 +824,32 @@ def build_router(get_db, get_current_user):
             "3. If neither covers the question, say so politely and offer to open a support ticket.\n"
             "4. Stay in role-scope: a student persona must NOT discuss admin/finance reports."
             "\n\n<FAQ>\n" + FAQ + "</FAQ>"
-            + rag_block
         )
 
         sess = await get_or_create_session(
             db, institution_id=req.institution_id, user_id=user["id"], kind="assistant"
         )
         try:
-            assistant = await chat_send(
-                db, session=sess, user_text=req.text,
-                system_message=sys, provider=provider, model=model,
-                citations=[{"source_id": p.get("source_id"), "title": p.get("source_title"),
-                            "score": p.get("score")} for p in passages],
-                max_history=20,
+            result = await veda_run_pipeline(
+                db=db, session=sess,
+                institution_id=req.institution_id, user=user,
+                user_text=req.text, base_system_message=base_sys,
+                provider=provider, model=model,
             )
             return {
-                "reply": assistant["text"], "model": assistant["model"],
-                "session_id": sess["id"],
+                "reply": result["reply"],
+                "model": result["model"],
+                "session_id": result["session_id"],
                 "persona": persona_key, "language": req.language,
-                "grounding": "rag" if passages else "faq",
-                "citations": assistant.get("citations", []),
+                "grounding": "rag" if result["citations"] else "faq",
+                "citations": result["citations"],
+                # Multi-pass reasoning telemetry
+                "pass_count": result["pass_count"],
+                "resolved_in_pass": result["resolved_in_pass"],
+                "escalated": result["escalated"],
+                "ticket_id": result["ticket_id"],
+                "intent": result["intent"],
+                "sub_questions": result["sub_questions"],
             }
         except Exception as e:
             logger.exception("Assistant chat failed")

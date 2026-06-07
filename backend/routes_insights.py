@@ -601,4 +601,52 @@ def build_claros_insights_router(get_db, get_current_user):
         _coerce_iid(user, rep["tenant_id"])
         return rep
 
+    # --------------------------------------------------------- VEDA KPI
+    # Resolution rate for the multi-pass VEDA pipeline. Sample: last N days
+    # of `veda_message_traces`. A message counts as "resolved" when
+    # `escalated == False` (some pass within MAX_PASSES satisfied the
+    # verifier). Target: 85%+.
+    @router.get("/veda/resolution-rate")
+    async def veda_resolution_rate(iid: Optional[str] = None,
+                                    days: int = 30,
+                                    user: dict = Depends(get_current_user)):
+        _require_admin(user)
+        db = get_db()
+        iid = _coerce_iid(user, iid)
+        from datetime import datetime, timezone, timedelta
+        since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+        q = {"institution_id": iid, "ts": {"$gte": since}}
+        total = await db.veda_message_traces.count_documents(q)
+        if total == 0:
+            return {
+                "window_days": days, "total": 0, "resolved": 0, "escalated": 0,
+                "resolution_rate_pct": 0.0, "target_pct": 85.0,
+                "resolved_by_pass": {"1": 0, "2": 0, "3": 0},
+                "avg_pass_count": 0.0,
+            }
+        escalated = await db.veda_message_traces.count_documents({**q, "escalated": True})
+        resolved = total - escalated
+        by_pass = {"1": 0, "2": 0, "3": 0}
+        sum_pc = 0
+        n_pc = 0
+        async for row in db.veda_message_traces.find(q, {"_id": 0, "resolved_in_pass": 1, "pass_count": 1}):
+            rp = row.get("resolved_in_pass")
+            if isinstance(rp, int) and 1 <= rp <= 3:
+                by_pass[str(rp)] += 1
+            pc = row.get("pass_count")
+            if isinstance(pc, int) and pc > 0:
+                sum_pc += pc
+                n_pc += 1
+        avg_pc = round(sum_pc / n_pc, 2) if n_pc else 0.0
+        return {
+            "window_days": days,
+            "total": total,
+            "resolved": resolved,
+            "escalated": escalated,
+            "resolution_rate_pct": round(resolved * 100.0 / total, 1),
+            "target_pct": 85.0,
+            "resolved_by_pass": by_pass,
+            "avg_pass_count": avg_pc,
+        }
+
     return router

@@ -2139,3 +2139,66 @@ theme, with a one-click sun/moon toggle in the TopBar.
 - `~ /app/frontend/src/App.js` (ThemeProvider wrap)
 - `~ /app/frontend/src/components/layout/TopBar.jsx` (ThemeToggle mount)
 - `~ /app/frontend/src/index.css` (`html.dark` + tenant variants)
+
+
+## Phase 41.6 — Full Legacy Cleanup & Consolidation (Option C) — Feb 2026
+
+**Scope**: Removed all legacy duplicates of the canonical Claros routes.
+52 files deleted with zero behaviour change to user-visible canonical
+flows (verified by smoke-testing 9 canonical routes + 6/6 tenant
+preview pytests).
+
+### Deleted (21 frontend pages)
+Phase{1,2,3}Complete · RemainingConsole · AriseConsole · NexusConsole ·
+VedaConsole · Admissions · Placements · Alumni · CompassAQAR · Nexus ·
+AIInstructor · AIAdvisor · PlatformModules · Compliance · Illuminate ·
+Prism · FacultyPlus · Guardian · GreenIQ.
+
+### Deleted (18 backend route files)
+routes_admissions · routes_nexus · routes_compass · routes_pathfinder ·
+routes_command · routes_illuminate · routes_prism · routes_alumni ·
+routes_faculty · routes_guardian · routes_greeniq ·
+routes_phase{1,2,3}_closeout · routes_veda · routes_arise ·
+routes_nexus_advanced · routes_closeout. **Kept**: routes_modules (used
+by Onboarding + useTenantModules) and routes_exec (used by
+ExecBriefing).
+
+### Deleted (13 pytest files)
+test_phase{13,14,16-27}*.py covering deleted backends.
+
+### Updated
+- **`/app/frontend/src/App.js`** — removed 18 page imports + 18 Route
+  registrations
+- **`/app/frontend/src/components/layout/Sidebar.jsx`** — dropped Legacy
+  Admissions, Legacy Placements, Legacy Alumni, Legacy AQAR, Legacy
+  Compliance, Legacy NEXUS, AI Instructor, AI Advisor, Platform
+  Modules, all "Advanced Console" entries, and the entire **Phase
+  Closeout** group. Cleaned 6 unused lucide imports.
+- **`/app/frontend/src/components/layout/CommandPalette.jsx`** — Cmd-K
+  destinations re-mapped to canonical Claros routes; 10 verb-first
+  ACTIONS (closeout/nexus2/veda/arise endpoints) cleared until
+  canonical equivalents ship.
+- **`/app/backend/server.py`** — 18 router includes + 18 imports
+  removed.
+- **3 pytest files** — pruned `Test*LegacyRegression` classes that
+  exercised the deleted backends (test_phase32_claros_core,
+  test_phase34_claros_comply, test_phase35_claros_launch).
+
+### Validation
+- Backend boots clean (Application startup complete, all canonical
+  seeds run); `tail -n` shows no ImportError / ModuleNotFoundError.
+- Frontend smoke pass: VCE Principal can navigate **/enroll, /core/dashboard,
+  /learn, /comply, /launch, /insights, /safe, /green, /onboarding** —
+  all 9 canonical routes render without compile errors or 404s.
+- Sidebar regression: no `sidebar-nav-admissions`, `…-placements`,
+  `…-nexus` (legacy), `…-platform-modules`, no `sidebar-group-phase-closeout`.
+- Pytest: 104 passed, 7 → 1 failure (only an unrelated pre-existing
+  seed-count drift `test_list_companies_vce` 15→16).
+- Lint clean on all touched files.
+
+### Result
+Codebase is now strictly canonical-Claros. The two systems that
+remained (legacy 12-platform registry vs canonical claros-* IDs) are
+joined only by `LEGACY_TO_CLAROS` map in Onboarding.jsx — no
+duplicate page/route surface area, no duplicate backend handlers,
+no stale tests.

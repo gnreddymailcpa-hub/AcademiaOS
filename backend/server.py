@@ -775,25 +775,7 @@ import routes_analytics
 import routes_workflows
 import routes_messaging
 import routes_modules
-import routes_admissions
-import routes_nexus
-import routes_compass
-import routes_pathfinder
-import routes_command
-import routes_illuminate
-import routes_prism
-import routes_alumni
-import routes_faculty
-import routes_guardian
-import routes_greeniq
 import routes_exec
-import routes_phase1_closeout
-import routes_phase2_closeout
-import routes_phase3_closeout
-import routes_veda
-import routes_arise
-import routes_nexus_advanced
-import routes_closeout
 import routes_core
 import routes_enroll
 import routes_comply
@@ -1107,25 +1089,7 @@ app.include_router(routes_workflows.build_audit_router(lambda: db, get_current_u
 app.include_router(routes_messaging.build_notifications_router(lambda: db, get_current_user))
 app.include_router(routes_messaging.build_tickets_router(lambda: db, get_current_user))
 app.include_router(routes_modules.build_modules_router(lambda: db, get_current_user))
-app.include_router(routes_admissions.build_admissions_router(lambda: db, get_current_user))
-app.include_router(routes_nexus.build_nexus_router(lambda: db, get_current_user))
-app.include_router(routes_compass.build_compass_router(lambda: db, get_current_user))
-app.include_router(routes_pathfinder.build_pathfinder_router(lambda: db, get_current_user))
-app.include_router(routes_command.build_command_router(lambda: db, get_current_user))
-app.include_router(routes_illuminate.build_illuminate_router(lambda: db, get_current_user))
-app.include_router(routes_prism.build_prism_router(lambda: db, get_current_user))
-app.include_router(routes_alumni.build_alumni_router(lambda: db, get_current_user))
-app.include_router(routes_faculty.build_faculty_router(lambda: db, get_current_user))
-app.include_router(routes_guardian.build_guardian_router(lambda: db, get_current_user))
-app.include_router(routes_greeniq.build_greeniq_router(lambda: db, get_current_user))
 app.include_router(routes_exec.build_exec_router(lambda: db, get_current_user))
-app.include_router(routes_phase1_closeout.build_phase1_router(lambda: db, get_current_user))
-app.include_router(routes_phase2_closeout.build_phase2_router(lambda: db, get_current_user))
-app.include_router(routes_phase3_closeout.build_phase3_router(lambda: db, get_current_user))
-app.include_router(routes_veda.build_veda_router(lambda: db, get_current_user))
-app.include_router(routes_arise.build_arise_router(lambda: db, get_current_user))
-app.include_router(routes_nexus_advanced.build_nexus_advanced_router(lambda: db, get_current_user))
-app.include_router(routes_closeout.build_closeout_router(lambda: db, get_current_user))
 app.include_router(routes_core.build_claros_core_router(lambda: db, get_current_user))
 app.include_router(routes_enroll.build_claros_enroll_router(lambda: db, get_current_user, get_optional_user))
 app.include_router(routes_comply.build_claros_comply_router(lambda: db, get_current_user))

@@ -17,52 +17,54 @@ import { api, formatApiError } from "../../lib/api";
  * users (deans, registrars, principal).
  */
 
-// All registered destinations — kept in sync with App.js routes.
+// All registered destinations — kept in sync with App.js routes (canonical Claros).
 const DESTINATIONS = [
   { label: "Dashboard",                path: "/",                    group: "Overview" },
-  { label: "Platform Modules",         path: "/admin/modules",       group: "Configuration" },
+  { label: "Branding & Module Names",  path: "/admin/tenant-config", group: "Configuration" },
   { label: "Institution Setup",        path: "/institution-setup",   group: "Configuration" },
   { label: "Academic Structure",       path: "/academic-structure",  group: "Configuration" },
   { label: "Users & Roles",            path: "/users-roles",         group: "Configuration" },
   { label: "AI Use Cases",             path: "/ai-use-cases",        group: "Configuration" },
   { label: "Onboarding Wizard",        path: "/onboarding",          group: "Configuration" },
 
-  { label: "Admissions · ARISE",       path: "/admissions",          group: "Recruitment" },
-  { label: "ARISE Console",            path: "/arise-console",       group: "Recruitment" },
+  { label: "Claros Insights · Executive Center", path: "/insights",    group: "Claros Insights" },
+  { label: "Analytics",                          path: "/analytics",   group: "Claros Insights" },
+  { label: "Command Centre",                     path: "/command",     group: "Claros Insights" },
+  { label: "Executive Briefing",                 path: "/exec-briefing", group: "Claros Insights" },
 
-  { label: "ILLUMINATE · LMS",         path: "/illuminate",          group: "Academics" },
-  { label: "Content Studio",           path: "/content-studio",      group: "Academics" },
-  { label: "Assessments",              path: "/assessments",         group: "Academics" },
-  { label: "AI Instructor",            path: "/ai-instructor",       group: "Academics" },
-  { label: "AI Advisor",               path: "/ai-advisor",          group: "Academics" },
-  { label: "Psychometrics",            path: "/psychometrics",       group: "Academics" },
+  { label: "Claros AI · Chat",         path: "/ai",                  group: "Claros AI" },
+  { label: "Claros AI · Knowledge Base", path: "/ai/knowledge",      group: "Claros AI" },
+  { label: "Student Assistant",        path: "/student-assistant",   group: "Claros AI" },
 
-  { label: "NEXUS · Campus ERP",       path: "/nexus",               group: "Student Services" },
-  { label: "NEXUS Console",            path: "/nexus-console",       group: "Student Services" },
-  { label: "Student Assistant",        path: "/student-assistant",   group: "Student Services" },
-  { label: "VEDA Console",             path: "/veda-console",        group: "Student Services" },
+  { label: "Claros Enroll · Pipeline", path: "/enroll",              group: "Claros Enroll" },
+  { label: "Claros Enroll · Analytics", path: "/enroll/analytics",   group: "Claros Enroll" },
 
-  { label: "FACULTY+ · Operations",    path: "/faculty-plus",        group: "Faculty & Research" },
-  { label: "PRISM · Research",         path: "/prism",               group: "Faculty & Research" },
+  { label: "Claros Core · Dashboard",  path: "/core/dashboard",      group: "Claros Core" },
+  { label: "Claros Core · Students",   path: "/core/students",       group: "Claros Core" },
+  { label: "Claros Core · Attendance", path: "/core/attendance",     group: "Claros Core" },
+  { label: "Claros Core · Timetable",  path: "/core/timetable",      group: "Claros Core" },
+  { label: "Claros Core · Fees",       path: "/core/fees",           group: "Claros Core" },
+  { label: "Claros Core · Notices",    path: "/core/notices",        group: "Claros Core" },
 
-  { label: "Placements · PATHFINDER",  path: "/placements",          group: "Career & Alumni" },
-  { label: "ALUMNI360 · Network",      path: "/alumni",              group: "Career & Alumni" },
+  { label: "Claros Learn · LMS",       path: "/learn",               group: "Claros Learn" },
+  { label: "Content Studio",           path: "/content-studio",      group: "Claros Learn" },
+  { label: "Assessments",              path: "/assessments",         group: "Claros Learn" },
+  { label: "Psychometrics",            path: "/psychometrics",       group: "Claros Learn" },
 
-  { label: "GUARDIAN · Safety",        path: "/guardian",            group: "Safety & Sustainability" },
-  { label: "GREENIQ · Sustainability", path: "/greeniq",             group: "Safety & Sustainability" },
+  { label: "Claros Launch · Cockpit",  path: "/launch",              group: "Claros Launch" },
+  { label: "Claros Launch · Drives",   path: "/launch/drives",       group: "Claros Launch" },
+  { label: "Claros Launch · Admin",    path: "/launch/admin",        group: "Claros Launch" },
 
-  { label: "Analytics",                path: "/analytics",           group: "Strategy & Compliance" },
-  { label: "Command · COMMAND",        path: "/command",             group: "Strategy & Compliance" },
-  { label: "NAAC AQAR · COMPASS",      path: "/compass-aqar",        group: "Strategy & Compliance" },
-  { label: "Compliance",               path: "/compliance",          group: "Strategy & Compliance" },
-  { label: "AI Governance",            path: "/governance",          group: "Strategy & Compliance" },
-  { label: "Workflows",                path: "/workflows",           group: "Strategy & Compliance" },
-  { label: "Executive Briefing",       path: "/exec-briefing",       group: "Strategy & Compliance" },
+  { label: "Claros Research",          path: "/research",            group: "Claros Research" },
+  { label: "Claros People · Faculty Dev", path: "/people",           group: "Claros People" },
+  { label: "Claros Alumni · Network",  path: "/alumni-network",      group: "Claros Alumni" },
+  { label: "Claros Safe · Incidents",  path: "/safe",                group: "Claros Safe" },
+  { label: "Claros Green · Sustainability", path: "/green",          group: "Claros Green" },
 
-  { label: "Phase 1 Closeout",         path: "/phase1-complete",     group: "Phase Closeout" },
-  { label: "Phase 2 Closeout",         path: "/phase2-complete",     group: "Phase Closeout" },
-  { label: "Phase 3 Closeout",         path: "/phase3-complete",     group: "Phase Closeout" },
-  { label: "Bulk Closeout",            path: "/closeout-console",    group: "Phase Closeout" },
+  { label: "Claros Comply · NAAC Dashboard", path: "/comply",        group: "Claros Comply" },
+  { label: "Claros Comply · OBE Framework",  path: "/comply/obe",    group: "Claros Comply" },
+  { label: "AI Governance",            path: "/governance",          group: "Claros Comply" },
+  { label: "Workflows",                path: "/workflows",           group: "Claros Comply" },
 
   { label: "Admin Guide",              path: "/admin-guide",         group: "Help & System" },
   { label: "Product Brief",            path: "/product-brief",       group: "Help & System" },
@@ -71,104 +73,10 @@ const DESTINATIONS = [
 
 const RECENT_KEY = "academiaos.cmdk.recent";
 
-/**
- * Verb-first ACTIONS — each fires a real API call against the current
- * tenant and shows toast feedback. Some actions also navigate to the
- * relevant page after success so the user lands in context.
- */
-const ACTIONS = [
-  {
-    id: "scan-defaulters",
-    label: "Scan defaulters (14d)",
-    keywords: "fees overdue payment risk",
-    run: async ({ iid }) => {
-      const r = await api.get(`/nexus2/${iid}/fees/predict-defaulters`, { params: { horizon_days: 14 } });
-      return { msg: `${r.data.n_at_risk} at-risk students`, path: "/nexus-console" };
-    },
-  },
-  {
-    id: "kpi-stream",
-    label: "Show all-platform KPI stream",
-    keywords: "command dashboard metrics",
-    run: async ({ iid }) => {
-      const r = await api.get(`/closeout/${iid}/command/kpi-stream`);
-      return { msg: `${r.data.students} students · ${r.data.publications} pubs · ${r.data.grievances_open} open grv`, path: "/closeout-console" };
-    },
-  },
-  {
-    id: "generate-aqar",
-    label: "Compose NAAC SSR section",
-    keywords: "naac aqar compass accreditation",
-    run: async ({ iid }) => {
-      const r = await api.post(`/closeout/${iid}/compass/ssr-compose`, { cycle: "A++", section: "curricular_aspects" });
-      return { msg: `Drafted: ${r.data.section_title || "section"}`, path: "/closeout-console" };
-    },
-  },
-  {
-    id: "esg-composite",
-    label: "Compute ESG composite",
-    keywords: "greeniq sustainability score",
-    run: async ({ iid }) => {
-      const r = await api.get(`/closeout/${iid}/greeniq/esg-composite`);
-      return { msg: `ESG ${r.data.composite} · ${r.data.band}`, path: "/closeout-console" };
-    },
-  },
-  {
-    id: "carbon-footprint",
-    label: "Show carbon footprint",
-    keywords: "greeniq emissions co2",
-    run: async ({ iid }) => {
-      const r = await api.get(`/closeout/${iid}/greeniq/carbon-footprint`);
-      return { msg: `Net ${r.data.tons_co2e}t CO₂e · solar ${r.data.solar_kwh} kWh`, path: "/closeout-console" };
-    },
-  },
-  {
-    id: "attendance-sweep",
-    label: "Run attendance alert sweep",
-    keywords: "nexus parent alerts",
-    run: async ({ iid }) => {
-      const r = await api.post(`/nexus2/${iid}/attendance/auto-alert`, null, { params: { threshold_pct: 75 } });
-      return { msg: `${r.data.alerts_emitted} alerts emitted`, path: "/nexus-console" };
-    },
-  },
-  {
-    id: "veda-kb-ingest",
-    label: "Run VEDA KB ingestion",
-    keywords: "knowledge base content sources",
-    run: async ({ iid }) => {
-      const r = await api.post(`/veda/${iid}/kb/ingest-run`, { only_pending: true });
-      return { msg: `${r.data.sources_processed} sources · ${r.data.chunks_created} chunks`, path: "/veda-console" };
-    },
-  },
-  {
-    id: "kb-status",
-    label: "Show VEDA KB status",
-    keywords: "knowledge base coverage chunks",
-    run: async ({ iid }) => {
-      const r = await api.get(`/veda/${iid}/kb/status`);
-      return { msg: `${r.data.sources_ingested}/${r.data.sources_total} ingested · ${r.data.chunks_total} chunks`, path: "/veda-console" };
-    },
-  },
-  {
-    id: "incident-dashboard",
-    label: "Show GUARDIAN incidents",
-    keywords: "safety alerts open",
-    run: async ({ iid }) => {
-      const r = await api.get(`/closeout/${iid}/guardian/incident-dashboard`);
-      return { msg: `${r.data.open} open of ${r.data.total} total`, path: "/closeout-console" };
-    },
-  },
-  {
-    id: "accreditation-timeline",
-    label: "Show accreditation deadlines",
-    keywords: "naac nba nirf compass timeline due",
-    run: async ({ iid }) => {
-      const r = await api.get(`/closeout/${iid}/compass/accreditation-timeline`);
-      const urgent = (r.data.items || []).filter((x) => x.band === "urgent" || x.band === "overdue").length;
-      return { msg: `${urgent} urgent/overdue out of ${(r.data.items || []).length}`, path: "/closeout-console" };
-    },
-  },
-];
+// Verb-first ACTIONS were tied to legacy closeout/nexus2/veda/arise backends
+// that have been retired. Reintroduce them once equivalents land on the
+// canonical Claros API surface.
+const ACTIONS = [];
 
 function loadRecent() {
   try {

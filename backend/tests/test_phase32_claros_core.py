@@ -347,22 +347,6 @@ class TestMultiTenantSeed:
         assert d["current_year"] == "2025-26"
 
 
-# -------------------- NEXUS LEGACY REGRESSION --------------------
-
-class TestNexusLegacyRegression:
-    def test_nexus_fees_legacy(self, principal_token):
-        r = requests.get(f"{API}/nexus/{VCE_IID}/fees",
-                         headers=_hdr(principal_token), timeout=30)
-        assert r.status_code == 200, r.text
-
-    def test_nexus2_timetable_solve(self, principal_token):
-        r = requests.post(f"{API}/nexus2/{VCE_IID}/timetable/solve",
-                          headers=_hdr(principal_token),
-                          json={}, timeout=60)
-        # Accept 200 (success) or 400 (validation) — anything but 5xx
-        assert r.status_code < 500, r.text
-
-
 # -------------------- PHASE 31 AI REGRESSION --------------------
 
 class TestPhase31Regression:

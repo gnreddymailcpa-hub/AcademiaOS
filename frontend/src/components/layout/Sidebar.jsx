@@ -21,22 +21,16 @@ import {
   Palette,
   FileText,
   UserPlus,
-  SlidersHorizontal,
-  Database,
-  Award,
   Briefcase,
   Command,
   BookOpen,
   Search,
-  HeartHandshake,
   Leaf,
   Rocket,
   CalendarClock,
   Wallet,
   BellRing,
-  ClipboardList,
   ListChecks,
-  BadgeCheck,
   X,
 } from "lucide-react";
 import { useLang } from "../../context/LanguageContext";
@@ -90,9 +84,6 @@ const NAV_GROUPS = [
     label: "Setup & Configuration",
     testid: "sidebar-group-configuration",
     items: [
-      { to: "/admin/modules", icon: SlidersHorizontal, key: "nav.platform_modules",
-        testid: "sidebar-nav-platform-modules",
-        roles: ["super_admin", "institution_admin"], label: "Platform Modules" },
       { to: "/admin/tenant-config", icon: Palette, key: "nav.tenant_config",
         testid: "sidebar-nav-tenant-config",
         roles: ["super_admin", "institution_admin"],
@@ -131,15 +122,8 @@ const NAV_GROUPS = [
       { to: "/ai/knowledge", icon: BookOpen, testid: "sidebar-nav-claros-knowledge", module: "VEDA",
         roles: ["super_admin", "institution_admin", "faculty", "instructor", "registrar", "programme_manager", "compliance_officer", "ai_governance_admin"],
         label: "Knowledge Base" },
-      { to: "/ai-instructor", icon: GraduationCap, testid: "sidebar-nav-ai-instructor", module: "VEDA",
-        label: "Instructor" },
-      { to: "/ai-advisor", icon: Compass, testid: "sidebar-nav-ai-advisor", module: "VEDA",
-        label: "Advisor" },
       { to: "/student-assistant", icon: MessageSquareText, testid: "sidebar-nav-student-assistant", module: "PATHFINDER",
         label: "Student Assistant" },
-      { to: "/veda-console", icon: Sparkles, testid: "sidebar-nav-veda-console",
-        roles: ["super_admin", "institution_admin", "registrar", "career_services", "compliance_officer", "ai_governance_admin", "faculty", "instructor", "programme_manager"],
-        label: "Advanced Console" },
     ],
   },
   {
@@ -152,11 +136,6 @@ const NAV_GROUPS = [
       { to: "/enroll/analytics", icon: BarChart3, testid: "sidebar-nav-enroll-analytics", module: "ARISE",
         roles: ["super_admin", "institution_admin", "registrar", "career_services", "programme_manager"],
         label: "Analytics" },
-      { to: "/admissions", icon: ClipboardList, testid: "sidebar-nav-admissions", module: "ARISE",
-        label: "Legacy Admissions" },
-      { to: "/arise-console", icon: Sparkles, testid: "sidebar-nav-arise-console",
-        roles: ["super_admin", "institution_admin", "registrar", "career_services", "programme_manager"],
-        label: "Advanced Console" },
     ],
   },
   {
@@ -179,12 +158,6 @@ const NAV_GROUPS = [
         label: "Fees" },
       { to: "/core/notices", icon: BellRing, testid: "sidebar-nav-core-notices", module: "NEXUS",
         label: "Notices" },
-      { to: "/nexus", icon: Database, testid: "sidebar-nav-nexus", module: "NEXUS",
-        roles: ["super_admin", "institution_admin", "registrar", "programme_manager", "hostel_warden", "faculty", "hod"],
-        label: "Legacy NEXUS" },
-      { to: "/nexus-console", icon: Sparkles, testid: "sidebar-nav-nexus-console",
-        roles: ["super_admin", "institution_admin", "registrar", "programme_manager", "hostel_warden"],
-        label: "Advanced Console" },
     ],
   },
   {
@@ -216,8 +189,6 @@ const NAV_GROUPS = [
       { to: "/launch/admin", icon: BarChart3, testid: "sidebar-nav-launch-admin", module: "ALUMNI360",
         roles: ["super_admin", "institution_admin", "registrar", "career_services", "programme_manager"],
         label: "Admin Analytics" },
-      { to: "/placements", icon: Briefcase, testid: "sidebar-nav-placements", module: "PATHFINDER",
-        label: "Legacy Placements" },
     ],
   },
   {
@@ -242,8 +213,6 @@ const NAV_GROUPS = [
     items: [
       { to: "/alumni-network", icon: Users, testid: "sidebar-nav-alumni-network", module: "ALUMNI360",
         label: "Network" },
-      { to: "/alumni", icon: HeartHandshake, testid: "sidebar-nav-alumni", module: "ALUMNI360",
-        label: "Legacy Alumni" },
     ],
   },
   {
@@ -271,11 +240,6 @@ const NAV_GROUPS = [
       { to: "/comply/obe", icon: GraduationCap, testid: "sidebar-nav-comply-obe", module: "COMPASS",
         roles: ["super_admin", "institution_admin", "compliance_officer", "ai_governance_admin", "faculty", "instructor", "hod", "programme_manager"],
         label: "OBE Framework" },
-      { to: "/compass-aqar", icon: Award, testid: "sidebar-nav-compass-aqar", module: "COMPASS",
-        roles: ["super_admin", "institution_admin", "compliance_officer", "ai_governance_admin"],
-        label: "Legacy AQAR" },
-      { to: "/compliance", icon: BadgeCheck, testid: "sidebar-nav-compliance", module: "COMPASS",
-        label: "Legacy Compliance" },
       { to: "/governance", icon: Scale, testid: "sidebar-nav-governance",
         roles: ["super_admin", "institution_admin", "ai_governance_admin", "compliance_officer"],
         label: "AI Governance" },
@@ -285,26 +249,8 @@ const NAV_GROUPS = [
   },
 
   // -------------------------------------------------------------------------
-  // Dev / audit + utility footers
+  // Utility footer
   // -------------------------------------------------------------------------
-  {
-    label: "Phase Closeout",
-    testid: "sidebar-group-phase-closeout",
-    items: [
-      { to: "/phase1-complete", icon: Sparkles, testid: "sidebar-nav-phase1-complete",
-        roles: ["super_admin", "institution_admin", "registrar", "career_services", "compliance_officer", "ai_governance_admin", "faculty", "instructor"],
-        label: "Phase 1 Closeout" },
-      { to: "/phase2-complete", icon: Sparkles, testid: "sidebar-nav-phase2-complete",
-        roles: ["super_admin", "institution_admin", "registrar", "career_services", "compliance_officer", "ai_governance_admin", "faculty", "instructor", "programme_manager", "training_manager"],
-        label: "Phase 2 Closeout" },
-      { to: "/phase3-complete", icon: Sparkles, testid: "sidebar-nav-phase3-complete",
-        roles: ["super_admin", "institution_admin", "registrar", "compliance_officer", "ai_governance_admin", "programme_manager"],
-        label: "Phase 3 Closeout" },
-      { to: "/closeout-console", icon: Sparkles, testid: "sidebar-nav-closeout-console",
-        roles: ["super_admin", "institution_admin", "registrar", "career_services", "compliance_officer", "ai_governance_admin", "programme_manager"],
-        label: "Bulk Closeout" },
-    ],
-  },
   {
     label: "Help & System",
     testid: "sidebar-group-system",

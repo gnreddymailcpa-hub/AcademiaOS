@@ -270,11 +270,3 @@ class TestRegression:
     def test_comply_dashboard(self, principal_token):
         r = requests.get(f"{BASE_URL}/api/v1/comply/dashboard", headers=_h(principal_token), timeout=TIMEOUT)
         assert r.status_code == 200
-
-    def test_legacy_alumni_directory(self, principal_token):
-        r = requests.get(f"{BASE_URL}/api/alumni/{VCE_IID}/directory", headers=_h(principal_token), timeout=TIMEOUT)
-        assert r.status_code == 200
-
-    def test_legacy_placements_dashboard(self, principal_token):
-        r = requests.get(f"{BASE_URL}/api/placements/{VCE_IID}/summary", headers=_h(principal_token), timeout=TIMEOUT)
-        assert r.status_code == 200

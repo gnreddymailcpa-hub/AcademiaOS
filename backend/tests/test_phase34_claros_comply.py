@@ -334,14 +334,3 @@ class TestRegression:
     def test_core_students(self, principal_token):
         r = requests.get(f"{API}/v1/core/students", headers=_hdr(principal_token), timeout=20)
         assert r.status_code == 200
-
-    def test_legacy_compass_timeline(self, principal_token):
-        # Actual mounted path is under /api/closeout
-        r = requests.get(f"{API}/closeout/{VCE_IID}/compass/accreditation-timeline",
-                         headers=_hdr(principal_token), timeout=20)
-        assert r.status_code == 200
-
-    def test_legacy_compass_aqar_preview(self, principal_token):
-        r = requests.get(f"{API}/compass/{VCE_IID}/aqar/preview",
-                         headers=_hdr(principal_token), timeout=20)
-        assert r.status_code == 200

@@ -23,38 +23,17 @@ import Settings from "./pages/Settings";
 import ComingSoon from "./pages/ComingSoon";
 import AIUseCases from "./pages/AIUseCases";
 import ContentStudio from "./pages/ContentStudio";
-import AIInstructor from "./pages/AIInstructor";
-import AIAdvisor from "./pages/AIAdvisor";
 import StudentAssistant from "./pages/StudentAssistant";
 import Assessments from "./pages/Assessments";
 import Psychometrics from "./pages/Psychometrics";
 import Analytics from "./pages/Analytics";
 import Workflows from "./pages/Workflows";
-import Compliance from "./pages/Compliance";
 import Governance from "./pages/Governance";
 import AdminGuide from "./pages/AdminGuide";
 import ProductBrief from "./pages/ProductBrief";
-import Admissions from "./pages/Admissions";
-import PlatformModules from "./pages/PlatformModules";
-import Nexus from "./pages/Nexus";
-import CompassAQAR from "./pages/CompassAQAR";
-import Placements from "./pages/Placements";
 import CommandCentre from "./pages/CommandCentre";
-import Illuminate from "./pages/Illuminate";
-import Prism from "./pages/Prism";
-import Alumni from "./pages/Alumni";
-import FacultyPlus from "./pages/FacultyPlus";
-import Guardian from "./pages/Guardian";
-import GreenIQ from "./pages/GreenIQ";
 import ExecBriefing from "./pages/ExecBriefing";
 import Onboarding from "./pages/Onboarding";
-import Phase1Complete from "./pages/Phase1Complete";
-import Phase2Complete from "./pages/Phase2Complete";
-import Phase3Complete from "./pages/Phase3Complete";
-import VedaConsole from "./pages/VedaConsole";
-import AriseConsole from "./pages/AriseConsole";
-import NexusConsole from "./pages/NexusConsole";
-import RemainingConsole from "./pages/RemainingConsole";
 import ClarosAI from "./pages/ClarosAI";
 import ClarosKnowledge from "./pages/ClarosKnowledge";
 import ClarosCoreDashboard from "./pages/ClarosCoreDashboard";
@@ -106,8 +85,6 @@ function ShellRoutes() {
         <Route path="/settings" element={<Settings />} />
         <Route path="/ai-use-cases" element={<AIUseCases />} />
         <Route path="/content-studio" element={<ModuleGate module="ILLUMINATE"><ContentStudio /></ModuleGate>} />
-        <Route path="/ai-instructor" element={<ModuleGate module="VEDA"><AIInstructor /></ModuleGate>} />
-        <Route path="/ai-advisor" element={<ModuleGate module="VEDA"><AIAdvisor /></ModuleGate>} />
         <Route path="/student-assistant" element={<ModuleGate module="PATHFINDER"><StudentAssistant /></ModuleGate>} />
         <Route path="/ai" element={<ModuleGate module="VEDA"><ClarosAI /></ModuleGate>} />
         <Route path="/ai/knowledge" element={<ModuleGate module="VEDA"><ClarosKnowledge /></ModuleGate>} />
@@ -147,28 +124,9 @@ function ShellRoutes() {
         <Route path="/governance" element={<Governance />} />
         <Route path="/admin-guide" element={<AdminGuide />} />
         <Route path="/product-brief" element={<ProductBrief />} />
-        <Route path="/admissions" element={<ModuleGate module="ARISE"><Admissions /></ModuleGate>} />
-        <Route path="/nexus" element={<ModuleGate module="NEXUS"><Nexus /></ModuleGate>} />
-        <Route path="/compass-aqar" element={<ModuleGate module="COMPASS"><CompassAQAR /></ModuleGate>} />
-        <Route path="/placements" element={<ModuleGate module="PATHFINDER"><Placements /></ModuleGate>} />
         <Route path="/command" element={<ModuleGate module="COMMAND"><CommandCentre /></ModuleGate>} />
-        <Route path="/illuminate" element={<ModuleGate module="ILLUMINATE"><Illuminate /></ModuleGate>} />
-        <Route path="/prism" element={<ModuleGate module="PRISM"><Prism /></ModuleGate>} />
-        <Route path="/alumni" element={<ModuleGate module="ALUMNI360"><Alumni /></ModuleGate>} />
-        <Route path="/faculty-plus" element={<ModuleGate module="FACULTY"><FacultyPlus /></ModuleGate>} />
-        <Route path="/guardian" element={<ModuleGate module="GUARDIAN"><Guardian /></ModuleGate>} />
-        <Route path="/greeniq" element={<ModuleGate module="GREENIQ"><GreenIQ /></ModuleGate>} />
         <Route path="/exec-briefing" element={<ExecBriefing />} />
         <Route path="/onboarding" element={<Onboarding />} />
-        <Route path="/phase1-complete" element={<Phase1Complete />} />
-        <Route path="/phase2-complete" element={<Phase2Complete />} />
-        <Route path="/phase3-complete" element={<Phase3Complete />} />
-        <Route path="/veda-console" element={<VedaConsole />} />
-        <Route path="/arise-console" element={<AriseConsole />} />
-        <Route path="/nexus-console" element={<NexusConsole />} />
-        <Route path="/closeout-console" element={<RemainingConsole />} />
-        <Route path="/admin/modules" element={<PlatformModules />} />
-        <Route path="/compliance" element={<ModuleGate module="COMPASS"><Compliance /></ModuleGate>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Shell>

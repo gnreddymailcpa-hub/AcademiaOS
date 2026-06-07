@@ -1695,3 +1695,61 @@ quiz attempts with timer, and per-student/per-course progress tracking.
   from Claude in ~25s; AI grading returned a coherent 4/10 score with
   detailed strengths/improvements arrays. No critical or minor UI bugs.
 
+
+---
+
+## Phase 38 — Claros 5-Module Batch (Research + People + Alumni + Safe + Green) — Feb 2026
+
+**Scope**: Built five complete modules in one batch. Each module gets one
+compact backend router, one idempotent seed, and one tabbed frontend page.
+
+### Modules delivered
+- **Claros Research** (`routes_research.py`, `seed_claros_research.py`,
+  `ClarosResearchHome.jsx`)
+  - Collections: `research_publications`, `patents`, `research_projects`,
+    `grant_opportunities`.
+  - 12 endpoints incl. AI literature review and AI grant matching (Claude).
+  - Tabs: Dashboard / Publications / Grants / Literature Review.
+- **Claros People** (`routes_people.py`, `seed_claros_people.py`,
+  `ClarosPeopleHome.jsx`)
+  - Collections: `faculty_development_plans`, `training_records`,
+    `api_scores`.
+  - 11 endpoints incl. on-the-fly API computation (teaching/research/service
+    breakdown) and Claude-generated development plan.
+  - Tabs: My Dashboard / Training / Development Plan / Faculty Admin
+    (HOD-and-above only).
+- **Claros Alumni** (`routes_claros_alumni.py`, `seed_claros_alumni.py`,
+  `ClarosAlumniHome.jsx`)
+  - Collections: `alumni_profiles`, `mentorship_requests`, `alumni_jobs`,
+    `alumni_events`.
+  - 14 endpoints incl. Claude-generated personalised outreach messages.
+  - Tabs: Home / Directory / Jobs / Mentorship (student vs alumni view).
+- **Claros Safe** (`routes_safe.py`, `seed_claros_safe_green.py`,
+  `ClarosSafeHome.jsx`)
+  - Collections: `visitors`, `incidents`.
+  - 8 endpoints — pre-register, check-in/out, incident report, status workflow.
+  - Tabs: Visitors / Incidents. Includes 4 KPI cards.
+- **Claros Green** (`routes_green.py`, same combined seed,
+  `ClarosGreenHome.jsx`)
+  - Collections: `energy_readings`, `sustainability_metrics`.
+  - 7 endpoints incl. Claude-generated monthly sustainability report.
+  - 30-day stacked area chart (Main vs Solar), 4 KPI cards, metric cards.
+
+### Validation
+- Backend pytest: **26/26 PASS** (`tests/test_claros_phase37.py`) covering
+  CRUD, RBAC and 3 Claude AI flows (literature, dev plan, sustainability).
+- Testing agent v3 iteration 37: 100% backend, 95% frontend selector
+  coverage. Curl proof: literature returns 3188-char markdown; grants/match
+  returns 3 ranked matches; dev plan returns coherent JSON;
+  green report returns 2073-char markdown.
+- Fixes applied post-test:
+  - HOD/Dean API gauge no longer renders NaN — falls back to a helpful
+    "No personal API score" panel pointing to Faculty Admin tab.
+  - Green chart wrapped with explicit `minHeight` + `debounce=1` on
+    `ResponsiveContainer` to silence recharts width(-1) warnings.
+
+### Sidebar additions
+- **Faculty & Research** group: Claros Research, Claros People
+- **Career & Alumni** group: Claros Alumni · Network
+- **Safety & Sustainability** group: Claros Safe, Claros Green
+

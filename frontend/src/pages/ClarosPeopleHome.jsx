@@ -26,10 +26,11 @@ function Stat({ icon: Icon, label, value, testid }) {
 }
 
 function ApiGauge({ score, maxScore = 140 }) {
-  const pct = Math.min(100, (score / maxScore) * 100);
+  const safeScore = Number.isFinite(score) ? score : 0;
+  const pct = Math.min(100, (safeScore / maxScore) * 100);
   return (
     <div className="space-y-2" data-testid="api-gauge">
-      <div className="text-3xl font-semibold tabular-nums">{score?.toFixed(0) ?? 0}<span className="text-sm font-normal text-muted-foreground">/{maxScore}</span></div>
+      <div className="text-3xl font-semibold tabular-nums">{safeScore.toFixed(0)}<span className="text-sm font-normal text-muted-foreground">/{maxScore}</span></div>
       <div className="h-3 w-full bg-muted rounded overflow-hidden">
         <div className={`h-full transition-all ${pct >= 70 ? "bg-emerald-500" : pct >= 50 ? "bg-amber-500" : "bg-red-500"}`}
           style={{ width: `${pct}%` }} />
@@ -195,16 +196,24 @@ export default function ClarosPeopleHome() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4" data-testid="people-dash-pane">
           <div className="card p-5 border border-border lg:col-span-1">
             <div className="label-eyebrow mb-1">Academic Performance Index</div>
-            <ApiGauge score={apiScore?.total_api} />
-            <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
-              <div><div className="text-muted-foreground">Teaching</div><div className="font-semibold tabular-nums">{apiScore?.teaching_score ?? 0}/50</div></div>
-              <div><div className="text-muted-foreground">Research</div><div className="font-semibold tabular-nums">{apiScore?.research_score ?? 0}/60</div></div>
-              <div><div className="text-muted-foreground">Service</div><div className="font-semibold tabular-nums">{apiScore?.service_score ?? 0}/30</div></div>
-            </div>
-            {me && (
-              <Button size="sm" variant="outline" className="mt-3" onClick={() => computeApi(me.id)} data-testid="recompute-api-btn">
-                Recompute
-              </Button>
+            {me ? (
+              <>
+                <ApiGauge score={apiScore?.total_api} />
+                <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                  <div><div className="text-muted-foreground">Teaching</div><div className="font-semibold tabular-nums">{apiScore?.teaching_score ?? 0}/50</div></div>
+                  <div><div className="text-muted-foreground">Research</div><div className="font-semibold tabular-nums">{apiScore?.research_score ?? 0}/60</div></div>
+                  <div><div className="text-muted-foreground">Service</div><div className="font-semibold tabular-nums">{apiScore?.service_score ?? 0}/30</div></div>
+                </div>
+                <Button size="sm" variant="outline" className="mt-3" onClick={() => computeApi(me.id)} data-testid="recompute-api-btn">
+                  Recompute
+                </Button>
+              </>
+            ) : (
+              <div className="text-sm text-muted-foreground" data-testid="api-gauge-na">
+                No personal API score — your role does not have an associated faculty profile.
+                Use the <span className="font-medium">Faculty Admin</span> tab to compute scores
+                for individual faculty members.
+              </div>
             )}
           </div>
           <div className="card p-5 border border-border">

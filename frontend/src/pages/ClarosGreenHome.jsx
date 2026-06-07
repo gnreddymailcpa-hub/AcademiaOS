@@ -130,8 +130,8 @@ export default function ClarosGreenHome() {
             <span className="inline-flex items-center gap-1"><span className="w-3 h-3 inline-block bg-amber-400 rounded-sm" /> Solar</span>
           </div>
         </div>
-        <div style={{ width: "100%", height: 260 }}>
-          <ResponsiveContainer>
+        <div style={{ width: "100%", height: 260, minHeight: 260 }}>
+          <ResponsiveContainer minHeight={260} debounce={1}>
             <AreaChart data={trends}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
               <XAxis dataKey="date" tick={{ fontSize: 10 }} interval={3} />

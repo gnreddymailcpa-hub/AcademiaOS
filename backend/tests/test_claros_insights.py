@@ -81,11 +81,11 @@ def test_naac_summary(admin_h):
     d = r.json()
     assert isinstance(d, list)
     assert len(d) == 7, f"expected 7 criteria got {len(d)}"
-    # criterion_code is returned as int from DB; frontend prefixes with "C"
+    # criterion_code returned as "C1".."C7" string
     codes = [str(c["criterion_code"]) for c in d]
-    assert "1" in codes and "5" in codes
-    c1 = next(c for c in d if str(c["criterion_code"]) == "1")
-    c5 = next(c for c in d if str(c["criterion_code"]) == "5")
+    assert "C1" in codes and "C5" in codes
+    c1 = next(c for c in d if str(c["criterion_code"]) == "C1")
+    c5 = next(c for c in d if str(c["criterion_code"]) == "C5")
     assert abs(c1["pct"] - 79.2) < 0.5
     assert abs(c5["pct"] - 78.3) < 0.5
 

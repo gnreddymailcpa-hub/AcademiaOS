@@ -35,9 +35,12 @@ def _now_iso() -> str:
 
 def _coerce_iid(user: dict, requested_iid: Optional[str]) -> str:
     if user["role"] == "super_admin":
-        if not requested_iid:
+        # Super admin must specify iid — but fall back to institution_id on the
+        # token if present (set by the tenant switcher in the UI).
+        target = requested_iid or user.get("institution_id")
+        if not target:
             raise HTTPException(400, "super_admin must specify iid query param")
-        return requested_iid
+        return target
     own = user.get("institution_id")
     if not own:
         raise HTTPException(403, "User has no institution_id")
@@ -105,12 +108,13 @@ async def _compute_overview(db, iid: str) -> dict:
     })
     departments = await db.departments.count_documents({"institution_id": iid})
 
-    # Attendance % — across all records this academic year (current calendar year as proxy)
-    year_start_iso = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0).strftime("%Y-%m-%d")
+    # Attendance % — rolling 12 months (aligned with the trend chart so the
+    # KPI never diverges from the curve)
+    twelve_mo_start = (now - timedelta(days=365)).strftime("%Y-%m-%d")
     att_total = await db.attendance_records.count_documents(
-        {"tenant_id": iid, "session_date": {"$gte": year_start_iso}})
+        {"tenant_id": iid, "class_date": {"$gte": twelve_mo_start}})
     att_present = await db.attendance_records.count_documents(
-        {"tenant_id": iid, "session_date": {"$gte": year_start_iso},
+        {"tenant_id": iid, "class_date": {"$gte": twelve_mo_start},
          "status": {"$in": ["PRESENT", "LATE"]}})
     avg_attendance_pct = round((att_present / att_total) * 100, 1) if att_total else 0.0
 
@@ -196,7 +200,7 @@ async def _trend_attendance(db, iid: str) -> List[dict]:
         last_day = calendar.monthrange(first.year, first.month)[1]
         start_d = first.strftime("%Y-%m-%d")
         end_d = first.replace(day=last_day).strftime("%Y-%m-%d")
-        flt = {"tenant_id": iid, "session_date": {"$gte": start_d, "$lte": end_d}}
+        flt = {"tenant_id": iid, "class_date": {"$gte": start_d, "$lte": end_d}}
         total = await db.attendance_records.count_documents(flt)
         present = await db.attendance_records.count_documents(
             {**flt, "status": {"$in": ["PRESENT", "LATE"]}})
@@ -297,7 +301,7 @@ async def _naac_summary(db, iid: str) -> List[dict]:
         evidence_count = await db.evidence_documents.count_documents(
             {"tenant_id": iid, "criterion_id": c["id"]})
         out.append({
-            "criterion_code": c["code"],
+            "criterion_code": f"C{c['code']}",
             "name": c["name"],
             "pct": pct,
             "evidence_count": evidence_count,

@@ -1560,3 +1560,65 @@ VCE + ISB. EAIC and UoB receive the 7 canonical criterion stubs but
 0 metrics / 0 evidence — NAAC is India-specific accreditation. The
 endpoints respond 200 for foreign tenants with empty arrays.
 
+
+
+---
+
+## Phase 36 — Claros Insights (Executive Analytics Command Center) — Feb 2026
+
+**Scope**: Executive analytics module that aggregates KPIs across every
+Claros module (Core, Enroll, Comply, Launch, AI). Visible to **Admin and
+Principal only** (super_admin + institution_admin). Powers board-ready
+reports via Claude.
+
+### Backend
+- `routes_insights.py` mounted at `/api/v1/insights/*`
+- New collections:
+  - `alert_rules` (id, tenant_id, rule_name, metric_key, threshold,
+    comparison [LT|GT|EQ|LTE|GTE], severity [INFO|WARNING|CRITICAL],
+    is_active)
+  - `alert_events` (id, tenant_id, rule_id, triggered_at, metric_value,
+    resolved_at, message)
+  - `generated_reports` (id, tenant_id, report_type, period_label, content,
+    generated_by, created_at)
+- Endpoints (all admin-only):
+  - `GET /overview` — 12 KPI fields (students, faculty, departments,
+    attendance %, fees %, AI sessions today, placed, avg pkg, placement
+    rate, NAAC readiness, active leads, enrolled this month)
+  - `GET /trends/attendance` (12 mo), `/trends/placements` (4 yrs),
+    `/trends/enrollment` (12 mo)
+  - `GET /fees/breakdown`, `/naac/summary` (7 criteria, code `C1`..`C7`),
+    `/ai/usage` (30 days)
+  - `GET /alerts`, `POST /alerts/rules`, `POST /alerts/evaluate`
+  - `POST /reports/generate` → Claude-generated 6-section formal report
+    (Executive Summary, Academic, Placement, Admissions, Compliance,
+    Action Items). Falls back to deterministic markdown if LLM unavailable.
+- Seed: 3 alert rules per tenant (attendance<75 WARNING,
+  placement_rate<80 CRITICAL, naac_readiness<70 WARNING) + 1 triggered
+  alert (72%) + 1 sample monthly report.
+
+### Frontend
+- `/app/frontend/src/pages/ClarosInsightsDashboard.jsx` — single page,
+  5 sections: 12-card KPI grid, charts row (attendance line +
+  placements bar + enrolment funnel bar), NAAC 7-bar health,
+  alert center, AI report generator (type/month/year picker, copy +
+  download).
+- Sidebar entry `Claros Insights · Executive Center` under "Strategy &
+  Compliance" group (roles whitelist: super_admin, institution_admin).
+- Route `/insights` wrapped in `ModuleGate(COMMAND)`.
+
+### Validation
+- Backend pytest: **14/14 pass** (`tests/test_claros_insights.py`).
+- Testing agent v3 iteration 35: dashboard renders all 5 sections;
+  KPI live values match seed; alert center shows seeded WARNING; report
+  generator returns content with tenant name; student gets 403 on all 6
+  endpoints and `insights-forbidden` UI; sidebar link hidden for students.
+- Bug fixes applied during this phase:
+  - Attendance window switched from "current calendar year" to rolling
+    12 months and field renamed `session_date` → `class_date` to match
+    actual schema (was returning 0%, now 84.8% for VCE).
+  - NAAC `criterion_code` aligned to `"C1".."C7"` string format.
+  - super_admin can now omit `?iid=` when a token-level institution_id
+    is set by the tenant switcher.
+  - Recharts ResponsiveContainer wrapped in fixed-size div to silence
+    -1 width/height warnings.

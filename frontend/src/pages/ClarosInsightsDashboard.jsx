@@ -66,7 +66,7 @@ function KpiCard({ icon: Icon, label, value, suffix, sub, testid }) {
       </div>
       <div className="text-3xl font-semibold tracking-tight tabular-nums leading-tight">
         {value}
-        {suffix && <span className="text-base font-normal text-muted-foreground ml-1">{suffix}</span>}
+        {suffix && <span className="text-base font-normal text-muted-foreground ml-1.5">{suffix}</span>}
       </div>
       {sub && <div className="text-xs text-muted-foreground">{sub}</div>}
     </div>
@@ -110,14 +110,15 @@ export default function ClarosInsightsDashboard() {
   const load = useCallback(async () => {
     if (!isAdmin) return;
     setLoading(true);
+    const iidParam = current?.id ? { iid: current.id } : {};
     try {
       const [ov, att, plc, enr, nc, al] = await Promise.all([
-        api.get("/v1/insights/overview").then(r => r.data),
-        api.get("/v1/insights/trends/attendance").then(r => r.data),
-        api.get("/v1/insights/trends/placements").then(r => r.data),
-        api.get("/v1/insights/trends/enrollment").then(r => r.data),
-        api.get("/v1/insights/naac/summary").then(r => r.data),
-        api.get("/v1/insights/alerts").then(r => r.data),
+        api.get("/v1/insights/overview", { params: iidParam }).then(r => r.data),
+        api.get("/v1/insights/trends/attendance", { params: iidParam }).then(r => r.data),
+        api.get("/v1/insights/trends/placements", { params: iidParam }).then(r => r.data),
+        api.get("/v1/insights/trends/enrollment", { params: iidParam }).then(r => r.data),
+        api.get("/v1/insights/naac/summary", { params: iidParam }).then(r => r.data),
+        api.get("/v1/insights/alerts", { params: iidParam }).then(r => r.data),
       ]);
       setOverview(ov);
       setAttendanceTrend(att || []);
@@ -131,13 +132,14 @@ export default function ClarosInsightsDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [isAdmin]);
+  }, [isAdmin, current?.id]);
 
   useEffect(() => { load(); }, [load]);
 
   const reevaluate = async () => {
     try {
-      const r = await api.post("/v1/insights/alerts/evaluate").then(r => r.data);
+      const iidParam = current?.id ? { iid: current.id } : {};
+      const r = await api.post("/v1/insights/alerts/evaluate", null, { params: iidParam }).then(r => r.data);
       toast.success(`Evaluated ${r.rule_count} rules · ${r.triggered.length} new alert(s)`);
       load();
     } catch {
@@ -149,11 +151,12 @@ export default function ClarosInsightsDashboard() {
     setGenerating(true);
     setGenerated(null);
     try {
+      const iidParam = current?.id ? { iid: current.id } : {};
       const r = await api.post("/v1/insights/reports/generate", {
         report_type: reportType,
         month: Number(month),
         year: Number(year),
-      }).then(r => r.data);
+      }, { params: iidParam }).then(r => r.data);
       setGenerated(r);
       toast.success("Report generated");
     } catch (e) {
@@ -268,17 +271,19 @@ export default function ClarosInsightsDashboard() {
               </div>
               <Activity className="h-4 w-4 text-muted-foreground" />
             </div>
-            <ResponsiveContainer width="100%" height={240}>
-              <LineChart data={attendanceTrend}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
-                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} domain={[0, 100]} unit="%" />
-                <Tooltip />
-                <Line type="monotone" dataKey="avg_pct" stroke="hsl(var(--primary))"
-                  strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }}
-                  name="Avg %" />
-              </LineChart>
-            </ResponsiveContainer>
+            <div style={{ width: "100%", height: 240 }}>
+              <ResponsiveContainer>
+                <LineChart data={attendanceTrend}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
+                  <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} domain={[0, 100]} unit="%" />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="avg_pct" stroke="hsl(var(--primary))"
+                    strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }}
+                    name="Avg %" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
           <div className="card p-5 border border-border" data-testid="chart-placements">
             <div className="flex items-center justify-between mb-3">
@@ -288,15 +293,17 @@ export default function ClarosInsightsDashboard() {
               </div>
               <Briefcase className="h-4 w-4 text-muted-foreground" />
             </div>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={placementTrend}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
-                <XAxis dataKey="year" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Bar dataKey="placed" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Placed" />
-              </BarChart>
-            </ResponsiveContainer>
+            <div style={{ width: "100%", height: 240 }}>
+              <ResponsiveContainer>
+                <BarChart data={placementTrend}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
+                  <XAxis dataKey="year" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Bar dataKey="placed" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Placed" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
         <div className="card p-5 border border-border" data-testid="chart-enrollment">
@@ -307,16 +314,18 @@ export default function ClarosInsightsDashboard() {
             </div>
             <UserPlus className="h-4 w-4 text-muted-foreground" />
           </div>
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={enrollTrend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
-              <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip />
-              <Bar dataKey="leads_created" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} name="Leads" />
-              <Bar dataKey="converted" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Converted" />
-            </BarChart>
-          </ResponsiveContainer>
+          <div style={{ width: "100%", height: 240 }}>
+            <ResponsiveContainer>
+              <BarChart data={enrollTrend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
+                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Bar dataKey="leads_created" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} name="Leads" />
+                <Bar dataKey="converted" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Converted" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </Section>
 
@@ -330,7 +339,7 @@ export default function ClarosInsightsDashboard() {
             <div key={c.criterion_code} data-testid={`naac-row-${c.criterion_code}`}>
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2 text-sm">
-                  <Badge variant="outline" className="font-mono text-[10px]">C{c.criterion_code}</Badge>
+                  <Badge variant="outline" className="font-mono text-[10px]">{c.criterion_code}</Badge>
                   <span className="font-medium">{c.name}</span>
                 </div>
                 <div className="flex items-center gap-3 text-xs tabular-nums">

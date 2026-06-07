@@ -1826,3 +1826,50 @@ multi-tenancy. Three architectural shifts landed in one batch.
   - Sidebar tenant chip now reads `tenantConfig.platform_display_name`
     with `data-testid="sidebar-tenant-name"` for tests.
 
+
+---
+
+## Phase 40 — Polish Sprint (Launch QA + multi-tenant live propagation + true white-label) — Feb 2026
+
+**Scope**: Cleared the 3 highest-priority items from the Phase 39 backlog
+in a single sprint.
+
+### 1. P0 — Claros Launch QA (overdue from Phase 35)
+- Testing agent v3 iteration 39: **15/15 backend tests PASS**, all 5
+  frontend pages render and operate end-to-end. Claude mock-interview
+  evaluation returned a 7.4/10 with structured feedback; AI skill gap
+  analysis ranked 6 skills with rationale; canonical-alias
+  `/api/v1/claros-launch/drives` matches `/api/v1/launch/drives` byte
+  for byte.
+- Polish fixes landed during the sprint:
+  - All 5 Launch pages now pass `moduleId="claros-launch"` to
+    `PageHeader` so VCE users see "PATHFINDER" on the eyebrow.
+  - Dashboard breakdown cards now display `score /max` units
+    (CGPA 26.2 / 30 etc.) instead of an ambiguous bare number.
+
+### 2. P1 — TenantConfigProvider auto re-fetch across tabs
+- `TenantConfigProvider` now listens on:
+  - `BroadcastChannel("claros-tenant-config")` — first-class browser API
+  - `window` event `claros:tenant-config-changed`
+  - `localStorage` key `claros-tenant-config-changed` (cross-tab fallback)
+- New helper `notifyChanged()` is exposed from the context. The admin
+  page calls it after every save / reset, so any other tab open on a
+  Claros page rebrands instantly without reload.
+
+### 3. P1 — "Powered by Claros" footer is now tenant-configurable
+- New `BrandingUpdate.powered_by_label` field (defaults to
+  `"Powered by Claros"`; empty string hides the footer).
+- Persisted in `tenant_branding`; surfaced in `/tenants/me/config`
+  payload.
+- Sidebar reads from `tenantConfig.powered_by_label`. Hides cleanly when
+  the tenant clears it.
+- Admin page `/admin/tenant-config` has a new
+  `branding-powered-by` input alongside platform name / colours.
+
+### Validation
+- Backend hot-reload + curl: PUT branding `{"powered_by_label":"by Vaagdevi Tech"}`
+  → GET returns the new tagline; full-tenant reset restores
+  `"Powered by Claros"` correctly.
+- Frontend webpack: compiled cleanly with all 4 file edits.
+- Testing agent iteration 39 already covered Launch flows top-to-bottom.
+

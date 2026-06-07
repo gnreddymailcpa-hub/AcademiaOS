@@ -59,6 +59,7 @@ export default function ClarosLaunchDashboard() {
     <div data-testid="claros-launch-dashboard-page">
       <PageHeader
         eyebrow="Claros Launch · Career & Placement"
+        moduleId="claros-launch"
         title="Placement Cockpit"
         description={isStudent ? "Your readiness, upcoming drives, applications, and AI-identified skill gaps." : "Institution-wide placement analytics."}
         actions={
@@ -76,12 +77,18 @@ export default function ClarosLaunchDashboard() {
             <div className="rounded-lg border border-border bg-card p-6 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
               <div className="flex justify-center"><ReadinessRing score={data.readiness?.score} /></div>
               <div className="md:col-span-2 grid grid-cols-2 gap-3" data-testid="launch-readiness-breakdown">
-                {data.readiness?.breakdown && Object.entries(data.readiness.breakdown).map(([k, v]) => (
-                  <div key={k} className="rounded-md border border-border p-3" data-testid={`launch-breakdown-${k}`}>
-                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{k.replace('_', ' ')}</div>
-                    <div className="text-xl font-semibold tabular-nums">{v}</div>
-                  </div>
-                ))}
+                {data.readiness?.breakdown && Object.entries(data.readiness.breakdown).map(([k, v]) => {
+                  const MAX = { cgpa: 30, attendance: 20, skills: 25, mock_interview: 25 };
+                  const max = MAX[k];
+                  return (
+                    <div key={k} className="rounded-md border border-border p-3" data-testid={`launch-breakdown-${k}`}>
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{k.replace('_', ' ')} score</div>
+                      <div className="text-xl font-semibold tabular-nums">
+                        {v}{max ? <span className="text-xs font-normal text-muted-foreground"> /{max}</span> : null}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

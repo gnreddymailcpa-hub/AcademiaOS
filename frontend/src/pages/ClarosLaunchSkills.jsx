@@ -58,7 +58,7 @@ export default function ClarosLaunchSkills() {
 
   return (
     <div data-testid="claros-launch-skills-page">
-      <PageHeader eyebrow="Claros Launch · Skills" title="My Skills" description="Manage your skill matrix and run AI gap analysis."
+      <PageHeader eyebrow="Claros Launch · Skills" moduleId="claros-launch" title="My Skills" description="Manage your skill matrix and run AI gap analysis."
         actions={<Button onClick={analyse} disabled={gapsLoading} data-testid="launch-skills-analyse-btn">
           {gapsLoading ? <Loader2 className="h-4 w-4 me-2 animate-spin" /> : <Sparkles className="h-4 w-4 me-2" />}Analyse Gaps
         </Button>}

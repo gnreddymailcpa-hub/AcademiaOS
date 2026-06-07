@@ -56,7 +56,7 @@ export default function ClarosLaunchInterview() {
   if (!current) return null;
   return (
     <div data-testid="claros-launch-interview-page">
-      <PageHeader eyebrow="Claros Launch · Mock Interview" title="AI Mock Interview Room"
+      <PageHeader eyebrow="Claros Launch · Mock Interview" moduleId="claros-launch" title="AI Mock Interview Room"
         description="Practice technical, HR or aptitude rounds. Claude scores your answer 1-10 with strengths + improvements."
       />
       <div className="p-6 lg:p-8 grid grid-cols-12 gap-6">

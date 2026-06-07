@@ -23,7 +23,7 @@ export default function ClarosLaunchAdmin() {
 
   return (
     <div data-testid="claros-launch-admin-page">
-      <PageHeader eyebrow="Claros Launch · Admin Analytics" title="Placement Analytics"
+      <PageHeader eyebrow="Claros Launch · Admin Analytics" moduleId="claros-launch" title="Placement Analytics"
         description={`Year-over-year placement performance for ${current.short_name || current.name}.`}
       />
       <div className="p-6 lg:p-8 space-y-6">

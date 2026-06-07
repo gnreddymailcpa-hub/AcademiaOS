@@ -52,7 +52,7 @@ export default function ClarosLaunchDrives() {
   if (!current) return null;
   return (
     <div data-testid="claros-launch-drives-page">
-      <PageHeader eyebrow="Claros Launch · Placement Drives" title="Placement Drives" description="Upcoming and historical on-campus drives." />
+      <PageHeader eyebrow="Claros Launch · Placement Drives" moduleId="claros-launch" title="Placement Drives" description="Upcoming and historical on-campus drives." />
       <div className="p-6 lg:p-8 space-y-4">
         <div className="flex gap-1.5" data-testid="launch-drives-tabs">
           {TABS.map(t => (

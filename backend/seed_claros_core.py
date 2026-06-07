@@ -254,7 +254,9 @@ async def seed_claros_core(db, logger):
                     upsert=True,
                 )
 
-        # ---- Timetable slots (Mon-Fri, 5 slots per day across courses) ----
+        # ---- Timetable slots (Mon-Fri, 3 weekly slots per course, no collisions) ----
+        # Clear any older overlapping slots from previous seed runs first.
+        await db.timetable_slots.delete_many({"tenant_id": iid, "academic_year_id": year_id})
         # Slots: 9-10, 10-11, 11-12, 14-15, 15-16
         slot_times = [
             ("09:00", "10:00"),
@@ -265,10 +267,12 @@ async def seed_claros_core(db, logger):
         ]
         for prog_id, course_ids in course_ids_by_program.items():
             for idx, cid in enumerate(course_ids):
-                # Each course gets 3 slots/week across Mon-Fri
-                for day_offset in range(3):
-                    day = (idx + day_offset) % 5  # 0..4 Mon-Fri
-                    start, end = slot_times[(idx + day_offset) % len(slot_times)]
+                # Each course occupies one hour-slot at a fixed time, on 3 different days
+                hour_idx = idx % len(slot_times)
+                start, end = slot_times[hour_idx]
+                # 3 distinct days, offset by course index so no two courses share the same (day, hour)
+                for k in range(3):
+                    day = (idx + k * 2) % 5  # Mon..Fri
                     sid = _det_uuid("slot", iid, cid, str(day), start)
                     await db.timetable_slots.update_one(
                         {"id": sid},

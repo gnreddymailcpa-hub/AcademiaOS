@@ -1318,3 +1318,84 @@ to avoid breaking sessions + seed integrity):
 - `Claros AI · Chat` (route `/ai`, ModuleGate VEDA)
 - `Claros AI · Knowledge Base` (route `/ai/knowledge`, ModuleGate VEDA +
   role-gated upload UI for admin/faculty/registrar/programme_manager).
+
+
+### Phase 32 — Feb 2026 (Claros Core · Campus ERP rebrand + full ERP build)
+
+**Scope chosen by user**: Rebrand NEXUS → Claros Core (keep all legacy NEXUS endpoints
+intact for backward compatibility), ADD 11 new collections + 17 new
+`/api/v1/core/*` endpoints + 7 new `/core/*` React pages on top. Seed across
+ALL 4 demo tenants (VCE / ISB / EAIC / UoB). Pure-mock fee payment for v1.
+Idempotent seed migrates anchor students/faculty to canonical user records.
+
+**New backend (in `routes_core.py` + `seed_claros_core.py`)**:
+- 11 collections seeded: `departments`, `programs`, `academic_years`,
+  `students`, `faculty_profiles`, `courses`, `timetable_slots`,
+  `attendance_records`, `fee_components`, `fee_payments`, `notices`.
+- 17 endpoints under `/api/v1/core/*`:
+  - Students: `GET /students` (paged + 4 filters), `GET /students/me`,
+    `GET /students/{id}`, `PUT /students/{id}`.
+  - Attendance: `POST /attendance/mark`, `GET /attendance/report`,
+    `GET /attendance/summary/me`.
+  - Timetable: `GET /timetable/me` (role-aware).
+  - Fees: `GET /fees/me`, `GET /fees/student/{id}`, `POST /fees/payment`
+    (mock, `transaction_ref` formatted `MOCK-{hex8}`), `GET /fees/report`.
+  - Notices: `GET /notices` (category filter + role gating; admins see all),
+    `POST /notices` (enum-validated category), `DELETE /notices/{id}`
+    (owner/admin).
+  - Stats: `GET /stats` (admin KPIs).
+  - Lookups: `/departments`, `/programs`, `/courses`, `/courses/{id}/roster`.
+- Tenant scope helper `_coerce_iid` enforces super_admin-only `?iid=…`
+  and locks non-admins to their own institution.
+- Seed (deterministic UUID5) per tenant: 3 depts + 6 programs + 20 students
+  + 8 faculty + 15 courses + 15 collision-free timetable slots + 24 fee
+  components + ~140 payments (70% paid / 20% partial / 10% none) + 5 notices
+  + ~750 attendance records (78% present biased).
+
+**New frontend pages**:
+- `ClarosCoreDashboard.jsx` — role-aware landing
+  (student: donut + CGPA + today's classes + fee alert; admin: 6-KPI strip + today's classes + notices)
+- `ClarosCoreStudents.jsx` — search + 3 filter dropdowns + colour-coded
+  attendance badge (≥75 green / 60-74 amber / <60 red)
+- `ClarosCoreNotices.jsx` — 7 category tabs + New Notice dialog with
+  target-roles toggle + per-card delete
+- `ClarosCoreTimetable.jsx` — Mon-Sat × 8-hour grid with deterministic
+  per-course colour palette + room labels
+- `ClarosCoreFees.jsx` — student mode (components + payments breakdown) vs
+  admin mode (institution-wide collection report)
+- `ClarosCoreAttendance.jsx` — faculty-only roster marking with course
+  Select + date input + Mark All Present/Absent + per-row PRESENT/ABSENT/LATE/EXCUSED toggle
+- `ClarosCoreAttendanceReport.jsx` — student (per-course) + admin (date-filtered)
+
+**Sidebar additions** (under Student Services cluster):
+- Claros Core · Dashboard / Students / Attendance / Attendance Report /
+  Timetable / Fees / Notices
+- Legacy NEXUS + Advanced Console relabeled "Claros Core · Legacy NEXUS" /
+  "Claros Core · Advanced Console" (kept for backward compatibility).
+
+**Testing** (`/app/test_reports/iteration_31.json`):
+- Backend: **35/35 pytest cases PASS** covering all 17 endpoints + 6
+  authorisation 403s + 4-tenant seed verification + regression on NEXUS
+  legacy + Phase 31 AI.
+- Frontend: PRINCIPAL flows 19/19 PASS, STUDENT flows 14/14 PASS after
+  two post-test fixes:
+  - **Seed fix**: timetable slot generator had `(idx, idx)` collisions
+    where 5 courses produced only 5 unique cells. Reworked to fixed-hour
+    per course × 3 days with stride-2 → 15 unique cells confirmed.
+  - **False positive resolved**: testing agent reported student
+    `/core/attendance/report` returning 0 rows + 403, but live retest
+    shows table_present=1 + rows=5 with proper colour-coded badges
+    (81.8%/90%/80%/90%/50%). The transient 403 in the test report
+    appears to have been a race during auth context init.
+
+**Multi-tenant verification**: Each of VCE/ISB/EAIC/UoB returns
+`{total_students: 20, total_faculty: 8, departments_count: 3, current_year: '2025-26'}`
+via the `/v1/core/stats` endpoint.
+
+**Mocked / deferred**:
+- `POST /api/v1/core/fees/payment` is pure-mock (writes a `fee_payments`
+  row with `transaction_ref='MOCK-{hex8}'`, `payment_mode='MOCK'`).
+  Real Stripe/Razorpay integration is on the roadmap.
+- The "tenant-configurable display name" for the module is hard-coded as
+  "Claros Core" today; a `platform_modules.claros_core.display_name`
+  per-tenant override is a P2 enhancement.

@@ -72,6 +72,7 @@ import ClarosLaunchDrives from "./pages/ClarosLaunchDrives";
 import ClarosLaunchSkills from "./pages/ClarosLaunchSkills";
 import ClarosLaunchInterview from "./pages/ClarosLaunchInterview";
 import ClarosLaunchAdmin from "./pages/ClarosLaunchAdmin";
+import ClarosInsightsDashboard from "./pages/ClarosInsightsDashboard";
 import AuthCallback from "./pages/AuthCallback";
 import ModuleGate from "./components/layout/ModuleGate";
 
@@ -116,6 +117,7 @@ function ShellRoutes() {
         <Route path="/launch/skills" element={<ModuleGate module="ALUMNI360"><ClarosLaunchSkills /></ModuleGate>} />
         <Route path="/launch/interview" element={<ModuleGate module="ALUMNI360"><ClarosLaunchInterview /></ModuleGate>} />
         <Route path="/launch/admin" element={<ModuleGate module="ALUMNI360"><ClarosLaunchAdmin /></ModuleGate>} />
+        <Route path="/insights" element={<ModuleGate module="COMMAND"><ClarosInsightsDashboard /></ModuleGate>} />
         <Route path="/assessments" element={<ModuleGate module="ILLUMINATE"><Assessments /></ModuleGate>} />
         <Route path="/psychometrics" element={<Psychometrics />} />
         <Route path="/analytics" element={<ModuleGate module="COMMAND"><Analytics /></ModuleGate>} />

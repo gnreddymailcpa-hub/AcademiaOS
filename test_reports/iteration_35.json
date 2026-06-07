@@ -1,0 +1,45 @@
+{
+  "summary": "Tested Claros Insights (Executive Command Center) end-to-end for principal@vaagdevi.edu.in. Backend pytest: 14/14 passed. Frontend: dashboard renders header, 12 KPI cards (students=20, departments=10, placed=9, placement_rate=45%), 3 chart SVGs, 7 NAAC progress rows (C1=79.2%, C5=78.3%), alert center, re-evaluate button (toast 'Evaluated 4 rules'), report generator producing markdown content with tenant 'Vaagdevi' plus Copy/Save buttons. Role gating verified: student sees insights-forbidden, sidebar-nav-insights hidden, all 6 student API calls return 403.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/v1/insights/naac/summary", "issue": "criterion_code returned as int (1..7) not 'C1'..'C7' as suggested in spec; frontend prefixes with 'C' for display. Either align backend to return code string or document as design choice."},
+      {"endpoint": "/api/v1/insights/overview", "issue": "avg_attendance_pct computes to 0.0% live because attendance_records are filtered by session_date >= 2026-01-01 (year_start) but seeded attendance data likely dates from 2025 — current year window discards them. Seeded alert event message shows 72% but live KPI shows 0%, creating a data inconsistency between Alert Center (72%) and KPI grid (0%)."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "KPI Card sparkline area", "issue": "Each KPI card's inner_text contains a leading '—' placeholder (likely the trend mini-sparkline fallback) alongside the real number. Visually small but signals stale/loading state when data is actually present.", "selector": "[data-testid='kpi-*']", "priority": "LOW"},
+      {"component": "KPI Avg Package", "issue": "Displays as '4LPA' without space/decimal (e.g., '4.0 LPA' or '₹4 LPA' is clearer).", "selector": "[data-testid='kpi-avg-package']", "priority": "LOW"},
+      {"component": "Recharts containers", "issue": "Console warnings: 'The width(-1) and height(-1) of chart should be greater than 0' fired during initial render for chart-attendance/placements/enrollment. Charts still render correctly after layout settles, but the warnings indicate missing minWidth/minHeight on ResponsiveContainer parent.", "selector": "[data-testid^='chart-']", "priority": "LOW"}
+    ],
+    "integration_issues": [
+      {"flow": "Alert Center count", "issue": "Spec expects 'exactly 1 active alert' (the seeded Low Attendance Watch). After any /alerts/evaluate run, two more rules trigger because live KPIs breach thresholds (placement_rate=45% < 80% CRITICAL, naac_readiness_pct=32.2% < 70% WARNING). This is correct rule logic — but tests asserting 'exactly 1' will fail once evaluate is run. Consider not auto-evaluating on seed, or tightening seeded thresholds.", "affected_selectors": ["[data-testid^='alert-']"]}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_claros_insights.py",
+    "/app/test_reports/pytest/pytest_phase35_insights.xml"
+  ],
+  "action_items": [
+    "Investigate why live avg_attendance_pct=0% while seed event reports 72% — attendance_records session_date format/year window mismatch (seed appears to use 2025 dates, code filters by 2026 year_start).",
+    "Consider returning naac criterion_code prefixed with 'C' (e.g., 'C1') from backend for consistency with display.",
+    "Fix Recharts ResponsiveContainer initial -1 width/height warnings by ensuring parent has explicit height or aspect prop.",
+    "Polish KPI card display: remove '—' placeholder in sparkline slot when no trend data; format avg package value (e.g., '4.0 LPA')."
+  ],
+  "critical_code_review_comments": [
+    "_compute_overview uses string-prefix regex on created_at (e.g. `^YYYY-MM-DD`) for ai_sessions_today — fragile if timestamps stored as datetime objects or with timezone offsets; recommend storing as proper ISO with consistent format and using $gte/$lt date bounds.",
+    "_coerce_iid for super_admin requires explicit iid query param but the dashboard fetches without iid — super_admin would get 400 on overview. Either default super_admin to first/known tenant or surface a tenant selector in UI.",
+    "Re-evaluate endpoint is admin-callable and unbounded — fine for now, but consider rate-limiting in production.",
+    "routes_insights.py is 600 lines and contains 7 KPI helpers + 8 routes — acceptable for now but watch growth; if/when reports/trends grow, split into routes_insights.py + insights_metrics.py."
+  ],
+  "updated_files": ["/app/backend/tests/test_claros_insights.py"],
+  "success_rate": {"backend": "100% (14/14)", "frontend": "95%"},
+  "test_credentials": "principal@vaagdevi.edu.in / Demo@2026 (institution_admin), manikanta.cse@vaagdevi.edu.in / Demo@2026 (student)",
+  "seed_data_creation": "Created 1 alert rule 'TEST_RULE_FeeFloor' via POST /api/v1/insights/alerts/rules during testing (idempotent, not cleaned up — minor leftover). After evaluate, 2 additional active alerts were triggered (placement CRITICAL, naac WARNING) in addition to seeded Low Attendance Watch.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend: 14/14 pytest pass in /app/backend/tests/test_claros_insights.py. Frontend: All UI sections work for VCE principal. Known data drift: avg_attendance_pct displays 0% while seeded alert says 72% — investigate attendance_records date filter. NAAC criterion_code returns ints; UI prefixes 'C'. Role gating fully working for student.",
+  "rca of the issue": "Attendance 0% root cause: _compute_overview filters by session_date >= year_start_iso of current calendar year (2026-01-01). If seeded attendance_records have session_date <= 2025-12-31, they are excluded. Either backfill attendance records into 2026 or switch the window to a rolling-12-month definition for parity with the trend chart."
+}

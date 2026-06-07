@@ -204,6 +204,10 @@ const NAV_GROUPS = [
     label: "Strategy & Compliance",
     testid: "sidebar-group-strategy-compliance",
     items: [
+      { to: "/insights", icon: Command, key: "nav.insights",
+        testid: "sidebar-nav-insights", module: "COMMAND",
+        roles: ["super_admin", "institution_admin"],
+        label: "Claros Insights · Executive Center" },
       { to: "/analytics", icon: BarChart3, key: "nav.analytics", testid: "sidebar-nav-analytics", module: "COMMAND" },
       { to: "/command", icon: Command, key: "nav.command", testid: "sidebar-nav-command",
         module: "COMMAND", label: "Command · COMMAND" },

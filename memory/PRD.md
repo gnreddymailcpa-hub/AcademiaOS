@@ -808,7 +808,40 @@ tenant-isolated, audit-logged, zero hardcoded weights.
   Phase 1 regression (29 + 20). Frontend Playwright 100% green on all 5
   tabs + 9 sub-flows + role-gating. Report: `/app/test_reports/iteration_22.json`.
 
-## 12-Platform AcademiaOS.ai — ALL PLATFORMS CLOSED + NAVIGATION RE-GROUPED 🎉
+### Phase 28 — Feb 2026 (⌘K Command Palette · keyboard-first navigation)
+Closes the user's accepted "potential improvement" from Phase 27. Power
+users (principal / deans / registrars) can now fuzzy-search every sidebar
+destination + recent items from the keyboard without clicking through the
+11-group sidebar tree.
+
+- **Component**: `/app/frontend/src/components/layout/CommandPalette.jsx`
+  (~190 LOC, self-contained). Uses the existing shadcn `CommandDialog`
+  primitive over `cmdk`. DESTINATIONS array is the single source of truth
+  for 30+ navigable pages, organised by the same 11 logical clusters as the
+  sidebar.
+
+- **Trigger**: Global `Cmd-K` (Mac) / `Ctrl-K` (Win/Linux) keyboard shortcut
+  via window keydown listener with `preventDefault()` to override the
+  browser's search shortcut. Plus a floating bottom-right FAB
+  (`cmdk-trigger`, md+ only) with a kbd badge for discoverability.
+
+- **Recent items**: Persisted to `localStorage` under
+  `academiaos.cmdk.recent` (capped at 6), surfaced in a "Recent" group at
+  the top of the list on re-open.
+
+- **A11y**: `VisuallyHidden` `DialogTitle` + `DialogDescription` added to
+  silence Radix's screen-reader warnings.
+
+- **Mounted globally**: Added to `Shell.jsx` so every authenticated route
+  has the palette available without per-page wiring.
+
+- **Tests**: 100% green on all 8 critical UX requirements in
+  `iteration_28.json` — FAB visibility, Cmd-K toggle, fuzzy filter on
+  'nexus', Down+Enter navigation, localStorage persistence, Recent group on
+  re-open, Escape close, multi-route availability. Two minor non-defect
+  spec deviations noted (functional behaviour correct).
+
+## 12-Platform AcademiaOS.ai — ALL PLATFORMS CLOSED + NAVIGATION RE-GROUPED + CMD-K 🎉
 Phase 1-3 + VEDA + ARISE + NEXUS + 9 remaining platforms — **156/156 backend
 cumulative** + 100% frontend across the full closeout suite (Phase 21-27),
 plus the deferred sidebar restructure now live.

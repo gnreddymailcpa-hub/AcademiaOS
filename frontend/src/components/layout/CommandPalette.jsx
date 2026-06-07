@@ -5,6 +5,8 @@ import {
   CommandItem, CommandList, CommandSeparator,
 } from "../ui/command";
 import { Search } from "lucide-react";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { DialogTitle, DialogDescription } from "../ui/dialog";
 
 /**
  * Cmd-K (Ctrl-K) command palette — fuzzy search over every sidebar
@@ -131,6 +133,12 @@ export default function CommandPalette() {
       </button>
 
       <CommandDialog open={open} onOpenChange={setOpen} data-testid="cmdk-dialog">
+        <VisuallyHidden>
+          <DialogTitle>Command Palette</DialogTitle>
+          <DialogDescription>
+            Fuzzy-search pages, modules and consoles. Navigate with arrow keys; press Enter to go.
+          </DialogDescription>
+        </VisuallyHidden>
         <CommandInput
           placeholder="Search anywhere — pages, modules, consoles…"
           data-testid="cmdk-input"

@@ -254,6 +254,9 @@ def build_tenant_config_router(get_db, get_current_user):
     @r.post("/me/config/modules/{module_id}/reset")
     async def reset_module(module_id: str,
                             user: dict = Depends(get_current_user)):
+        """Reset one module override. If the tenant had a seeded label
+        (e.g. VCE → 'VEDA' for claros-ai), the seed value is re-applied.
+        Otherwise the canonical name takes over."""
         _require_admin(user)
         if module_id not in CANONICAL_BY_ID:
             raise HTTPException(404, f"Unknown module: {module_id}")
@@ -261,6 +264,24 @@ def build_tenant_config_router(get_db, get_current_user):
         iid = _tenant_of(user)
         await db.tenant_module_configs.delete_one(
             {"tenant_id": iid, "module_id": module_id})
+        # Re-apply seed if the tenant has one (idempotent via the seed helper)
+        try:
+            from seed_tenant_config import VCE_NAMES, VCE_ID, _det, _iso
+            if iid == VCE_ID and module_id in VCE_NAMES:
+                dn, sn = VCE_NAMES[module_id]
+                rid = _det("tmc", iid, module_id)
+                await db.tenant_module_configs.update_one(
+                    {"id": rid},
+                    {"$setOnInsert": {
+                        "id": rid, "tenant_id": iid, "module_id": module_id,
+                        "display_name": dn, "short_name": sn,
+                        "enabled": True, "icon_override": None,
+                        "created_at": _iso(),
+                    }},
+                    upsert=True,
+                )
+        except Exception:
+            pass
         return await get_tenant_config(db, iid)
 
     return r

@@ -43,7 +43,7 @@ import { useLang } from "../../context/LanguageContext";
 import { useInstitution } from "../../context/InstitutionContext";
 import { useAuth } from "../../context/AuthContext";
 import { useTenantModules } from "../../lib/useTenantModules";
-import { useModuleName } from "../../context/TenantConfigContext";
+import { useModuleName, useTenantConfig } from "../../context/TenantConfigContext";
 
 // Per-item label resolver — uses the tenant-configured display name when the
 // item carries a canonical Claros module id.
@@ -117,8 +117,6 @@ const NAV_GROUPS = [
       { to: "/learn", icon: GraduationCap, key: "nav.learn", testid: "sidebar-nav-learn",
         canonicalId: "claros-learn",
         module: "ILLUMINATE", label: "Claros Learn · LMS" },
-      { to: "/illuminate", icon: BookOpen, key: "nav.illuminate", testid: "sidebar-nav-illuminate",
-        module: "ILLUMINATE", label: "ILLUMINATE · Legacy" },
       { to: "/content-studio", icon: FileStack, key: "nav.content_studio", testid: "sidebar-nav-content-studio", module: "ILLUMINATE" },
       { to: "/assessments", icon: ClipboardCheck, key: "nav.assessments", testid: "sidebar-nav-assessments", module: "ILLUMINATE" },
       { to: "/ai-instructor", icon: GraduationCap, key: "nav.ai_instructor", testid: "sidebar-nav-ai-instructor", module: "VEDA" },
@@ -184,10 +182,6 @@ const NAV_GROUPS = [
       { to: "/people", icon: GraduationCap, key: "nav.people", testid: "sidebar-nav-people",
         canonicalId: "claros-people",
         module: "FACULTY", label: "Claros People · Faculty Dev" },
-      { to: "/faculty-plus", icon: GraduationCap, key: "nav.faculty_plus", testid: "sidebar-nav-faculty-plus",
-        module: "FACULTY", label: "FACULTY+ · Legacy" },
-      { to: "/prism", icon: Search, key: "nav.prism", testid: "sidebar-nav-prism",
-        module: "PRISM", label: "PRISM · Legacy" },
     ],
   },
   {
@@ -229,10 +223,6 @@ const NAV_GROUPS = [
       { to: "/green", icon: Leaf, key: "nav.green", testid: "sidebar-nav-green",
         canonicalId: "claros-green",
         module: "GREENIQ", label: "Claros Green · Sustainability" },
-      { to: "/guardian", icon: ShieldCheck, key: "nav.guardian", testid: "sidebar-nav-guardian",
-        module: "GUARDIAN", label: "GUARDIAN · Legacy" },
-      { to: "/greeniq", icon: Leaf, key: "nav.greeniq", testid: "sidebar-nav-greeniq",
-        module: "GREENIQ", label: "GREENIQ · Legacy" },
     ],
   },
   {
@@ -304,6 +294,7 @@ const NAV_GROUPS = [
 
 export default function Sidebar({ isOpen = false, onClose = () => {} }) {
   const { t } = useLang();
+  const { config: tenantConfig } = useTenantConfig();
   const { current } = useInstitution();
   const { user } = useAuth();
   const { statusOf } = useTenantModules();
@@ -351,8 +342,8 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
           </div>
         )}
         <div className="leading-tight flex-1 min-w-0">
-          <div className="text-sm font-semibold tracking-tight text-foreground truncate">
-            {current?.short_name || "Claros"}
+          <div className="text-sm font-semibold tracking-tight text-foreground truncate" data-testid="sidebar-tenant-name">
+            {tenantConfig?.platform_display_name || current?.short_name || "Claros"}
           </div>
           <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
             Powered by Claros

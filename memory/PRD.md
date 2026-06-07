@@ -1753,3 +1753,76 @@ compact backend router, one idempotent seed, and one tabbed frontend page.
 - **Career & Alumni** group: Claros Alumni · Network
 - **Safety & Sustainability** group: Claros Safe, Claros Green
 
+
+---
+
+## Phase 39 — Strongest Multi-Tenant Architecture — Feb 2026
+
+**Scope**: Implement the Claros naming convention to white-label-grade
+multi-tenancy. Three architectural shifts landed in one batch.
+
+### 1. Canonical API URLs (immutable layer)
+- Single Starlette middleware (`canonical_url_rewrite` in `server.py`)
+  rewrites incoming `/api/v1/claros-{module}/...` paths to the existing
+  `/api/v1/{module}/...` handlers for all 12 canonical modules.
+- Legacy paths continue to work — zero existing integration breakage.
+- Module IDs are **immutable in code** (the CANONICAL_MODULES catalogue
+  in `routes_tenant_config.py`) and become the routing/integration key
+  forever.
+
+### 2. Tenant configuration API
+- New file `routes_tenant_config.py` exposes:
+  - `GET /api/v1/tenants/canonical/modules` — public catalogue (12 modules)
+  - `GET /api/v1/tenants/me/config` — resolved tenant config (any user)
+  - `PUT /api/v1/tenants/me/config/modules/{module_id}` — admin rename
+    (1–30 chars displayName, 1–10 chars shortName, optional enable/icon)
+  - `PUT /api/v1/tenants/me/config/branding` — admin platform name +
+    primary/accent colour + logo + custom domain
+  - `POST /api/v1/tenants/me/config/reset` — wipe ALL overrides for tenant
+  - `POST /api/v1/tenants/me/config/modules/{module_id}/reset` — per-module
+    reset (intelligently re-applies the tenant **seed** name if any, so
+    VCE → VEDA is restored on reset, not canonical "Claros AI")
+- Two new collections: `tenant_module_configs` (keyed by tenant+module),
+  `tenant_branding` (one per tenant). Idempotent seed loads VCE with the
+  12 legacy code names (VEDA / ARISE / NEXUS / ILLUMINATE / PATHFINDER /
+  PRISM / COMPASS / GUARDIAN / ALUMNI360 / GREENIQ / FACULTY+ / COMMAND)
+  + brand colour #1565C0; ISB stays on canonical Claros names.
+- `claros-ai` is permanently NEVER_DISABLE (cannot be turned off — it
+  powers the other modules).
+
+### 3. Frontend display-name resolver
+- `TenantConfigContext.jsx` provider fetches `/tenants/me/config` once
+  per session, applies `--tenant-primary` CSS variable to
+  `document.documentElement`, exposes `useModuleName(canonicalId, mode)`
+  and `usePlatformName()` hooks with canonical fallbacks.
+- `Shell.PageHeader` now accepts `moduleId` and resolves the eyebrow to
+  the tenant-configured label. All 12 module pages wired.
+- `Sidebar.jsx` has a `SidebarItemLabel` resolver. Each Claros module
+  sidebar entry carries `canonicalId="claros-*"`. Legacy duplicate
+  entries (`ILLUMINATE · Legacy`, `PRISM · Legacy`, `FACULTY+ · Legacy`,
+  `GUARDIAN · Legacy`, `GREENIQ · Legacy`) were removed.
+- Sidebar tenant chip now reads `platform_display_name` from
+  `TenantConfig` (was hard-coded to `current.short_name`).
+- New admin page `/admin/tenant-config` (`TenantConfigAdmin.jsx`) — 12
+  per-module rows with displayName / shortName / enabled / reset / save
+  + branding card (platform name + primary + accent + logo URL). Live
+  refresh after every mutation. Hidden from non-admins via
+  `<Navigate to="/">`.
+
+### Validation
+- Backend pytest: **16/16 PASS** (`tests/test_phase38_tenant_config.py`,
+  ~80s) covering GET/PUT/POST endpoints, 30-char limits, NEVER_DISABLE,
+  per-module + full-tenant reset, branding round-trip, canonical alias
+  parity with legacy.
+- Testing agent v3 iteration 38: **100% backend, 95% frontend** (only
+  cosmetic duplicates noted — now fixed). Sidebar entries verified
+  showing VEDA / ILLUMINATE / PRISM / FACULTY+ / ALUMNI360 / GUARDIAN /
+  GREENIQ / COMMAND on a VCE login; page eyebrows resolve correctly;
+  admin gate enforced (student redirected from /admin/tenant-config).
+- Post-test fixes applied:
+  - `reset_module` re-applies VCE seed name (VEDA, etc.) instead of
+    canonical so per-module reset is truly idempotent across restarts.
+  - Removed all 5 duplicate `*-Legacy` sidebar entries.
+  - Sidebar tenant chip now reads `tenantConfig.platform_display_name`
+    with `data-testid="sidebar-tenant-name"` for tests.
+

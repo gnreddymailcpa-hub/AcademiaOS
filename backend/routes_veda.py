@@ -204,7 +204,7 @@ class KbIngestIn(BaseModel):
     only_pending: bool = True
 
 
-def build_phase24_router(get_db, get_current_user):
+def build_veda_router(get_db, get_current_user):
     router = APIRouter(prefix="/api/veda", tags=["phase24-veda"])
 
     def _guard(user, iid):

@@ -775,13 +775,13 @@ import routes_faculty
 import routes_guardian
 import routes_greeniq
 import routes_exec
-import routes_phase1_complete
-import routes_phase2_complete
-import routes_phase3_complete
-import routes_phase24_veda
-import routes_phase25_arise
-import routes_phase26_nexus
-import routes_phase27_remaining
+import routes_phase1_closeout
+import routes_phase2_closeout
+import routes_phase3_closeout
+import routes_veda
+import routes_arise
+import routes_nexus_advanced
+import routes_closeout
 from collections import Counter
 from ai_service import chunk_text, _tokens
 
@@ -1016,13 +1016,13 @@ app.include_router(routes_faculty.build_faculty_router(lambda: db, get_current_u
 app.include_router(routes_guardian.build_guardian_router(lambda: db, get_current_user))
 app.include_router(routes_greeniq.build_greeniq_router(lambda: db, get_current_user))
 app.include_router(routes_exec.build_exec_router(lambda: db, get_current_user))
-app.include_router(routes_phase1_complete.build_phase1_router(lambda: db, get_current_user))
-app.include_router(routes_phase2_complete.build_phase2_router(lambda: db, get_current_user))
-app.include_router(routes_phase3_complete.build_phase3_router(lambda: db, get_current_user))
-app.include_router(routes_phase24_veda.build_phase24_router(lambda: db, get_current_user))
-app.include_router(routes_phase25_arise.build_phase25_router(lambda: db, get_current_user))
-app.include_router(routes_phase26_nexus.build_phase26_router(lambda: db, get_current_user))
-app.include_router(routes_phase27_remaining.build_phase27_router(lambda: db, get_current_user))
+app.include_router(routes_phase1_closeout.build_phase1_router(lambda: db, get_current_user))
+app.include_router(routes_phase2_closeout.build_phase2_router(lambda: db, get_current_user))
+app.include_router(routes_phase3_closeout.build_phase3_router(lambda: db, get_current_user))
+app.include_router(routes_veda.build_veda_router(lambda: db, get_current_user))
+app.include_router(routes_arise.build_arise_router(lambda: db, get_current_user))
+app.include_router(routes_nexus_advanced.build_nexus_advanced_router(lambda: db, get_current_user))
+app.include_router(routes_closeout.build_closeout_router(lambda: db, get_current_user))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

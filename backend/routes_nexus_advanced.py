@@ -131,7 +131,7 @@ class GraduateIn(BaseModel):
     branch: Optional[str] = None
 
 
-def build_phase26_router(get_db, get_current_user):
+def build_nexus_advanced_router(get_db, get_current_user):
     router = APIRouter(prefix="/api/nexus2", tags=["phase26-nexus"])
 
     def _guard(user, iid):

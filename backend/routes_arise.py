@@ -198,7 +198,7 @@ class BCatAllocIn(BaseModel):
     notes: Optional[str] = ""
 
 
-def build_phase25_router(get_db, get_current_user):
+def build_arise_router(get_db, get_current_user):
     router = APIRouter(prefix="/api/arise", tags=["phase25-arise"])
 
     def _guard(user, iid):

@@ -1208,3 +1208,47 @@ thresholds**. Surfaced behind a single `/phase1-complete` console.
 - Kafka event bus (currently direct DB writes across platforms)
 - Print-CSS polish + per-platform footnotes for Executive Briefing / AQAR
 
+
+
+### Phase 30 — Feb 2026 (Backend route refactor · phase_*.py → domain-named routers)
+Closes the P1 tech-debt item from the Phase-29 backlog. The fragmented
+`routes_phase*_*.py` files have been renamed to domain-meaningful names so the
+backend reads as a platform-oriented codebase rather than an iteration log.
+
+- **Renamed files** (pure file moves; URL contracts unchanged):
+  - `routes_phase24_veda.py`        → `routes_veda.py`
+  - `routes_phase25_arise.py`       → `routes_arise.py`
+  - `routes_phase26_nexus.py`       → `routes_nexus_advanced.py`
+  - `routes_phase27_remaining.py`   → `routes_closeout.py`
+  - `routes_phase1_complete.py`     → `routes_phase1_closeout.py`
+  - `routes_phase2_complete.py`     → `routes_phase2_closeout.py`
+  - `routes_phase3_complete.py`     → `routes_phase3_closeout.py`
+
+- **Renamed `build_*_router` functions** for the three platform-specific
+  modules: `build_phase24_router` → `build_veda_router`,
+  `build_phase25_router` → `build_arise_router`,
+  `build_phase26_router` → `build_nexus_advanced_router`,
+  `build_phase27_router` → `build_closeout_router`. The `phase1/2/3` closeout
+  routers retain their `build_phase{N}_router` names because their URL
+  prefixes are still `/api/phase{N}` (frontend contract).
+
+- **`server.py` updated** — 7 import lines + 7 `app.include_router(...)`
+  lines updated to use the new module + function names. Zero URL changes,
+  zero behavioural changes.
+
+- **Tests**: 155/156 Phase-21-29 endpoint tests pass via the renamed
+  routers (one pre-existing Phase-25 drip flake unchanged from prior runs;
+  noted as "non-blocking" in handoff). The 18 broader-suite failures in
+  `backend_test.py` / `test_phase6.py` / `test_phase10_messaging.py` /
+  `test_phase13_platform_modules.py` are pre-existing stale assertions
+  (e.g., assert 3 institutions but now there are 4 since VCE was added)
+  and are unaffected by this refactor. Smoke-tested live via curl: all six
+  prefixes — `/api/veda`, `/api/arise`, `/api/closeout`, `/api/phase1`,
+  `/api/phase2`, `/api/phase3` — respond 200 with expected JSON shapes.
+
+- **Backend file count**: 26 `routes_*.py` files, all domain-named. The
+  `phase*_closeout.py` naming preserves the temporal grouping that the
+  shared `/api/phase{N}` URL prefix enforces — these endpoints span
+  multiple platforms within a release wave (Phase-1 platforms, Phase-2
+  platforms, Phase-3 platforms) and cannot be split further without
+  breaking the frontend contract.

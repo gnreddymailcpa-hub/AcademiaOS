@@ -112,7 +112,7 @@ class DrillIn(BaseModel):
     issues_found: List[str] = Field(default_factory=list)
 
 
-def build_phase27_router(get_db, get_current_user):
+def build_closeout_router(get_db, get_current_user):
     router = APIRouter(prefix="/api/closeout", tags=["phase27-bulk"])
 
     def _guard(user, iid):

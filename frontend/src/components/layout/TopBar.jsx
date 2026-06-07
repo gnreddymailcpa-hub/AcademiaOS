@@ -4,6 +4,7 @@ import { Search, Bell, LogOut, ShieldCheck, ChevronDown, Inbox } from "lucide-re
 import InstitutionSwitcher from "./InstitutionSwitcher";
 import LanguageSwitcher from "./LanguageSwitcher";
 import TenantPreviewSwitcher from "./TenantPreviewSwitcher";
+import ThemeToggle from "./ThemeToggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -105,6 +106,7 @@ export default function TopBar() {
           </Badge>
 
           <LanguageSwitcher />
+          <ThemeToggle />
 
           <Popover>
             <PopoverTrigger asChild>

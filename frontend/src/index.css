@@ -118,6 +118,60 @@ h1, h2, h3, h4, h5, h6 {
   --chart-5: 0 60% 55%;
 }
 
+/* ---------- Dark theme (editorial slate, gold accent) ----------
+ * Applied via `html.dark` so it wins specificity-wise over the
+ * per-institution `.X-theme` classes (which are also on <html>).
+ * Each institution still controls its accent / chart palette below
+ * via `html.dark.X-theme` so per-tenant gold/violet/red identity
+ * survives in dark mode.
+ */
+html.dark {
+  --background: 222 28% 8%;
+  --foreground: 210 30% 92%;
+  --card: 222 25% 11%;
+  --card-foreground: 210 30% 92%;
+  --popover: 222 25% 11%;
+  --popover-foreground: 210 30% 92%;
+  --primary: 210 30% 92%;
+  --primary-foreground: 222 47% 11%;
+  --secondary: 222 20% 16%;
+  --secondary-foreground: 210 30% 92%;
+  --muted: 222 18% 16%;
+  --muted-foreground: 220 12% 65%;
+  --accent: 43 78% 58%;
+  --accent-foreground: 222 47% 11%;
+  --destructive: 0 72% 55%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 222 18% 20%;
+  --input: 222 18% 20%;
+  --ring: 43 78% 58%;
+  --surface: 222 25% 11%;
+  --chart-1: 210 30% 92%;
+  --chart-2: 43 78% 58%;
+  --chart-3: 183 60% 55%;
+  --chart-4: 270 55% 65%;
+  --chart-5: 12 70% 65%;
+}
+
+/* Preserve per-institution brand accents in dark mode */
+html.dark.isb-theme {
+  --accent: 43 80% 60%;
+  --ring: 43 80% 60%;
+  --chart-2: 43 80% 60%;
+}
+html.dark.eaic-theme {
+  --accent: 39 88% 62%;
+  --ring: 39 88% 62%;
+  --chart-2: 39 88% 62%;
+  --chart-3: 183 60% 55%;
+}
+html.dark.bradford-theme {
+  --accent: 45 95% 55%;
+  --ring: 45 95% 55%;
+  --chart-1: 270 60% 70%;
+  --chart-2: 45 95% 55%;
+}
+
 @layer base {
   * {
     @apply border-border;

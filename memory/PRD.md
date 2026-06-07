@@ -2087,3 +2087,55 @@ institution_id), `config` stayed null, but the page only checked `loading`.
 - `/app/backend/routes_tenant_config.py` (+4 endpoints, +3 shared helpers)
 - `/app/frontend/src/pages/TenantConfigAdmin.jsx` (state model refactor +
   super_admin UX)
+
+
+## Phase 41.5 — Dark Theme + Toggle — Feb 2026
+
+**Scope**: Added an editorial dark theme alongside the existing light
+theme, with a one-click sun/moon toggle in the TopBar.
+
+### Design
+- Editorial slate palette (avoids the AI-slop violet/blue gradient).
+  Background `hsl(222 28% 8%)`, cards `hsl(222 25% 11%)`, foreground
+  `hsl(210 30% 92%)`, gold accent warmed to `hsl(43 78% 58%)` for
+  contrast.
+- Per-institution accents preserved in dark mode via
+  `html.dark.isb-theme / .eaic-theme / .bradford-theme` so each tenant's
+  brand gold/violet/red survives the theme switch.
+- Charts re-skin: chart-1 flips to off-white for line strokes on dark,
+  while chart-2 (teal/gold) stays vibrant. Recharts inherits CSS vars
+  automatically.
+
+### Implementation
+- **`/app/frontend/src/context/ThemeContext.jsx`** — new context with
+  `theme`, `setTheme`, `toggleTheme`. Persists to `localStorage` key
+  `claros-theme`. Reads system `prefers-color-scheme` on first visit.
+  Applies `.dark` class to `document.documentElement` (Tailwind
+  `darkMode: "class"`).
+- **`/app/frontend/src/components/layout/ThemeToggle.jsx`** — sun/moon
+  icon button with smooth rotate-fade transition. `data-testid="theme-toggle"`.
+- **`/app/frontend/src/index.css`** — appended `html.dark` block
+  (outside `@layer base` to win specificity over `.isb-theme` etc.) plus
+  three per-tenant dark accent overrides.
+- **`/app/frontend/src/App.js`** — wrapped both router branches in
+  `ThemeProvider` so the toggle works on `/login` AND post-auth routes.
+- **`/app/frontend/src/components/layout/TopBar.jsx`** — added
+  `<ThemeToggle />` between `LanguageSwitcher` and the notifications
+  bell.
+
+### Validation
+- 4/4 toggle assertions green:
+  - Default light (no `.dark` on `<html>`) on first visit ✓
+  - Click toggle → `.dark` class added + `localStorage.claros-theme='dark'` ✓
+  - Reload → dark persisted ✓
+  - Click toggle again → `.dark` removed ✓
+- Screenshots confirm both themes render correctly for VCE Principal,
+  including charts, KPI cards, sidebar VCE rebrand (VEDA/ARISE/NEXUS),
+  and Recent Audit Events. ESLint clean.
+
+### Files touched
+- `+ /app/frontend/src/context/ThemeContext.jsx`
+- `+ /app/frontend/src/components/layout/ThemeToggle.jsx`
+- `~ /app/frontend/src/App.js` (ThemeProvider wrap)
+- `~ /app/frontend/src/components/layout/TopBar.jsx` (ThemeToggle mount)
+- `~ /app/frontend/src/index.css` (`html.dark` + tenant variants)

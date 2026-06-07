@@ -7,6 +7,7 @@ import { Toaster } from "./components/ui/sonner";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { InstitutionProvider } from "./context/InstitutionContext";
 import { TenantConfigProvider } from "./context/TenantConfigContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import TenantConfigAdmin from "./pages/TenantConfigAdmin";
 import { LanguageProvider } from "./context/LanguageContext";
 
@@ -180,41 +181,45 @@ export default function App() {
   if (typeof window !== "undefined" && window.location.hash?.includes("session_id=")) {
     return (
       <BrowserRouter>
-        <AuthProvider>
-          <LanguageProvider>
-            <InstitutionProvider>
-              <TenantConfigProvider>
-                <AuthCallback />
-                <Toaster position="top-right" richColors />
-              </TenantConfigProvider>
-            </InstitutionProvider>
-          </LanguageProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <LanguageProvider>
+              <InstitutionProvider>
+                <TenantConfigProvider>
+                  <AuthCallback />
+                  <Toaster position="top-right" richColors />
+                </TenantConfigProvider>
+              </InstitutionProvider>
+            </LanguageProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </BrowserRouter>
     );
   }
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <LanguageProvider>
-          <InstitutionProvider>
-            <TenantConfigProvider>
-            <Routes>
-              <Route path="/login" element={<LoginRoute />} />
-              <Route
-                path="/*"
-                element={
-                  <ProtectedRoute>
-                    <ShellRoutes />
-                  </ProtectedRoute>
-                }
-              />
-            </Routes>
-            <Toaster position="top-right" richColors />
-            </TenantConfigProvider>
-          </InstitutionProvider>
-        </LanguageProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <LanguageProvider>
+            <InstitutionProvider>
+              <TenantConfigProvider>
+              <Routes>
+                <Route path="/login" element={<LoginRoute />} />
+                <Route
+                  path="/*"
+                  element={
+                    <ProtectedRoute>
+                      <ShellRoutes />
+                    </ProtectedRoute>
+                  }
+                />
+              </Routes>
+              <Toaster position="top-right" richColors />
+              </TenantConfigProvider>
+            </InstitutionProvider>
+          </LanguageProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

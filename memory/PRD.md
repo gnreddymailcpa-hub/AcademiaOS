@@ -1993,3 +1993,45 @@ automatically into the sidebar headings without any extra wiring.
 ### Files touched
 - `/app/frontend/src/components/layout/Sidebar.jsx` (full re-write of
   `NAV_GROUPS` + new `GroupLabel` component)
+
+
+## Phase 41.3 — Onboarding Wizard refreshed for canonical Claros naming — Feb 2026
+
+**Scope**: The Onboarding Wizard was still surfacing the legacy 12-platform
+registry codes (VEDA · ARISE · NEXUS · COMPASS …) everywhere, ignoring the
+tenant's canonical Claros module names. Rewired all three steps to resolve
+labels via `useTenantConfig().modules[claros-id].display_name`.
+
+### Key changes
+- Added `LEGACY_TO_CLAROS` map (single source of truth joining the legacy
+  registry to the canonical config layer):
+  `VEDA→claros-ai, ARISE→claros-enroll, NEXUS→claros-core,
+  COMPASS→claros-comply, PATHFINDER→claros-launch, COMMAND→claros-insights,
+  ILLUMINATE→claros-learn, PRISM→claros-research, GUARDIAN→claros-safe,
+  ALUMNI360→claros-alumni, FACULTY→claros-people, GREENIQ→claros-green`.
+- New `useTenantLabelForLegacyCode()` hook resolves any legacy code to the
+  tenant's display label.
+- **Step 1** — replaced the hardcoded "VEDA · ARISE · NEXUS · …" string
+  with a catalog-driven, phase-grouped list that renders the tenant's
+  display names. Default tenants now correctly read
+  "Claros AI · Claros Enroll · Claros Core · …" instead of the legacy
+  codes; VCE continues to see its rebrand.
+- **Step 2** — each module row now shows the tenant display name as the
+  primary heading. When the rebrand differs from the legacy code, the
+  legacy code appears as a small mono badge for engineer-facing context.
+  Dependencies (`depends on: X`) also resolve to display names.
+- **Step 3** — launch tiles show display name on top with the legacy code
+  in a small mono footnote.
+
+### Validation
+- ISB (no rebrand) Step 1: shows `Claros AI · Claros Enroll · Claros Core ·
+  Claros Comply · Claros Launch · Claros Insights` ✓
+- ISB Step 2: VEDA label → "Claros AI", ARISE → "Claros Enroll",
+  COMMAND → "Claros Insights", GREENIQ → "Claros Green" ✓
+- ISB legacy code "VEDA" does NOT appear in Step 1 prose ✓
+- VCE Step 1 + Step 2 still show VEDA/ARISE/NEXUS rebrand intact ✓
+- ESLint: clean.
+
+### Files touched
+- `/app/frontend/src/pages/Onboarding.jsx` (full rewrite of label
+  resolution + Step 1/2/3 rendering)

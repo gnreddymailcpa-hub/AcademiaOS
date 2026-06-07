@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
   Sparkles, ChevronRight, ChevronLeft, CheckCircle2, Rocket, Building2,
@@ -10,6 +10,7 @@ import { Switch } from "../components/ui/switch";
 import { toast } from "sonner";
 import { useInstitution } from "../context/InstitutionContext";
 import { useAuth } from "../context/AuthContext";
+import { useTenantConfig } from "../context/TenantConfigContext";
 import { api, formatApiError } from "../lib/api";
 
 /**
@@ -17,7 +18,41 @@ import { api, formatApiError } from "../lib/api";
  * pick which of the 12 platforms to activate → review & launch. Wraps
  * `/api/modules/catalog` + `/api/modules/{tenant}/{code}` (PATCH) so this
  * UI is purely a thin orchestrator on the existing platform registry API.
+ *
+ * Module labels are sourced from the tenant's resolved canonical Claros
+ * config so that every name in this wizard reflects the tenant's rebrand
+ * (e.g. VCE sees "VEDA" for Claros AI, default tenants see "Claros AI").
  */
+
+// Legacy-code → canonical-claros-id map. The platform registry
+// (routes_modules.py) and the canonical tenant config (routes_tenant_config.py)
+// are two parallel systems; this is the single source of truth that joins them.
+const LEGACY_TO_CLAROS = {
+  VEDA: "claros-ai",
+  ARISE: "claros-enroll",
+  NEXUS: "claros-core",
+  COMPASS: "claros-comply",
+  PATHFINDER: "claros-launch",
+  COMMAND: "claros-insights",
+  ILLUMINATE: "claros-learn",
+  PRISM: "claros-research",
+  GUARDIAN: "claros-safe",
+  ALUMNI360: "claros-alumni",
+  FACULTY: "claros-people",
+  GREENIQ: "claros-green",
+};
+
+// Resolve a legacy registry code (e.g. "VEDA") to the tenant's display label
+// (e.g. "VEDA" for VCE, "Claros AI" for default tenants).
+function useTenantLabelForLegacyCode() {
+  const { config } = useTenantConfig();
+  return (legacyCode) => {
+    const claros = LEGACY_TO_CLAROS[legacyCode];
+    if (!claros) return legacyCode;
+    return config?.modules?.[claros]?.display_name || legacyCode;
+  };
+}
+
 export default function Onboarding() {
   const { current } = useInstitution();
   const { user } = useAuth();
@@ -27,6 +62,7 @@ export default function Onboarding() {
   const [tenantModules, setTenantModules] = useState([]);
   const [selection, setSelection] = useState({});  // code -> bool
   const [saving, setSaving] = useState(false);
+  const labelFor = useTenantLabelForLegacyCode();
 
   useEffect(() => {
     if (!current?.id) return;
@@ -108,26 +144,44 @@ export default function Onboarding() {
             ))}
           </ol>
 
-          {step === 1 && <StepOne current={current} onNext={() => setStep(2)} />}
+          {step === 1 && <StepOne current={current} catalog={catalog} labelFor={labelFor} onNext={() => setStep(2)} />}
           {step === 2 && (
             <StepTwo
               catalog={catalog}
               selection={selection}
               setSelection={setSelection}
               tenantModules={tenantModules}
+              labelFor={labelFor}
               onBack={() => setStep(1)}
               onNext={launch}
               saving={saving}
             />
           )}
-          {step === 3 && <StepThree current={current} catalog={catalog} selection={selection} onDone={() => nav("/")} />}
+          {step === 3 && <StepThree current={current} catalog={catalog} selection={selection} labelFor={labelFor} onDone={() => nav("/")} />}
         </div>
       </div>
     </div>
   );
 }
 
-function StepOne({ current, onNext }) {
+function StepOne({ current, catalog, labelFor, onNext }) {
+  // Group catalog by phase and resolve to tenant display names so the wizard
+  // shows VCE "VEDA · ARISE · NEXUS…" and a default tenant "Claros AI ·
+  // Claros Enroll · Claros Core…".
+  const phaseGroups = useMemo(() => {
+    const byPhase = { 1: [], 2: [], 3: [] };
+    (catalog || []).forEach((c) => {
+      if (byPhase[c.phase]) byPhase[c.phase].push(labelFor(c.code));
+    });
+    return byPhase;
+  }, [catalog, labelFor]);
+
+  const PHASE_META = [
+    { n: 1, name: "Foundational", desc: "Day-1 essentials — recruitment, ERP, compliance & analytics" },
+    { n: 2, name: "Engagement",   desc: "Adaptive learning, research, alumni, faculty & safety" },
+    { n: 3, name: "Strategic",    desc: "Sustainability intelligence & long-tail platforms" },
+  ];
+
   return (
     <div className="rounded-lg border border-border bg-card p-8" data-testid="onboarding-step-1">
       <div className="flex items-start gap-4">
@@ -139,15 +193,26 @@ function StepOne({ current, onNext }) {
             lets you pick exactly which ones to launch on day 1. You can change
             this anytime in <span className="font-mono">Platform Modules</span>.
           </p>
-          <ul className="mt-4 space-y-1.5 text-xs text-foreground/85">
-            <li>· <span className="font-semibold text-foreground">Phase 1 (Foundational)</span> — VEDA · ARISE · NEXUS · COMPASS · PATHFINDER · COMMAND</li>
-            <li>· <span className="font-semibold text-foreground">Phase 2 (Engagement)</span> — ILLUMINATE · PRISM · ALUMNI360 · FACULTY+ · GUARDIAN</li>
-            <li>· <span className="font-semibold text-foreground">Phase 3 (Strategic)</span> — GREENIQ</li>
+          <ul className="mt-5 space-y-3 text-xs text-foreground/85" data-testid="onboarding-phase-overview">
+            {PHASE_META.map((p) => (
+              <li key={p.n} data-testid={`onboarding-phase-${p.n}-overview`}>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-foreground">Phase {p.n}</span>
+                  <Badge variant="outline" className="text-[10px]">{p.name}</Badge>
+                </div>
+                <div className="mt-1 text-muted-foreground">{p.desc}</div>
+                <div className="mt-1.5 font-mono text-[11px] text-foreground/90">
+                  {phaseGroups[p.n].length > 0
+                    ? phaseGroups[p.n].join(" · ")
+                    : <span className="text-muted-foreground italic">loading…</span>}
+                </div>
+              </li>
+            ))}
           </ul>
         </div>
       </div>
       <div className="flex justify-end mt-6">
-        <Button onClick={onNext} className="gap-1.5" data-testid="onboarding-step1-next">
+        <Button onClick={onNext} className="gap-1.5" data-testid="onboarding-step1-next" disabled={!catalog?.length}>
           Pick your platforms <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
@@ -155,7 +220,7 @@ function StepOne({ current, onNext }) {
   );
 }
 
-function StepTwo({ catalog, selection, setSelection, tenantModules, onBack, onNext, saving }) {
+function StepTwo({ catalog, selection, setSelection, tenantModules, labelFor, onBack, onNext, saving }) {
   const phases = [1, 2, 3];
   const inPhase = (n) => catalog.filter((c) => c.phase === n);
   const setAll = (phase, val) => {
@@ -177,27 +242,36 @@ function StepTwo({ catalog, selection, setSelection, tenantModules, onBack, onNe
             </div>
           </div>
           <ul className="space-y-2.5">
-            {inPhase(phase).map((c) => (
-              <li key={c.code} className="flex items-start justify-between gap-3" data-testid={`onboarding-module-${c.code}`}>
-                <div className="min-w-0">
-                  <div className="font-medium text-sm flex items-center gap-2">
-                    {c.code}
-                    <span className="text-[10px] text-muted-foreground font-normal">{c.name}</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground">{c.tagline}</div>
-                  {c.depends_on?.length > 0 && (
-                    <div className="text-[10px] text-muted-foreground mt-0.5">
-                      depends on: {c.depends_on.join(", ")}
+            {inPhase(phase).map((c) => {
+              const display = labelFor(c.code);
+              const isRebranded = display !== c.code;
+              return (
+                <li key={c.code} className="flex items-start justify-between gap-3" data-testid={`onboarding-module-${c.code}`}>
+                  <div className="min-w-0">
+                    <div className="font-medium text-sm flex items-center gap-2 flex-wrap">
+                      <span data-testid={`onboarding-module-name-${c.code}`}>{display}</span>
+                      {isRebranded && (
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono" title="Platform code">
+                          {c.code}
+                        </span>
+                      )}
+                      <span className="text-[10px] text-muted-foreground font-normal">· {c.name}</span>
                     </div>
-                  )}
-                </div>
-                <Switch
-                  checked={!!selection[c.code]}
-                  onCheckedChange={(v) => setSelection({ ...selection, [c.code]: v })}
-                  data-testid={`onboarding-toggle-${c.code}`}
-                />
-              </li>
-            ))}
+                    <div className="text-xs text-muted-foreground mt-0.5">{c.tagline}</div>
+                    {c.depends_on?.length > 0 && (
+                      <div className="text-[10px] text-muted-foreground mt-0.5">
+                        depends on: {c.depends_on.map(labelFor).join(", ")}
+                      </div>
+                    )}
+                  </div>
+                  <Switch
+                    checked={!!selection[c.code]}
+                    onCheckedChange={(v) => setSelection({ ...selection, [c.code]: v })}
+                    data-testid={`onboarding-toggle-${c.code}`}
+                  />
+                </li>
+              );
+            })}
           </ul>
         </div>
       ))}
@@ -216,12 +290,12 @@ function StepTwo({ catalog, selection, setSelection, tenantModules, onBack, onNe
   );
 }
 
-function StepThree({ current, catalog, selection, onDone }) {
+function StepThree({ current, catalog, selection, labelFor, onDone }) {
   const enabled = catalog.filter((c) => selection[c.code] && c.route);
   return (
     <div className="rounded-lg border border-emerald-200 bg-emerald-600/5 p-8 text-center" data-testid="onboarding-step-3">
       <CheckCircle2 className="h-10 w-10 mx-auto text-emerald-600" />
-      <h2 className="text-xl font-semibold tracking-tight mt-3">You're live, {current.short_name}!</h2>
+      <h2 className="text-xl font-semibold tracking-tight mt-3">You&apos;re live, {current.short_name}!</h2>
       <p className="text-sm text-muted-foreground mt-1.5">
         {enabled.length} platforms activated. Jump in below or head back to the dashboard.
       </p>
@@ -233,8 +307,11 @@ function StepThree({ current, catalog, selection, onDone }) {
               className="flex items-center justify-between rounded-md border border-border bg-card px-3 py-2 hover:border-primary transition"
               data-testid={`onboarding-launch-${c.code}`}
             >
-              <span className="text-sm font-medium">{c.code}</span>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              <div className="flex flex-col items-start min-w-0">
+                <span className="text-sm font-medium truncate">{labelFor(c.code)}</span>
+                <span className="text-[10px] text-muted-foreground font-mono">{c.code}</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
             </Link>
           </li>
         ))}

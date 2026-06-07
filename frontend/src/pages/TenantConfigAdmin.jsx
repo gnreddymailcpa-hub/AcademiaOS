@@ -12,7 +12,7 @@ import { toast } from "sonner";
 
 export default function TenantConfigAdmin() {
   const { user } = useAuth();
-  const { config, loading, refresh } = useTenantConfig();
+  const { config, loading, refresh, notifyChanged } = useTenantConfig();
   const [branding, setBranding] = useState({});
   const [modules, setModules] = useState({});
   const [savingId, setSavingId] = useState(null);
@@ -25,6 +25,7 @@ export default function TenantConfigAdmin() {
       primary_color: config.primary_color || "#2563EB",
       accent_color: config.accent_color || "#0EA5E9",
       logo_url: config.logo_url || "",
+      powered_by_label: config.powered_by_label ?? "Powered by Claros",
     });
     setModules(Object.fromEntries(
       Object.entries(config.modules || {}).map(([id, m]) => [id, {
@@ -42,7 +43,7 @@ export default function TenantConfigAdmin() {
     try {
       await api.put(`/v1/tenants/me/config/modules/${mid}`, modules[mid]);
       toast.success(`Saved ${mid}`);
-      refresh();
+      refresh(); notifyChanged();
     } catch (e) {
       toast.error(e?.response?.data?.detail || "Save failed");
     } finally { setSavingId(null); }
@@ -53,7 +54,7 @@ export default function TenantConfigAdmin() {
     try {
       await api.post(`/v1/tenants/me/config/modules/${mid}/reset`);
       toast.success(`Reset ${mid} to canonical`);
-      refresh();
+      refresh(); notifyChanged();
     } catch { toast.error("Reset failed"); }
     finally { setSavingId(null); }
   };
@@ -63,7 +64,7 @@ export default function TenantConfigAdmin() {
     try {
       await api.put("/v1/tenants/me/config/branding", branding);
       toast.success("Branding updated");
-      refresh();
+      refresh(); notifyChanged();
     } catch (e) { toast.error(e?.response?.data?.detail || "Save failed"); }
     finally { setSavingId(null); }
   };
@@ -74,7 +75,7 @@ export default function TenantConfigAdmin() {
     try {
       await api.post("/v1/tenants/me/config/reset");
       toast.success("Reset complete");
-      refresh();
+      refresh(); notifyChanged();
     } catch { toast.error("Reset failed"); }
     finally { setResetting(false); }
   };
@@ -143,6 +144,12 @@ export default function TenantConfigAdmin() {
             <Input data-testid="branding-logo-url" placeholder="https://…/logo.svg"
               value={branding.logo_url || ""}
               onChange={(e) => setBranding(s => ({ ...s, logo_url: e.target.value }))} />
+          </div>
+          <div className="space-y-1 md:col-span-2">
+            <label className="label-eyebrow">Footer tagline (empty to hide)</label>
+            <Input data-testid="branding-powered-by" placeholder="Powered by Claros"
+              value={branding.powered_by_label ?? ""}
+              onChange={(e) => setBranding(s => ({ ...s, powered_by_label: e.target.value }))} />
           </div>
         </div>
         <div className="mt-4">

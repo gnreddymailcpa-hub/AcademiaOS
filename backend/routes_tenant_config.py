@@ -130,6 +130,7 @@ class BrandingUpdate(BaseModel):
     favicon_url: Optional[str] = None
     font: Optional[str] = None
     custom_domain: Optional[str] = None
+    powered_by_label: Optional[str] = None  # Footer tagline, e.g. "Powered by Claros" or "" to hide
 
 
 # ---------------------------------------------------------------------------
@@ -173,6 +174,9 @@ async def get_tenant_config(db, iid: str) -> Dict:
         "favicon_url": branding.get("favicon_url"),
         "font": branding.get("font") or "Plus Jakarta Sans",
         "custom_domain": branding.get("custom_domain"),
+        "powered_by_label": branding.get("powered_by_label")
+            if branding.get("powered_by_label") is not None
+            else "Powered by Claros",
         "modules": modules,
     }
 

@@ -1,0 +1,50 @@
+{
+  "summary": "Phase 35/39 — Claros Launch (Placement & Career Intelligence) E2E test. 15/15 backend tests pass; all 5 frontend pages render with full Claude AI flows (skill-gap + mock-interview eval) working end-to-end. Canonical alias /api/v1/claros-launch/* mirrors /api/v1/launch/* identically. RBAC enforced on /stats (student=403, admin/faculty=200). Two SIGNIFICANT spec gaps vs. review request: (1) ClarosLaunchAdmin page is read-only analytics only — NO create-drive form, companies table, drives table or add buttons exist; (2) Backend has NO POST /companies or POST /drives endpoints — only GET — so the prescribed admin write-flow and the RBAC POST-403 cases cannot exist as written.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/v1/launch/drives", "issue": "Endpoint does not exist; review request expects admin write-flow + RBAC 403 for students. Currently only GET /drives is implemented. Cannot validate POST RBAC."},
+      {"endpoint": "POST /api/v1/launch/companies", "issue": "Endpoint does not exist; same gap as drives. Returns 405 Method Not Allowed for any caller."},
+      {"endpoint": "POST /api/v1/launch/interview/evaluate", "issue": "Spec mismatch: review describes body={question_text, answer_text}; actual Pydantic model requires {question, answer, role, company_name?, company_id?}. Frontend code uses the actual schema, so functionality works — but the review-spec wording is wrong (or backend payload contract is undocumented)."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "ClarosLaunchAdmin", "issue": "Admin page does NOT contain create-drive form, companies/drives/recruiters tables, or add buttons described in the review request. It is purely read-only KPI + top-recruiters bar chart. Admin write-flow described in the task literally does not exist in code.", "selector": "[data-testid=\"claros-launch-admin-page\"]", "priority": "HIGH"},
+      {"component": "ClarosLaunchDashboard breakdown labels", "issue": "Breakdown cards display labels 'CGPA 26.2' and 'Mock Interview 15.3' — these are score contributions (out of 30 and 25) not raw values; the student's real CGPA is ~8.7 and mock-avg ~6/10. Labels read like raw metrics and are misleading. Recommend appending '/30' or renaming to 'CGPA score' / 'Mock score'.", "selector": "[data-testid=\"launch-breakdown-cgpa\"]", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Admin /launch/admin breadcrumb", "issues": ["Still reads 'CLAROS LAUNCH · ADMIN ANALYTICS' — task says VCE tenant should rebrand display to 'PATHFINDER'. Tenant-config rebrand may not be wired into PageHeader for Launch pages (verify on other pages too)."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_claros_launch.py",
+    "/app/test_reports/pytest/pytest_phase39_launch.xml"
+  ],
+  "action_items": [
+    "Decide whether to (a) implement admin-write endpoints POST /api/v1/launch/companies + POST /api/v1/launch/drives and an admin-form UI on ClarosLaunchAdmin, OR (b) update the spec/review request to acknowledge admin Launch is read-only.",
+    "If admin write-flow is in scope: add Pydantic models for CompanyCreate / DriveCreate, role-gated routes (WRITE_ROLES), and UI forms with data-testids on the admin page. Tenants/seeds already populate drives via seed_claros_launch.py.",
+    "Fix Launch dashboard breakdown card labels: append units (e.g., 'CGPA / 30') or rename to 'CGPA score' to remove ambiguity with raw CGPA value.",
+    "Wire tenant rebrand ('PATHFINDER' for VCE) into Launch pages' PageHeader eyebrow / breadcrumb if the rebrand is intended to be visible there.",
+    "Either update the review-request body shape for POST /interview/evaluate to {question, answer, role, ...} or accept current shape (frontend already aligned)."
+  ],
+  "critical_code_review_comments": [
+    "routes_launch.py:71 — list_companies returns full company docs including prep_tips/skills_required to all roles; consider trimming for students or paginating beyond limit(200).",
+    "routes_launch.py:227 — skill_gaps prompt only samples 5 companies (limit 5) before union — small tenants with fewer companies may pass empty company_skills, causing trivial gaps. Acceptable but worth noting.",
+    "routes_launch.py:309 — evaluate_answer always persists a mock_interviews record even on parse failure of LLM JSON; if Claude rate-limits, fallback writes a row with score~3. Consider tagging records with provenance ('LLM'|'FALLBACK').",
+    "ClarosLaunchAdmin.jsx — single read-only page; does not match its name 'Admin' which usually implies CRUD. Sub-headers say 'Year-over-year placement performance' but no year breakdown is rendered; drive of label vs content.",
+    "ClarosLaunchDashboard breakdown labels — see ui_bug, value semantics ambiguous.",
+    "No POST routes for companies/drives = no way for institution admin to onboard a new recruiter through the product; relies on seed/DB-direct insertion."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_claros_launch.py"
+  ],
+  "success_rate": {"backend": "100% (15/15 pytest on implemented endpoints)", "frontend": "100% of implemented pages render + AI flows return"},
+  "test_credentials": "Student manikanta.cse@vaagdevi.edu.in / Demo@2026; Admin principal@vaagdevi.edu.in / Demo@2026; Faculty prof.suresh@vaagdevi.edu.in / Demo@2026 — all from /app/memory/test_credentials.md",
+  "seed_data_creation": "None created; relied on existing seed_claros_launch.py (VCE: 15 companies, 8 drives, skills for 5 students, 5 mock interviews for first student, ~9 placements).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend regression suite at /app/backend/tests/test_claros_launch.py — 15 tests, ~31s including 2 Claude calls. Reuse for any future Phase-35 work. Key gap: admin write-flow (POST /companies, POST /drives) and the UI form on ClarosLaunchAdmin do NOT exist. If main agent adds them, extend this test file with create→GET-persistence + RBAC 403 cases. Frontend coverage of data-testids is excellent across all 5 pages — selectors used in scripts are stable.",
+  "rca of the issue": "Phase 35 implementation shipped read-only admin analytics + student-facing flows. The review request assumed an admin write-flow was implemented (forms + POST routes), which was never built — this was likely a miscommunication carried into the review brief rather than a regression. Backend logic itself is sound: deterministic UUID seeding (idempotent), Claude JSON parsing with code-fence stripping, and fallback heuristics work cleanly. Canonical URL middleware rewrite is path-only and preserves auth/body — verified equality of /launch vs /claros-launch responses."
+}

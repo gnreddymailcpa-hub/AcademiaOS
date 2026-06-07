@@ -39,6 +39,30 @@ export function TenantConfigProvider({ children }) {
 
   useEffect(() => { refresh(); }, [refresh]);
 
+  // Cross-tab live propagation via BroadcastChannel + localStorage fallback.
+  // Any tab/page that mutates tenant config calls
+  // `window.dispatchEvent(new Event("claros:tenant-config-changed"))`
+  // OR localStorage.setItem("claros-tenant-config-changed", String(Date.now()))
+  // OR posts to the broadcast channel.
+  useEffect(() => {
+    let bc;
+    const onLocal = () => refresh();
+    try {
+      bc = new BroadcastChannel("claros-tenant-config");
+      bc.onmessage = onLocal;
+    } catch (_e) { /* old browsers */ }
+    const onStorage = (e) => {
+      if (e.key === "claros-tenant-config-changed") refresh();
+    };
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("claros:tenant-config-changed", onLocal);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("claros:tenant-config-changed", onLocal);
+      if (bc) bc.close();
+    };
+  }, [refresh]);
+
   // Apply CSS variable for primary brand colour so the whole UI rebrands instantly.
   useEffect(() => {
     if (config?.primary_color && typeof document !== "undefined") {
@@ -50,8 +74,21 @@ export function TenantConfigProvider({ children }) {
     return !!config?.modules?.[moduleId]?.is_overridden;
   }, [config]);
 
-  const value = useMemo(() => ({ config, loading, refresh, isOverridden }),
-    [config, loading, refresh, isOverridden]);
+  // Helper: broadcast a config-change signal so OTHER tabs refetch too.
+  const notifyChanged = useCallback(() => {
+    try {
+      const bc = new BroadcastChannel("claros-tenant-config");
+      bc.postMessage({ at: Date.now() });
+      bc.close();
+    } catch (_e) { /* ignored */ }
+    try {
+      localStorage.setItem("claros-tenant-config-changed", String(Date.now()));
+    } catch (_e) { /* ignored */ }
+    window.dispatchEvent(new Event("claros:tenant-config-changed"));
+  }, []);
+
+  const value = useMemo(() => ({ config, loading, refresh, isOverridden, notifyChanged }),
+    [config, loading, refresh, isOverridden, notifyChanged]);
 
   return (
     <TenantConfigContext.Provider value={value}>

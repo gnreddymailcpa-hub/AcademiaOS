@@ -345,9 +345,11 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
           <div className="text-sm font-semibold tracking-tight text-foreground truncate" data-testid="sidebar-tenant-name">
             {tenantConfig?.platform_display_name || current?.short_name || "Claros"}
           </div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            Powered by Claros
-          </div>
+          {(tenantConfig?.powered_by_label ?? "Powered by Claros") && (
+            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground" data-testid="sidebar-powered-by">
+              {tenantConfig?.powered_by_label ?? "Powered by Claros"}
+            </div>
+          )}
         </div>
         <button
           onClick={onClose}

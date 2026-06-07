@@ -841,7 +841,42 @@ destination + recent items from the keyboard without clicking through the
   re-open, Escape close, multi-route availability. Two minor non-defect
   spec deviations noted (functional behaviour correct).
 
-## 12-Platform AcademiaOS.ai — ALL PLATFORMS CLOSED + NAVIGATION RE-GROUPED + CMD-K 🎉
+### Phase 29 — Feb 2026 (⌘K Action Commands · verb-first console)
+Extends the Phase-28 palette from navigator to verb-first console. 10
+high-value action commands trigger real backend operations from a single
+keystroke, with toast feedback and contextual auto-navigation.
+
+- **ACTIONS catalog** (10): scan-defaulters · kpi-stream · generate-aqar ·
+  esg-composite · carbon-footprint · attendance-sweep · veda-kb-ingest ·
+  kb-status · incident-dashboard · accreditation-timeline. Each calls an
+  existing closeout / nexus2 / veda endpoint, surfaces a one-line result
+  via toast, and navigates to the most relevant page for follow-up context.
+
+- **UX affordances**: ⚡ Zap icon on every action row · disabled +
+  `…running` suffix while the API is in-flight (verified ~15s for the
+  Claude-driven `generate-aqar`) · keyword tags in cmdk's `value` string so
+  fuzzy search hits synonyms (e.g. typing "naac" → generate-aqar +
+  accreditation-timeline).
+
+- **Recent surface**: action-driven navigations also populate the Recent
+  group so the user's verb-first muscle memory still benefits from the
+  navigator pattern.
+
+- **Resilience**: runAction guards on missing iid, catches API errors via
+  formatApiError fallback, clears busy state in `finally` — race-free.
+
+- **Tests**: 100% green on all 10 actions + 8 Phase-28 regression checks in
+  `iteration_29.json`. All 10 backend endpoints returned 200 via the UI:
+  `/api/nexus2/{iid}/fees/predict-defaulters`,
+  `/api/closeout/{iid}/command/kpi-stream`, `/api/closeout/{iid}/compass/ssr-compose`,
+  `/api/closeout/{iid}/greeniq/esg-composite`,
+  `/api/closeout/{iid}/greeniq/carbon-footprint`,
+  `/api/nexus2/{iid}/attendance/auto-alert`,
+  `/api/veda/{iid}/kb/ingest-run`, `/api/veda/{iid}/kb/status`,
+  `/api/closeout/{iid}/guardian/incident-dashboard`,
+  `/api/closeout/{iid}/compass/accreditation-timeline`.
+
+
 Phase 1-3 + VEDA + ARISE + NEXUS + 9 remaining platforms — **156/156 backend
 cumulative** + 100% frontend across the full closeout suite (Phase 21-27),
 plus the deferred sidebar restructure now live.

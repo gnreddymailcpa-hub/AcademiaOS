@@ -28,6 +28,8 @@ import {
   Copy,
   Download,
   RefreshCcw,
+  Brain,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "../components/layout/Shell";
@@ -85,6 +87,143 @@ function Section({ title, children, actions, testid }) {
   );
 }
 
+/**
+ * VEDA agentic reasoning telemetry. Renders nothing when the endpoint
+ * returned no data (e.g. permission denied or zero traffic ever).
+ * Lays out a hero KPI + status pill + per-pass breakdown + escalations.
+ */
+function VedaResolutionRateSection({ data }) {
+  if (!data) return null;
+  const pct = data.resolution_rate_pct || 0;
+  const target = data.target_pct || 85;
+  const meeting = pct >= target;
+  const total = data.total || 0;
+
+  // Color the hero number relative to the 85% target.
+  const heroTone =
+    pct >= target ? "text-emerald-600 dark:text-emerald-400" :
+    pct >= target - 15 ? "text-amber-600 dark:text-amber-400" :
+    "text-red-600 dark:text-red-400";
+
+  const byPass = data.resolved_by_pass || { 1: 0, 2: 0, 3: 0 };
+  const totalResolved = (byPass["1"] || 0) + (byPass["2"] || 0) + (byPass["3"] || 0);
+  // Percentage share of resolved messages handled by each pass count
+  const passPct = (n) => totalResolved > 0
+    ? Math.round((byPass[String(n)] || 0) * 100 / totalResolved)
+    : 0;
+
+  return (
+    <Section
+      title="VEDA Agentic Reasoning"
+      testid="insights-veda-section"
+      actions={
+        <Badge
+          variant="outline"
+          className={
+            "gap-1.5 " +
+            (meeting
+              ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-700 dark:text-emerald-300"
+              : "bg-amber-500/10 border-amber-500/40 text-amber-700 dark:text-amber-300")
+          }
+          data-testid="veda-target-badge"
+        >
+          {meeting ? "On target" : `Below ${target}% target`}
+        </Badge>
+      }
+    >
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4" data-testid="veda-resolution-section">
+        {/* HERO — Resolution rate */}
+        <div
+          className="card p-6 border border-border bg-card flex flex-col gap-2 lg:col-span-1"
+          data-testid="veda-kpi-card"
+        >
+          <div className="flex items-center justify-between">
+            <div className="label-eyebrow inline-flex items-center gap-1.5">
+              <Brain className="h-3.5 w-3.5" /> Resolution rate (30d)
+            </div>
+            <span className="text-[10px] text-muted-foreground tabular-nums">target {target}%</span>
+          </div>
+          <div className={`text-4xl font-semibold tracking-tight tabular-nums ${heroTone}`}
+               data-testid="veda-resolution-rate">
+            {total > 0 ? `${pct}%` : "—"}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {total > 0
+              ? `${data.resolved}/${total} conversations resolved · avg ${data.avg_pass_count} pass(es)`
+              : "Awaiting first VEDA traffic"}
+          </div>
+          {/* Progress relative to target */}
+          {total > 0 && (
+            <div className="mt-2">
+              <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                <div
+                  className={pctTone(pct)}
+                  style={{ width: `${Math.min(100, pct)}%`, height: "100%" }}
+                  data-testid="veda-resolution-bar"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* PASS BREAKDOWN — what cycle resolved each conversation */}
+        <div
+          className="card p-6 border border-border bg-card lg:col-span-1"
+          data-testid="veda-pass-breakdown"
+        >
+          <div className="label-eyebrow mb-3">Resolved in pass…</div>
+          <div className="space-y-2.5">
+            {[1, 2, 3].map((n) => {
+              const count = byPass[String(n)] || 0;
+              const share = passPct(n);
+              return (
+                <div key={n} className="flex items-center gap-3" data-testid={`veda-pass-${n}-row`}>
+                  <span className="text-xs font-mono w-12 text-muted-foreground">Pass {n}</span>
+                  <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full bg-primary"
+                      style={{ width: `${share}%` }}
+                    />
+                  </div>
+                  <span className="text-xs tabular-nums w-10 text-right">{count}</span>
+                  <span className="text-[10px] text-muted-foreground tabular-nums w-10 text-right">{share}%</span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-3 text-[10px] text-muted-foreground">
+            More queries resolving in pass 1 means cleaner retrieval; more in pass 3 means the verifier is doing heavy lifting.
+          </div>
+        </div>
+
+        {/* ESCALATIONS — when the 3-pass chain gave up */}
+        <div
+          className="card p-6 border border-border bg-card lg:col-span-1"
+          data-testid="veda-escalations-card"
+        >
+          <div className="flex items-center justify-between">
+            <div className="label-eyebrow inline-flex items-center gap-1.5">
+              <AlertCircle className="h-3.5 w-3.5" /> Escalations (30d)
+            </div>
+          </div>
+          <div className="mt-1 text-4xl font-semibold tracking-tight tabular-nums"
+               data-testid="veda-escalations-count">
+            {data.escalated || 0}
+          </div>
+          <div className="text-xs text-muted-foreground mt-1">
+            Conversations VEDA couldn&apos;t resolve in 3 passes — each filed as a support ticket.
+          </div>
+          <div className="text-xs text-muted-foreground mt-2 tabular-nums">
+            Escalation rate: <span className="font-semibold text-foreground">{total > 0 ? Math.round((data.escalated || 0) * 100 / total) : 0}%</span>
+          </div>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+
+
 export default function ClarosInsightsDashboard() {
   const { user } = useAuth();
   const { current } = useInstitution();
@@ -96,6 +235,7 @@ export default function ClarosInsightsDashboard() {
   const [enrollTrend, setEnrollTrend] = useState([]);
   const [naac, setNaac] = useState([]);
   const [alerts, setAlerts] = useState([]);
+  const [veda, setVeda] = useState(null);
 
   // Report generator state
   const now = new Date();
@@ -112,13 +252,16 @@ export default function ClarosInsightsDashboard() {
     setLoading(true);
     const iidParam = current?.id ? { iid: current.id } : {};
     try {
-      const [ov, att, plc, enr, nc, al] = await Promise.all([
+      const [ov, att, plc, enr, nc, al, vd] = await Promise.all([
         api.get("/v1/insights/overview", { params: iidParam }).then(r => r.data),
         api.get("/v1/insights/trends/attendance", { params: iidParam }).then(r => r.data),
         api.get("/v1/insights/trends/placements", { params: iidParam }).then(r => r.data),
         api.get("/v1/insights/trends/enrollment", { params: iidParam }).then(r => r.data),
         api.get("/v1/insights/naac/summary", { params: iidParam }).then(r => r.data),
         api.get("/v1/insights/alerts", { params: iidParam }).then(r => r.data),
+        api.get("/v1/insights/veda/resolution-rate", { params: { ...iidParam, days: 30 } })
+          .then(r => r.data)
+          .catch(() => null),  // KPI is optional — don't fail the whole page if it errors
       ]);
       setOverview(ov);
       setAttendanceTrend(att || []);
@@ -126,6 +269,7 @@ export default function ClarosInsightsDashboard() {
       setEnrollTrend(enr || []);
       setNaac(nc || []);
       setAlerts((al && al.items) || []);
+      setVeda(vd);
     } catch (e) {
       console.error("Insights load failed", e);
       toast.error("Failed to load insights");
@@ -260,6 +404,9 @@ export default function ClarosInsightsDashboard() {
           ))}
         </div>
       </Section>
+
+      {/* SECTION 1b — VEDA reasoning telemetry */}
+      <VedaResolutionRateSection data={veda} />
 
       {/* SECTION 2 — Charts row */}
       <Section title="Trends" testid="insights-trends-section">

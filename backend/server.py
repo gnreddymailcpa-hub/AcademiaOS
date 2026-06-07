@@ -100,6 +100,18 @@ async def get_current_user(
     return user
 
 
+async def get_optional_user(
+    request: Request,
+    creds: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
+) -> Optional[dict]:
+    """Like get_current_user but returns None for unauthed callers
+    (used by public website-form endpoints)."""
+    try:
+        return await get_current_user(request, creds)
+    except HTTPException:
+        return None
+
+
 # ---------------------------------------------------------------------------
 # Models
 # ---------------------------------------------------------------------------
@@ -783,6 +795,7 @@ import routes_arise
 import routes_nexus_advanced
 import routes_closeout
 import routes_core
+import routes_enroll
 from collections import Counter
 from ai_service import chunk_text, _tokens
 
@@ -981,6 +994,13 @@ async def seed_database():
     except Exception as e:
         logger.error("Claros Core seed failed: %s", e)
 
+    # Claros Enroll (admissions CRM) — idempotent seed across all 4 tenants
+    from seed_claros_enroll import seed_claros_enroll
+    try:
+        await seed_claros_enroll(db, logger)
+    except Exception as e:
+        logger.error("Claros Enroll seed failed: %s", e)
+
 
 @app.on_event("startup")
 async def startup():
@@ -1032,6 +1052,7 @@ app.include_router(routes_arise.build_arise_router(lambda: db, get_current_user)
 app.include_router(routes_nexus_advanced.build_nexus_advanced_router(lambda: db, get_current_user))
 app.include_router(routes_closeout.build_closeout_router(lambda: db, get_current_user))
 app.include_router(routes_core.build_claros_core_router(lambda: db, get_current_user))
+app.include_router(routes_enroll.build_claros_enroll_router(lambda: db, get_current_user, get_optional_user))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

@@ -1,0 +1,73 @@
+{
+  "summary": "Phase 33 — Claros Enroll (Admissions CRM) end-to-end testing. Backend: 34/34 pytest cases PASS covering all 11 /api/v1/enroll/* endpoints + 5 authorisation 403 cases (student delete/activity/ai-counsel; cross-tenant; registrar non-delete) + lead-score formula (6 parameterised + activity bump + status change recompute) + multi-tenant seed (ISB/EAIC/UoB all 30 leads, ISB sources distribution 15/7/5/3 verified) + ARISE legacy + Phase-32 Claros Core regression. Frontend (Playwright): /enroll Kanban renders with 7 stage columns, enroll-kanban-board + 49 lead cards (30 seed + 19 TEST_* leads I created during backend testing), enroll-add-lead-btn opens a sheet drawer with 6 input fields and enroll-draft-submit. Lead detail page (/enroll/leads/{id}) renders all expected testids EXCEPT enroll-detail-timeline (see frontend_issues). AI Counseling Script generation via Claude SUCCEEDED — 5 personalised bullets returned (verified personalised to student name 'Ananya' and program 'ECE'). Analytics page (/enroll/analytics) renders perfectly: enroll-analytics-summary + funnel (7 funnel-stage-* bars) + sources (4 source-row-* — WEBSITE/REFERRAL/EVENT/WALKIN) + daily (30 daily-bar-* bars).",
+  "backend_results": {
+    "total": 34,
+    "passed": 34,
+    "failed": 0,
+    "file": "/app/backend/tests/test_phase33_claros_enroll.py",
+    "junit_xml": "/app/test_reports/pytest/pytest_phase33.xml",
+    "coverage": [
+      "GET /api/v1/enroll/leads (seed) — total=30 for VCE principal",
+      "POST /api/v1/enroll/leads (authed) — auto-computes lead_score correctly (rank 15000 + REFERRAL = 35)",
+      "POST /api/v1/enroll/leads (public unauthed with institution_id) — 200 OK",
+      "POST /api/v1/enroll/leads (public missing institution_id) — 400",
+      "GET /leads?status=NEW & source=REFERRAL — filters honored",
+      "PUT /leads/{id} status change — auto STATUS_CHANGE activity logged",
+      "PUT /leads/{id} status=INVALID — 400",
+      "POST /leads/{id}/activity — created, timeline reflects it",
+      "POST /leads/{id}/activity activity_type=BOGUS — 400",
+      "POST /leads/{id}/ai-counsel — returns talking_points (5 strings, non-empty) + model field",
+      "GET /analytics/funnel — 7 stages + totals{month_total,enrolled,conversion_pct}",
+      "GET /analytics/sources — items[] with source/total/enrolled/conversion_pct",
+      "GET /analytics/daily — exactly 30 day-buckets",
+      "POST /leads/bulk-import — CSV with 2 valid + 1 invalid → created=2/skipped=1",
+      "DELETE /leads/{id} — 200; subsequent GET returns 404 (cascade works)",
+      "AUTHZ: student DELETE/activity/ai-counsel all 403; cross-tenant iid=ISB 403; registrar DELETE 403 (write but not delete role)",
+      "LEAD SCORE FORMULA verified for 4 rank/source combos: (1000,REFERRAL)=45, (18000,EVENT)=30, (10000,WEBSITE)=25, (600000,WALKIN)=0; status COUNSELED bumps +10 plus +10 from auto STATUS_CHANGE activity; 3 activities bump 45→65",
+      "MULTI-TENANT seed: ISB/EAIC/UoB all have total=30 leads; ISB source distribution WEBSITE=15/REFERRAL=7/EVENT=5/WALKIN=3 (matches spec exactly)",
+      "REGRESSION: /api/admissions/{iid}/leads + /api/arise/{iid}/scoring/score still respond <500; /api/v1/core/stats still returns total_students=20"
+    ]
+  },
+  "frontend_results": {
+    "/enroll (Kanban)": "PASS — claros-enroll-kanban-page + enroll-kanban-board render; 7 stage columns NEW/CONTACTED/COUNSELED/APPLIED/OFFERED/ENROLLED/DROPPED visible; 49 enroll-card-* cards (30 seed + 19 backend-test TEST_* leads). Score bars + source labels + last-contact dates visible. enroll-add-lead-btn opens a drawer with 6 inputs + enroll-draft-submit.",
+    "/enroll/leads/{id} (Detail)": "MOSTLY PASS — claros-enroll-lead-detail-page, enroll-detail-score-card, enroll-detail-status-select, enroll-detail-next-stage, enroll-detail-ai-card, enroll-detail-ai-btn, enroll-act-type-select, enroll-act-desc-input, enroll-act-submit-btn all present. AI Generate button produced 5 personalised bullets via Claude (real, not fallback). Activity timeline visually shows entries. ONE testid missing: enroll-detail-timeline. Bullets appear under enroll-detail-talking-points + enroll-ai-point-0..4 as expected.",
+    "/enroll/analytics": "PASS — claros-enroll-analytics-page + enroll-analytics-summary (4 KPI cards) + enroll-analytics-funnel (7 funnel-stage-* bars) + enroll-analytics-sources (4 source-row-* WEBSITE/REFERRAL/EVENT/WALKIN) + enroll-analytics-daily (30 daily-bar-* bars). Conversion% renders 3.7%, Month total 27."
+  },
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "ClarosEnrollLeadDetail.jsx", "issue": "data-testid='enroll-detail-timeline' not found on the timeline container. The activities themselves are visible (AI script auto-creates a NOTE entry, manual log works), only the wrapper testid is missing — likely on the parent <div> wrapping the activity items. Cosmetic / test-coverage issue only.", "selector": "[data-testid='enroll-detail-timeline']", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/enroll/analytics", "issues": ["The 'Daily new leads · last 30 days' bar chart appears largely empty visually — bars are present (30 daily-bar-* testids confirmed) but heights are very low because most lead activity is concentrated in the last few days. Cosmetic — consider scaling the y-axis or adding minimum bar height for non-zero days. Y-axis labels are also absent."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_phase33_claros_enroll.py",
+    "/app/test_reports/pytest/pytest_phase33.xml"
+  ],
+  "action_items": [
+    "Add data-testid='enroll-detail-timeline' to the timeline container <div> in ClarosEnrollLeadDetail.jsx so playwright e2e for timeline visibility can pass. Cosmetic; no functional impact.",
+    "(Optional) ClarosEnrollAnalytics.jsx daily chart — add y-axis labels and ensure non-zero bars have a minimum visible height; currently most bars look invisible because today's spike dwarfs prior days.",
+    "(Cleanup) My backend tests created ~19 TEST_* leads in VCE tenant (visible in the Kanban / shifted NEW count from 8 to 25). All have email prefixes 'TEST_'; main agent may want to bulk-delete them: db.leads.deleteMany({email: /^test_/}) or rerun seed; the deterministic seed will NOT replace them."
+  ],
+  "critical_code_review_comments": [
+    "routes_enroll.py (571 lines) is well-structured and uses {'_id': 0} projections throughout — no MongoDB ObjectId leakage.",
+    "compute_lead_score is pure and easy to test; spec coverage verified end-to-end against 4 parameterised cases + activity/status bumps.",
+    "get_optional_user dependency on the public POST /leads is correctly implemented; falls back to body.institution_id when user is anonymous; 400 emitted when neither present (verified by test).",
+    "ai-counsel endpoint has robust LLM fallback path: deterministic 5-bullet template if Claude fails. Verified end-to-end with real Claude — bullets are personalised with name + program correctly.",
+    "Bulk-import skips rows missing name/email silently — correct per spec; tested with 2 valid + 1 invalid row.",
+    "Cross-tenant guard _coerce_iid is enforced on every list/detail/update/activity/ai/analytics endpoint — verified 403 for VCE principal calling iid=ISB.",
+    "WRITE_ROLES correctly includes registrar but DELETE_ROLES does not — verified registrar receives 403 on DELETE.",
+    "Sidebar has 4 new entries: Pipeline / Analytics / Legacy Admissions / Advanced Console (visible in screenshot)."
+  ],
+  "updated_files": ["/app/backend/tests/test_phase33_claros_enroll.py (NEW — 34 tests, all PASS)"],
+  "success_rate": {"backend": "100% (34/34)", "frontend": "98% (all critical testids + flows pass; 1 missing wrapper testid enroll-detail-timeline)"},
+  "test_credentials": "principal@vaagdevi.edu.in / Demo@2026 · manikanta.cse@vaagdevi.edu.in / Demo@2026 · examcell@vaagdevi.edu.in / Demo@2026 · shankar.dean@isb.edu / Demo@2026 · khalid.exec@eaic.gov.ae / Demo@2026 · emma.admin@bradford.ac.uk / Demo@2026 · admin@academiaos.ai / Admin@2026",
+  "seed_data_creation": "Backend tests left ~19 TEST_* leads in VCE tenant (emails prefixed 'test_'). Seed function is idempotent so it will not delete/replace them. If exact 30-lead seed counts matter for next visual demo, main agent can run: db.leads.delete_many({'tenant_id': '44444444-4444-4444-4444-444444444444', 'email': {'$regex': '^test_'}}) and corresponding cleanup on lead_activities/lead_programs.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend Phase 33 fully green via /app/backend/tests/test_phase33_claros_enroll.py (34/34). One minor frontend nit: add data-testid='enroll-detail-timeline' to the timeline wrapper <div> in ClarosEnrollLeadDetail.jsx. AI counseling via Claude (claude-sonnet-4-6 via Emergent LLM Key) is WORKING — returned 5 personalised bullets during testing, not the fallback. Replay backend: `python -m pytest /app/backend/tests/test_phase33_claros_enroll.py -v`. UI replay: login principal@vaagdevi.edu.in / Demo@2026 → walk /enroll, /enroll/leads/{id}, /enroll/analytics — all screens render. NOTE: ~19 TEST_* leads remain in VCE tenant after my run; cleanup is optional but will affect visual counts on the kanban (NEW column shows 25 instead of seed-only 8).",
+  "rca_of_the_issue": "N/A — Phase 33 is shippable as-is. The single missing testid (enroll-detail-timeline) is a 1-line frontend addition; no functional regression."
+}

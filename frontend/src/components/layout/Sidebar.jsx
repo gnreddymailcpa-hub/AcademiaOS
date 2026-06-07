@@ -33,6 +33,7 @@ import {
   CalendarClock,
   Wallet,
   BellRing,
+  ClipboardList,
   X,
 } from "lucide-react";
 import { useLang } from "../../context/LanguageContext";
@@ -74,12 +75,20 @@ const NAV_GROUPS = [
     label: "Recruitment",
     testid: "sidebar-group-recruitment",
     items: [
-      { to: "/admissions", icon: UserPlus, key: "nav.admissions", testid: "sidebar-nav-admissions",
-        module: "ARISE", label: "Admissions · ARISE" },
+      { to: "/enroll", icon: UserPlus, key: "nav.enroll_pipeline",
+        testid: "sidebar-nav-enroll-pipeline", module: "ARISE",
+        roles: ["super_admin", "institution_admin", "registrar", "career_services", "programme_manager", "faculty", "instructor"],
+        label: "Claros Enroll · Pipeline" },
+      { to: "/enroll/analytics", icon: BarChart3, key: "nav.enroll_analytics",
+        testid: "sidebar-nav-enroll-analytics", module: "ARISE",
+        roles: ["super_admin", "institution_admin", "registrar", "career_services", "programme_manager"],
+        label: "Claros Enroll · Analytics" },
+      { to: "/admissions", icon: ClipboardList, key: "nav.admissions", testid: "sidebar-nav-admissions",
+        module: "ARISE", label: "Claros Enroll · Legacy Admissions" },
       { to: "/arise-console", icon: Sparkles, key: "nav.arise_console",
         testid: "sidebar-nav-arise-console",
         roles: ["super_admin", "institution_admin", "registrar", "career_services", "programme_manager"],
-        label: "ARISE Console" },
+        label: "Claros Enroll · Advanced Console" },
     ],
   },
   {

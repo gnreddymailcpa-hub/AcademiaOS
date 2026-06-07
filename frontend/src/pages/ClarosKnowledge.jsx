@@ -100,11 +100,9 @@ export default function ClarosKnowledge() {
     }
   }, [current]);
 
-  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     load();
   }, [load]);
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   const onPickFile = (f) => {
     if (!f) return;

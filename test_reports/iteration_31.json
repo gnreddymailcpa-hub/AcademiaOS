@@ -1,0 +1,87 @@
+{
+  "summary": "Phase 32 — Claros Core (Campus ERP) end-to-end testing. Backend: 35/35 pytest cases PASS covering all 17 /api/v1/core/* endpoints + 6 authorisation 403 cases + multi-tenant seed verification across ISB/EAIC/UoB + NEXUS legacy regression + Phase 31 AI regression. Frontend (Playwright): PRINCIPAL flows 19/19 PASS — /core/dashboard renders core-kpi-strip with 6 KPIs (20 active students, 8 faculty, 84.8% avg attendance, 85.6% fee collection, 3 departments, 2025-26), /core/students lists 20 rows + q='CSE' filter shrinks to 12, /core/notices has tabs/list/new btn, /core/fees shows core-fees-report-cards, /core/attendance shows course-select+date+roster, /core/attendance/report shows filters. STUDENT flows 12/14 PASS — dashboard donut visible & KPI strip correctly hidden, timetable grid renders, fees components/summary visible, notice new btn correctly hidden, attendance-mark denied msg renders. TWO frontend integration nits: (1) student /core/attendance/report renders page shell but core-att-report-table testid is missing (per-course breakdown table does NOT render; a 403 was logged in console during the navigation) — likely calling admin-only /v1/core/attendance/report instead of /v1/core/attendance/summary/me for student role; (2) only 5 timetable slot blocks visible for student vs review-req's expected ≥15 — needs main agent to verify seed depth or whether slot grid renders compressed.",
+  "backend_results": {
+    "total": 35, "passed": 35, "failed": 0,
+    "file": "/app/backend/tests/test_phase32_claros_core.py",
+    "junit_xml": "/app/test_reports/pytest/pytest_phase32.xml",
+    "coverage": [
+      "GET /api/v1/core/stats (admin) — total_students=20, total_faculty=8, departments_count=3, current_year='2025-26', fee_collection_pct set",
+      "GET /api/v1/core/departments — 3 rows",
+      "GET /api/v1/core/programs — non-empty",
+      "GET /api/v1/core/courses — ≥10 rows",
+      "GET /api/v1/core/students paging+filters — total=20, q='CSE' shrinks, status=GRADUATED returns 0, attendance_pct enriched",
+      "GET /api/v1/core/students/me (student) — roll=22CSE001, attendance+fees attached",
+      "GET /api/v1/core/students/{id} (admin) — returns roll_number=22CSE001",
+      "PUT /api/v1/core/students/{id} (admin) — cgpa=9.12, current_semester=6 persists across GET",
+      "POST /api/v1/core/attendance/mark (faculty) — ok=true",
+      "GET /api/v1/core/attendance/report (admin) — row_count > 100",
+      "GET /api/v1/core/attendance/summary/me (student) — per_course + overall returned",
+      "GET /api/v1/core/timetable/me (student & faculty)",
+      "GET /api/v1/core/fees/me (student) — 4 components",
+      "GET /api/v1/core/fees/student/{id} (admin)",
+      "POST /api/v1/core/fees/payment (admin) — transaction_ref starts with 'MOCK-' and payment_mode='MOCK'",
+      "GET /api/v1/core/fees/report (admin) — total_expected/collected/pct/defaulters/active_students=20",
+      "GET /api/v1/core/notices — admin sees ≥5",
+      "GET /api/v1/core/notices?category=EXAM — only EXAM",
+      "POST + DELETE /api/v1/core/notices — round-trip ok",
+      "POST /api/v1/core/notices — invalid category=BOGUS returns 400",
+      "AUTHZ: student POST /attendance/mark → 403; student DELETE notice → 403; student GET other student → 403; student PUT student → 403; student GET other fees → 403; VCE principal GET /stats?iid=ISB → 403",
+      "MULTI-TENANT: ISB dean / EAIC executive / UoB admin all return students=20, faculty=8, depts=3, year=2025-26",
+      "REGRESSION: /api/nexus/{iid}/fees (legacy) 200; /api/nexus2/{iid}/timetable/solve <500; /api/ai/assistant/message 200 with reply"
+    ]
+  },
+  "frontend_results": {
+    "principal": {
+      "/core/dashboard": "PASS — claros-core-dashboard + core-kpi-strip render; 6 KPIs verified: 20/8/84.8%/85.6%/3/2025-26",
+      "/core/students": "PASS — claros-core-students-page + filters + table render; 20 rows; q='CSE' shrinks to 12 rows",
+      "/core/notices": "PASS — claros-core-notices-page + core-notice-tabs + core-notice-list + core-notice-new-btn (admin) all visible",
+      "/core/fees (admin)": "PASS — claros-core-fees-page + core-fees-report-cards visible",
+      "/core/attendance (admin/faculty)": "PASS — core-att-course-select + core-att-date-input + core-att-roster-table render",
+      "/core/attendance/report (admin)": "PASS — claros-core-attendance-report-page + core-att-report-filters render"
+    },
+    "student": {
+      "/core/dashboard": "PASS — claros-core-dashboard + core-attendance-donut render; core-kpi-strip correctly HIDDEN for student",
+      "/core/timetable": "PARTIAL — claros-core-timetable-page + core-timetable-grid render but only 5 core-slot-* blocks visible (review-req specified ≥15). Possibly each of the 5 current-sem courses has 1 weekly slot in the seed; please verify intended density.",
+      "/core/fees (student)": "PASS — claros-core-fees-page + core-fees-summary + core-fees-components-table render",
+      "/core/notices (student)": "PASS — core-notice-new-btn correctly HIDDEN for student role",
+      "/core/attendance (mark)": "PASS — 'You don\\u2019t have permission to mark attendance.' message renders (faculty-only screen)",
+      "/core/attendance/report (student)": "FAIL — claros-core-attendance-report-page renders but core-att-report-table testid is MISSING (0 rows). A 403 was logged in browser console during navigation, suggesting the page calls admin-only /v1/core/attendance/report instead of the student-scoped /v1/core/attendance/summary/me. Review-req specified a 5-row per-course breakdown."
+    }
+  },
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Student /core/attendance/report", "issue": "Page shell renders but the per-course breakdown table (testid core-att-report-table) is missing — 0 rows. Browser console shows a 403 during the data fetch on this route as student. Likely the page is calling the admin-only GET /v1/core/attendance/report without falling back to GET /v1/core/attendance/summary/me for the student role (the latter we verified returns per_course[] with valid pct/total/present/absent).", "affected_selectors": ["[data-testid=\"core-att-report-table\"]"]}
+    ],
+    "design_issues": [
+      {"screen": "/core/timetable (student)", "issues": ["Only 5 slot blocks visible — review-request expected ≥15. May be a seed density issue (5 courses × 1 weekly slot each) or a render issue collapsing slots; please verify."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_phase32_claros_core.py",
+    "/app/test_reports/pytest/pytest_phase32.xml"
+  ],
+  "action_items": [
+    "ClarosCoreAttendanceReport.jsx: when user.role==='student', call GET /api/v1/core/attendance/summary/me and render its per_course[] in the table with testid core-att-report-table (5 rows). Currently the student variant either calls /attendance/report (admin-only → 403) or renders an empty container without the testid.",
+    "Verify seed timetable density: review-request expected ≥15 slot blocks for student; only 5 observed. Either (a) each of the 5 current-sem courses should have ≥3 weekly periods or (b) update the spec/test."
+  ],
+  "critical_code_review_comments": [
+    "routes_core.py is 733 lines — borderline; consider splitting STUDENTS / ATTENDANCE / TIMETABLE / FEES / NOTICES into 5 sub-files for maintainability when next feature lands.",
+    "Mongo _id is consistently excluded via {'_id': 0} projections throughout routes_core.py — good.",
+    "Cross-tenant guard _coerce_iid is correctly enforced on every endpoint; super_admin requirement to pass ?iid is explicit and tested.",
+    "Notice deletion correctly enforces publisher-or-admin (delete_notice L622-631); covered by test_student_cannot_delete_others_notice.",
+    "POST /fees/payment is admin-only and writes transaction_ref=MOCK-{8-hex}; clearly a MOCKED v1 path — please flag in PRD.md and ensure the v1 cutover replaces it with a real PSP.",
+    "list_notices role filter on L583-594: admin gets EVERYTHING regardless of target_roles (deliberate per spec). Confirmed via test (admin sees ≥5 + EXAM-only filter).",
+    "Frontend ClarosCoreAttendanceReport.jsx for student role appears to bypass the role-specific endpoint — main agent action above.",
+    "ClarosCoreTimetable.jsx renders 5 slots for a student with 5 current-sem courses; if 1 slot/course/week is by design the review-request's ≥15 expectation is incorrect; otherwise seed needs more slots."
+  ],
+  "updated_files": ["/app/backend/tests/test_phase32_claros_core.py (NEW — 35 tests, all PASS)"],
+  "success_rate": {"backend": "100% (35/35)", "frontend": "94% (31/33 checks PASS; 1 missing testid on student attendance report, 1 timetable slot density question)"},
+  "test_credentials": "principal@vaagdevi.edu.in / Demo@2026 · manikanta.cse@vaagdevi.edu.in / Demo@2026 · prof.suresh@vaagdevi.edu.in / Demo@2026 · shankar.dean@isb.edu · khalid.exec@eaic.gov.ae · emma.admin@bradford.ac.uk · admin@academiaos.ai / Admin@2026",
+  "seed_data_creation": "Test left behind: one persisted fee_payment row (amount_paid=100.0, MOCK ref) for student 22CSE004 + one CGPA/semester mutation on 22CSE002 (cgpa=9.12, current_semester=6). Seed is idempotent so re-running seed will not undo these; main agent may want to clean if exact seed values are needed.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend Phase 32 fully green via /app/backend/tests/test_phase32_claros_core.py (35/35). Two open frontend items pending main-agent fix: (1) student /core/attendance/report missing core-att-report-table — needs to call /attendance/summary/me and render per_course[]; (2) timetable shows only 5 slots/student — verify seed vs spec. Replay backend: `python -m pytest /app/backend/tests/test_phase32_claros_core.py -v`. UI replay: login principal@vaagdevi.edu.in / Demo@2026 and walk all 7 /core/* pages; the Sidebar 'Student Services' group already shows 'Claros Core · Dashboard / Attendance Marking / Timetable / Fees / Notices' plus 'Students' and 'Attendance Report' (verified). The note from agent-to-agent context (Sat/Sun → empty Today's Classes) does NOT apply to /core/timetable which shows the full weekly grid regardless of weekday.",
+  "rca_of_the_issue": "Student attendance report empty table RCA: ClarosCoreAttendanceReport.jsx most likely uses a single fetch path (GET /v1/core/attendance/report) for both admin and student roles. The backend explicitly rewrites the filter when user.role==='student' to scope to their own student_id (routes_core.py L315-320), which would normally succeed — but the page may also pass admin-only query params (iid/date filters) or render the table conditionally on response shape and skip rendering on a 403. The cleanest fix is: if role==='student', call GET /v1/core/attendance/summary/me (returns {per_course[], overall}) and render per_course directly; that endpoint is already tested green."
+}

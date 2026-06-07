@@ -782,6 +782,7 @@ import routes_veda
 import routes_arise
 import routes_nexus_advanced
 import routes_closeout
+import routes_core
 from collections import Counter
 from ai_service import chunk_text, _tokens
 
@@ -973,6 +974,13 @@ async def seed_database():
     logger.info("Seeded %d workflow templates + %d sample runs",
                 len(SEED_WORKFLOW_TEMPLATES), len(SEED_WORKFLOW_RUNS))
 
+    # Claros Core (campus ERP) — idempotent seed across all 4 tenants
+    from seed_claros_core import seed_claros_core
+    try:
+        await seed_claros_core(db, logger)
+    except Exception as e:
+        logger.error("Claros Core seed failed: %s", e)
+
 
 @app.on_event("startup")
 async def startup():
@@ -1023,6 +1031,7 @@ app.include_router(routes_veda.build_veda_router(lambda: db, get_current_user))
 app.include_router(routes_arise.build_arise_router(lambda: db, get_current_user))
 app.include_router(routes_nexus_advanced.build_nexus_advanced_router(lambda: db, get_current_user))
 app.include_router(routes_closeout.build_closeout_router(lambda: db, get_current_user))
+app.include_router(routes_core.build_claros_core_router(lambda: db, get_current_user))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

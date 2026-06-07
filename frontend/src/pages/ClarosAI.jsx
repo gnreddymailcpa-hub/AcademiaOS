@@ -62,7 +62,6 @@ function ClarosAIChat({ institution: current }) {
     }
   }, [current]);
 
-  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     loadSessions();
   }, [loadSessions]);
@@ -73,7 +72,6 @@ function ClarosAIChat({ institution: current }) {
       behavior: "smooth",
     });
   }, [messages]);
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   const openSession = async (sid) => {
     if (sid === activeId) return;

@@ -54,6 +54,13 @@ import NexusConsole from "./pages/NexusConsole";
 import RemainingConsole from "./pages/RemainingConsole";
 import ClarosAI from "./pages/ClarosAI";
 import ClarosKnowledge from "./pages/ClarosKnowledge";
+import ClarosCoreDashboard from "./pages/ClarosCoreDashboard";
+import ClarosCoreStudents from "./pages/ClarosCoreStudents";
+import ClarosCoreNotices from "./pages/ClarosCoreNotices";
+import ClarosCoreTimetable from "./pages/ClarosCoreTimetable";
+import ClarosCoreFees from "./pages/ClarosCoreFees";
+import ClarosCoreAttendance from "./pages/ClarosCoreAttendance";
+import ClarosCoreAttendanceReport from "./pages/ClarosCoreAttendanceReport";
 import AuthCallback from "./pages/AuthCallback";
 import ModuleGate from "./components/layout/ModuleGate";
 
@@ -80,6 +87,13 @@ function ShellRoutes() {
         <Route path="/student-assistant" element={<ModuleGate module="PATHFINDER"><StudentAssistant /></ModuleGate>} />
         <Route path="/ai" element={<ModuleGate module="VEDA"><ClarosAI /></ModuleGate>} />
         <Route path="/ai/knowledge" element={<ModuleGate module="VEDA"><ClarosKnowledge /></ModuleGate>} />
+        <Route path="/core/dashboard" element={<ModuleGate module="NEXUS"><ClarosCoreDashboard /></ModuleGate>} />
+        <Route path="/core/students" element={<ModuleGate module="NEXUS"><ClarosCoreStudents /></ModuleGate>} />
+        <Route path="/core/notices" element={<ModuleGate module="NEXUS"><ClarosCoreNotices /></ModuleGate>} />
+        <Route path="/core/timetable" element={<ModuleGate module="NEXUS"><ClarosCoreTimetable /></ModuleGate>} />
+        <Route path="/core/fees" element={<ModuleGate module="NEXUS"><ClarosCoreFees /></ModuleGate>} />
+        <Route path="/core/attendance" element={<ModuleGate module="NEXUS"><ClarosCoreAttendance /></ModuleGate>} />
+        <Route path="/core/attendance/report" element={<ModuleGate module="NEXUS"><ClarosCoreAttendanceReport /></ModuleGate>} />
         <Route path="/assessments" element={<ModuleGate module="ILLUMINATE"><Assessments /></ModuleGate>} />
         <Route path="/psychometrics" element={<Psychometrics />} />
         <Route path="/analytics" element={<ModuleGate module="COMMAND"><Analytics /></ModuleGate>} />

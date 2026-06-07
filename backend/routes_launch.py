@@ -63,6 +63,86 @@ def build_claros_launch_router(get_db, get_current_user):
             return None
         return await db.students.find_one({"tenant_id": user["institution_id"], "user_id": user["id"]}, {"_id": 0})
 
+    # ---------------- ADMIN WRITE FLOWS ----------------
+    ADMIN_ROLES = {"super_admin", "institution_admin", "placement_officer"}
+
+    class _CompanyBody(BaseModel):
+        name: str
+        industry: str = ""
+        website: str = ""
+        avg_package: float = 0.0
+        max_package: float = 0.0
+        typical_roles: List[str] = []
+        skills_required: List[str] = []
+        interview_types: List[str] = []
+        is_active: bool = True
+
+    class _DriveBody(BaseModel):
+        company_id: str
+        drive_date: str
+        status: str = "UPCOMING"  # UPCOMING | OPEN | CLOSED | CANCELLED
+        eligible_programs: List[str] = []
+        min_cgpa: float = 0.0
+        package_offered: float = 0.0
+        roles: List[str] = []
+        notes: str = ""
+
+    @router.post("/companies")
+    async def create_company(body: _CompanyBody,
+                              iid: Optional[str] = None,
+                              user: dict = Depends(get_current_user)):
+        if user["role"] not in ADMIN_ROLES:
+            raise HTTPException(403, "Placement admin only")
+        db = get_db()
+        iid = _coerce_iid(user, iid)
+        if not body.name.strip():
+            raise HTTPException(400, "name required")
+        doc = {
+            "id": str(uuid.uuid4()), "tenant_id": iid,
+            "name": body.name.strip(),
+            "industry": body.industry, "website": body.website,
+            "avg_package": float(body.avg_package or 0),
+            "max_package": float(body.max_package or 0),
+            "typical_roles": body.typical_roles,
+            "skills_required": body.skills_required,
+            "interview_types": body.interview_types,
+            "is_active": bool(body.is_active),
+            "created_by": user["id"], "created_at": _now(),
+        }
+        await db.companies.insert_one(doc)
+        doc.pop("_id", None)
+        return doc
+
+    @router.post("/drives")
+    async def create_drive(body: _DriveBody,
+                            iid: Optional[str] = None,
+                            user: dict = Depends(get_current_user)):
+        if user["role"] not in ADMIN_ROLES:
+            raise HTTPException(403, "Placement admin only")
+        db = get_db()
+        iid = _coerce_iid(user, iid)
+        company = await db.companies.find_one(
+            {"id": body.company_id, "tenant_id": iid}, {"_id": 0})
+        if not company:
+            raise HTTPException(404, "Company not found")
+        if body.status not in {"UPCOMING", "OPEN", "CLOSED", "CANCELLED"}:
+            raise HTTPException(400, "Invalid status")
+        doc = {
+            "id": str(uuid.uuid4()), "tenant_id": iid,
+            "company_id": body.company_id,
+            "company_name": company.get("name"),
+            "drive_date": body.drive_date,
+            "status": body.status,
+            "eligible_programs": body.eligible_programs,
+            "min_cgpa": float(body.min_cgpa or 0),
+            "package_offered": float(body.package_offered or 0),
+            "roles": body.roles, "notes": body.notes,
+            "created_by": user["id"], "created_at": _now(),
+        }
+        await db.placement_drives.insert_one(doc)
+        doc.pop("_id", None)
+        return doc
+
     # ---------------- COMPANIES ----------------
     @router.get("/companies")
     async def list_companies(iid: Optional[str] = None, user: dict = Depends(get_current_user)):

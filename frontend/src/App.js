@@ -64,6 +64,9 @@ import ClarosCoreAttendanceReport from "./pages/ClarosCoreAttendanceReport";
 import ClarosEnrollKanban from "./pages/ClarosEnrollKanban";
 import ClarosEnrollLeadDetail from "./pages/ClarosEnrollLeadDetail";
 import ClarosEnrollAnalytics from "./pages/ClarosEnrollAnalytics";
+import ClarosComplyDashboard from "./pages/ClarosComplyDashboard";
+import ClarosComplyCriterion from "./pages/ClarosComplyCriterion";
+import ClarosComplyOBE from "./pages/ClarosComplyOBE";
 import AuthCallback from "./pages/AuthCallback";
 import ModuleGate from "./components/layout/ModuleGate";
 
@@ -100,6 +103,9 @@ function ShellRoutes() {
         <Route path="/enroll" element={<ModuleGate module="ARISE"><ClarosEnrollKanban /></ModuleGate>} />
         <Route path="/enroll/analytics" element={<ModuleGate module="ARISE"><ClarosEnrollAnalytics /></ModuleGate>} />
         <Route path="/enroll/leads/:id" element={<ModuleGate module="ARISE"><ClarosEnrollLeadDetail /></ModuleGate>} />
+        <Route path="/comply" element={<ModuleGate module="COMPASS"><ClarosComplyDashboard /></ModuleGate>} />
+        <Route path="/comply/criteria/:id" element={<ModuleGate module="COMPASS"><ClarosComplyCriterion /></ModuleGate>} />
+        <Route path="/comply/obe" element={<ModuleGate module="COMPASS"><ClarosComplyOBE /></ModuleGate>} />
         <Route path="/assessments" element={<ModuleGate module="ILLUMINATE"><Assessments /></ModuleGate>} />
         <Route path="/psychometrics" element={<Psychometrics />} />
         <Route path="/analytics" element={<ModuleGate module="COMMAND"><Analytics /></ModuleGate>} />

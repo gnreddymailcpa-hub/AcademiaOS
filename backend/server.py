@@ -796,6 +796,7 @@ import routes_nexus_advanced
 import routes_closeout
 import routes_core
 import routes_enroll
+import routes_comply
 from collections import Counter
 from ai_service import chunk_text, _tokens
 
@@ -1001,6 +1002,15 @@ async def seed_database():
     except Exception as e:
         logger.error("Claros Enroll seed failed: %s", e)
 
+    # Claros Comply (NAAC) — seed criteria + metrics + evidence + OBE
+    from routes_comply import seed_naac_criteria
+    from seed_claros_comply import seed_claros_comply
+    try:
+        await seed_naac_criteria(db, logger)
+        await seed_claros_comply(db, logger)
+    except Exception as e:
+        logger.error("Claros Comply seed failed: %s", e)
+
 
 @app.on_event("startup")
 async def startup():
@@ -1053,6 +1063,7 @@ app.include_router(routes_nexus_advanced.build_nexus_advanced_router(lambda: db,
 app.include_router(routes_closeout.build_closeout_router(lambda: db, get_current_user))
 app.include_router(routes_core.build_claros_core_router(lambda: db, get_current_user))
 app.include_router(routes_enroll.build_claros_enroll_router(lambda: db, get_current_user, get_optional_user))
+app.include_router(routes_comply.build_claros_comply_router(lambda: db, get_current_user))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

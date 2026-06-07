@@ -184,6 +184,66 @@ async def get_tenant_config(db, iid: str) -> Dict:
 def build_tenant_config_router(get_db, get_current_user):
     r = APIRouter(prefix="/api/v1/tenants", tags=["tenant-config"])
 
+    async def _apply_module_update(db, tenant_id: str, module_id: str,
+                                    body: ModuleUpdate, user: dict):
+        updates = {k: v for k, v in body.dict().items() if v is not None}
+        if not updates:
+            raise HTTPException(400, "No changes")
+        if "display_name" in updates and not (1 <= len(updates["display_name"]) <= 30):
+            raise HTTPException(400, "display_name must be 1-30 chars")
+        if "short_name" in updates and not (1 <= len(updates["short_name"]) <= 10):
+            raise HTTPException(400, "short_name must be 1-10 chars")
+        updates["updated_at"] = _now()
+        updates["updated_by"] = user["id"]
+        await db.tenant_module_configs.update_one(
+            {"tenant_id": tenant_id, "module_id": module_id},
+            {"$set": updates,
+             "$setOnInsert": {"id": str(uuid.uuid4()),
+                              "tenant_id": tenant_id, "module_id": module_id,
+                              "created_at": _now()}},
+            upsert=True,
+        )
+        return await get_tenant_config(db, tenant_id)
+
+    async def _apply_branding_update(db, tenant_id: str, body: BrandingUpdate,
+                                      user: dict):
+        updates = {k: v for k, v in body.dict().items() if v is not None}
+        if not updates:
+            raise HTTPException(400, "No changes")
+        updates["updated_at"] = _now()
+        updates["updated_by"] = user["id"]
+        await db.tenant_branding.update_one(
+            {"tenant_id": tenant_id},
+            {"$set": updates,
+             "$setOnInsert": {"id": str(uuid.uuid4()), "tenant_id": tenant_id,
+                              "created_at": _now()}},
+            upsert=True,
+        )
+        return await get_tenant_config(db, tenant_id)
+
+    async def _apply_module_reset(db, tenant_id: str, module_id: str):
+        await db.tenant_module_configs.delete_one(
+            {"tenant_id": tenant_id, "module_id": module_id})
+        # Re-apply seed if the tenant has one (idempotent via the seed helper)
+        try:
+            from seed_tenant_config import VCE_NAMES, VCE_ID, _det, _iso
+            if tenant_id == VCE_ID and module_id in VCE_NAMES:
+                dn, sn = VCE_NAMES[module_id]
+                rid = _det("tmc", tenant_id, module_id)
+                await db.tenant_module_configs.update_one(
+                    {"id": rid},
+                    {"$setOnInsert": {
+                        "id": rid, "tenant_id": tenant_id, "module_id": module_id,
+                        "display_name": dn, "short_name": sn,
+                        "enabled": True, "icon_override": None,
+                        "created_at": _iso(),
+                    }},
+                    upsert=True,
+                )
+        except Exception:
+            pass
+        return await get_tenant_config(db, tenant_id)
+
     @r.get("/canonical/modules")
     async def canonical_modules():
         """Public canonical catalogue — useful for docs & admin UIs."""
@@ -216,25 +276,22 @@ def build_tenant_config_router(get_db, get_current_user):
             raise HTTPException(400, f"{module_id} cannot be disabled")
         db = get_db()
         iid = _tenant_of(user)
-        updates = {k: v for k, v in body.dict().items() if v is not None}
-        if not updates:
-            raise HTTPException(400, "No changes")
-        # Length / sanity checks
-        if "display_name" in updates and not (1 <= len(updates["display_name"]) <= 30):
-            raise HTTPException(400, "display_name must be 1-30 chars")
-        if "short_name" in updates and not (1 <= len(updates["short_name"]) <= 10):
-            raise HTTPException(400, "short_name must be 1-10 chars")
-        updates["updated_at"] = _now()
-        updates["updated_by"] = user["id"]
-        await db.tenant_module_configs.update_one(
-            {"tenant_id": iid, "module_id": module_id},
-            {"$set": updates,
-             "$setOnInsert": {"id": str(uuid.uuid4()),
-                              "tenant_id": iid, "module_id": module_id,
-                              "created_at": _now()}},
-            upsert=True,
-        )
-        return await get_tenant_config(db, iid)
+        return await _apply_module_update(db, iid, module_id, body, user)
+
+    @r.put("/{tenant_id}/config/modules/{module_id}")
+    async def update_module_for_tenant(tenant_id: str, module_id: str,
+                                        body: ModuleUpdate,
+                                        user: dict = Depends(get_current_user)):
+        """Super-admin-only: edit any tenant's module override.
+        Used by the admin Branding & Module Names page while in preview mode."""
+        if user["role"] != "super_admin":
+            raise HTTPException(403, "Super admin only")
+        if module_id not in CANONICAL_BY_ID:
+            raise HTTPException(404, f"Unknown module: {module_id}")
+        if body.enabled is False and module_id in NEVER_DISABLE:
+            raise HTTPException(400, f"{module_id} cannot be disabled")
+        db = get_db()
+        return await _apply_module_update(db, tenant_id, module_id, body, user)
 
     @r.put("/me/config/branding")
     async def update_branding(body: BrandingUpdate,
@@ -242,19 +299,16 @@ def build_tenant_config_router(get_db, get_current_user):
         _require_admin(user)
         db = get_db()
         iid = _tenant_of(user)
-        updates = {k: v for k, v in body.dict().items() if v is not None}
-        if not updates:
-            raise HTTPException(400, "No changes")
-        updates["updated_at"] = _now()
-        updates["updated_by"] = user["id"]
-        await db.tenant_branding.update_one(
-            {"tenant_id": iid},
-            {"$set": updates,
-             "$setOnInsert": {"id": str(uuid.uuid4()), "tenant_id": iid,
-                              "created_at": _now()}},
-            upsert=True,
-        )
-        return await get_tenant_config(db, iid)
+        return await _apply_branding_update(db, iid, body, user)
+
+    @r.put("/{tenant_id}/config/branding")
+    async def update_branding_for_tenant(tenant_id: str, body: BrandingUpdate,
+                                          user: dict = Depends(get_current_user)):
+        """Super-admin-only: edit any tenant's branding."""
+        if user["role"] != "super_admin":
+            raise HTTPException(403, "Super admin only")
+        db = get_db()
+        return await _apply_branding_update(db, tenant_id, body, user)
 
     @r.post("/me/config/reset")
     async def reset_to_canonical(user: dict = Depends(get_current_user)):
@@ -265,6 +319,17 @@ def build_tenant_config_router(get_db, get_current_user):
         await db.tenant_module_configs.delete_many({"tenant_id": iid})
         await db.tenant_branding.delete_many({"tenant_id": iid})
         return await get_tenant_config(db, iid)
+
+    @r.post("/{tenant_id}/config/reset")
+    async def reset_to_canonical_for_tenant(tenant_id: str,
+                                             user: dict = Depends(get_current_user)):
+        """Super-admin-only: reset any tenant's overrides + branding."""
+        if user["role"] != "super_admin":
+            raise HTTPException(403, "Super admin only")
+        db = get_db()
+        await db.tenant_module_configs.delete_many({"tenant_id": tenant_id})
+        await db.tenant_branding.delete_many({"tenant_id": tenant_id})
+        return await get_tenant_config(db, tenant_id)
 
     @r.post("/me/config/modules/{module_id}/reset")
     async def reset_module(module_id: str,
@@ -277,26 +342,17 @@ def build_tenant_config_router(get_db, get_current_user):
             raise HTTPException(404, f"Unknown module: {module_id}")
         db = get_db()
         iid = _tenant_of(user)
-        await db.tenant_module_configs.delete_one(
-            {"tenant_id": iid, "module_id": module_id})
-        # Re-apply seed if the tenant has one (idempotent via the seed helper)
-        try:
-            from seed_tenant_config import VCE_NAMES, VCE_ID, _det, _iso
-            if iid == VCE_ID and module_id in VCE_NAMES:
-                dn, sn = VCE_NAMES[module_id]
-                rid = _det("tmc", iid, module_id)
-                await db.tenant_module_configs.update_one(
-                    {"id": rid},
-                    {"$setOnInsert": {
-                        "id": rid, "tenant_id": iid, "module_id": module_id,
-                        "display_name": dn, "short_name": sn,
-                        "enabled": True, "icon_override": None,
-                        "created_at": _iso(),
-                    }},
-                    upsert=True,
-                )
-        except Exception:
-            pass
-        return await get_tenant_config(db, iid)
+        return await _apply_module_reset(db, iid, module_id)
+
+    @r.post("/{tenant_id}/config/modules/{module_id}/reset")
+    async def reset_module_for_tenant(tenant_id: str, module_id: str,
+                                       user: dict = Depends(get_current_user)):
+        """Super-admin-only: reset one module override for any tenant."""
+        if user["role"] != "super_admin":
+            raise HTTPException(403, "Super admin only")
+        if module_id not in CANONICAL_BY_ID:
+            raise HTTPException(404, f"Unknown module: {module_id}")
+        db = get_db()
+        return await _apply_module_reset(db, tenant_id, module_id)
 
     return r

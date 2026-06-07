@@ -2035,3 +2035,55 @@ labels via `useTenantConfig().modules[claros-id].display_name`.
 ### Files touched
 - `/app/frontend/src/pages/Onboarding.jsx` (full rewrite of label
   resolution + Step 1/2/3 rendering)
+
+
+## Phase 41.4 — Branding & Module Names admin: super_admin support — Feb 2026
+
+**Bug**: super_admin opened `/admin/tenant-config` and got stuck on
+"Loading configuration…" forever. Root cause: page called
+`/api/v1/tenants/me/config` which 403s for super_admin (no
+institution_id), `config` stayed null, but the page only checked `loading`.
+
+### Backend
+- Added super-admin-scoped write endpoints alongside the existing
+  `/me/config/...` routes:
+  - `PUT /api/v1/tenants/{tenant_id}/config/modules/{module_id}`
+  - `PUT /api/v1/tenants/{tenant_id}/config/branding`
+  - `POST /api/v1/tenants/{tenant_id}/config/reset`
+  - `POST /api/v1/tenants/{tenant_id}/config/modules/{module_id}/reset`
+  All four require `user.role == "super_admin"` (other roles → 403).
+  Shared helpers `_apply_module_update`, `_apply_branding_update`,
+  `_apply_module_reset` factor out the persistence logic across both
+  the `/me` and `/{tenant_id}` variants.
+
+### Frontend
+- `TenantConfigAdmin.jsx` rewritten to:
+  - Show a clear **"No tenant selected"** empty state (CTA to use the
+    Preview as… switcher) when super_admin lacks an active preview.
+  - When super_admin IS previewing, route all PUT/POST through
+    `/v1/tenants/{previewTenantId}/config/...` instead of `/me`.
+  - Show a violet "Editing: <tenant name>" badge in the header so the
+    super_admin can never forget which tenant they're mutating.
+  - Refactored state model from `setState-in-useEffect` to a single
+    `edits` overlay (`brandingEdits` + `moduleEdits`) — inputs read
+    `edits[key] ?? config[key]` and only diverge when the user types.
+    Avoids the `react-hooks/set-state-in-effect` lint rule.
+
+### Validation
+- Backend curl matrix:
+  - super_admin `PUT /{vce}/config/branding` → 200 ✓
+  - super_admin `PUT /{vce}/config/modules/claros-ai` → 200, returns
+    "VEDA" ✓
+  - principal `PUT /{vce}/config/branding` → 403 ✓ (only super_admin)
+  - principal `PUT /me/config/branding` → 200 ✓ (regression preserved)
+- Frontend:
+  - super_admin no preview: empty-state CTA renders, no infinite spinner ✓
+  - super_admin VCE preview: full form loads, "Editing: Vaagdevi College
+    of Engineering" badge, VEDA/ARISE/NEXUS/ILLUMINATE module rows
+    editable ✓
+- ESLint: clean.
+
+### Files touched
+- `/app/backend/routes_tenant_config.py` (+4 endpoints, +3 shared helpers)
+- `/app/frontend/src/pages/TenantConfigAdmin.jsx` (state model refactor +
+  super_admin UX)

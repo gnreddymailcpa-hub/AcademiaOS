@@ -1958,3 +1958,38 @@ critical regression fix surfaced by the testing agent.
   banner-exit toast parity
 - `/app/backend/tests/test_tenant_preview.py` (created by testing agent)
 
+
+
+## Phase 41.2 — Sidebar Re-grouping (Canonical Claros-Module-Aligned) — Feb 2026
+
+**Scope**: Replaced the 11-group job-to-be-done sidebar layout with a
+**canonical-module-aligned** structure where each of the 12 Claros modules
+gets its own group, plus 4 utility groups (Overview · Setup · Phase
+Closeout · Help). Group headers now resolve via `useModuleName(canonicalId)`
+so a tenant rebrand (e.g. VCE → VEDA / ARISE / NEXUS / ILLUMINATE) cascades
+automatically into the sidebar headings without any extra wiring.
+
+### Key changes
+- New `GroupLabel` component resolves group headers from the tenant config.
+- Items inside Claros-module groups dropped their redundant `"Claros X · "`
+  prefix — the parent group header carries the brand.
+- Misplaced items relocated to the correct canonical Claros module:
+  - `AI Chat / Knowledge Base / AI Instructor / AI Advisor / Student
+    Assistant / VEDA Console` → **Claros AI** group
+  - `Insights / Analytics / Command Centre` → dedicated **Claros Insights**
+  - `Psychometrics` → **Claros Learn**
+  - `Alumni · Network` → dedicated **Claros Alumni**
+  - `Comply / NAAC / OBE / AQAR / Governance / Workflows` → **Claros Comply**
+- All 36 existing `data-testid`s preserved 1-to-1; new group testids follow
+  `sidebar-group-claros-{module}`.
+- All existing role-gates and module-gates preserved.
+
+### Validation
+- VCE Principal smoke test: sidebar shows **VEDA · ARISE · NEXUS ·
+  ILLUMINATE · COMMAND** as group headers (VCE rebrand confirmed).
+- Student role-gating regression: 9/9 checks green.
+- ESLint clean.
+
+### Files touched
+- `/app/frontend/src/components/layout/Sidebar.jsx` (full re-write of
+  `NAV_GROUPS` + new `GroupLabel` component)

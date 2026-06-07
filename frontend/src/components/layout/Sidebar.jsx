@@ -45,24 +45,40 @@ import { useAuth } from "../../context/AuthContext";
 import { useTenantModules } from "../../lib/useTenantModules";
 import { useModuleName, useTenantConfig } from "../../context/TenantConfigContext";
 
-// Per-item label resolver — uses the tenant-configured display name when the
-// item carries a canonical Claros module id.
+// Per-item label resolver — items inside a Claros-module group rely on the
+// group header for the module brand, so their labels are intentionally short
+// (e.g. "Chat", "Knowledge Base"). Items without a parent module group keep
+// their static label.
 function SidebarItemLabel({ item, fallbackLabel }) {
-  const resolved = useModuleName(item.canonicalId || "");
-  if (item.canonicalId) {
-    // Trim the "Claros " prefix from canonical fallback for sidebar density.
-    return <span className="truncate flex-1">{resolved.replace(/^Claros\s+/, "")}</span>;
-  }
   return <span className="truncate flex-1">{fallbackLabel}</span>;
 }
 
+// Group header — for Claros-module groups, resolves the tenant-configured
+// display name (e.g. "VEDA" for VCE, "Claros AI" by default). For static
+// utility groups (Overview, Setup, Help), renders the literal label.
+function GroupLabel({ group }) {
+  const resolved = useModuleName(group.canonicalId || "");
+  if (group.canonicalId) return resolved;
+  return group.label;
+}
+
 /**
- * Sidebar nav is grouped into logical sections to scale to 17+ destinations
- * without becoming a flat wall of links. Each group is independently role-gated
- * (any item with a `roles` whitelist is hidden if the current user isn't in it,
- * and an entire group hides if all its items become invisible).
+ * Sidebar nav is grouped per **canonical Claros module** so that every
+ * destination lives under the same brand its tenant has configured. Group
+ * headers re-render automatically when a tenant rebrands (e.g. "Claros AI"
+ * → "VEDA" for VCE).
+ *
+ * Four utility groups (Overview, Setup & Configuration, Phase Closeout,
+ * Help & System) sit alongside the 12 module groups for app-wide chrome.
+ *
+ * Each item is independently role-gated (`roles` whitelist) and module-gated
+ * (`module` key resolved via `useTenantModules`). A whole group hides when
+ * all its items resolve to hidden.
  */
 const NAV_GROUPS = [
+  // -------------------------------------------------------------------------
+  // Utility groups
+  // -------------------------------------------------------------------------
   {
     label: "Overview",
     testid: "sidebar-group-overview",
@@ -71,7 +87,7 @@ const NAV_GROUPS = [
     ],
   },
   {
-    label: "Configuration",
+    label: "Setup & Configuration",
     testid: "sidebar-group-configuration",
     items: [
       { to: "/admin/modules", icon: SlidersHorizontal, key: "nav.platform_modules",
@@ -90,189 +106,201 @@ const NAV_GROUPS = [
         roles: ["super_admin", "institution_admin"], label: "Onboarding Wizard" },
     ],
   },
+
+  // -------------------------------------------------------------------------
+  // Claros canonical modules (one group each — group label rebrands per tenant)
+  // -------------------------------------------------------------------------
   {
-    label: "Recruitment",
-    testid: "sidebar-group-recruitment",
+    canonicalId: "claros-insights",
+    testid: "sidebar-group-claros-insights",
     items: [
-      { to: "/enroll", icon: UserPlus, key: "nav.enroll_pipeline",
-        testid: "sidebar-nav-enroll-pipeline", module: "ARISE",
-        roles: ["super_admin", "institution_admin", "registrar", "career_services", "programme_manager", "faculty", "instructor"],
-        label: "Claros Enroll · Pipeline" },
-      { to: "/enroll/analytics", icon: BarChart3, key: "nav.enroll_analytics",
-        testid: "sidebar-nav-enroll-analytics", module: "ARISE",
-        roles: ["super_admin", "institution_admin", "registrar", "career_services", "programme_manager"],
-        label: "Claros Enroll · Analytics" },
-      { to: "/admissions", icon: ClipboardList, key: "nav.admissions", testid: "sidebar-nav-admissions",
-        module: "ARISE", label: "Claros Enroll · Legacy Admissions" },
-      { to: "/arise-console", icon: Sparkles, key: "nav.arise_console",
-        testid: "sidebar-nav-arise-console",
-        roles: ["super_admin", "institution_admin", "registrar", "career_services", "programme_manager"],
-        label: "Claros Enroll · Advanced Console" },
+      { to: "/insights", icon: Command, testid: "sidebar-nav-insights", module: "COMMAND",
+        roles: ["super_admin", "institution_admin"], label: "Executive Center" },
+      { to: "/analytics", icon: BarChart3, testid: "sidebar-nav-analytics", module: "COMMAND",
+        label: "Analytics" },
+      { to: "/command", icon: Command, testid: "sidebar-nav-command", module: "COMMAND",
+        label: "Command Centre" },
     ],
   },
   {
-    label: "Academics",
-    testid: "sidebar-group-academics",
+    canonicalId: "claros-ai",
+    testid: "sidebar-group-claros-ai",
     items: [
-      { to: "/learn", icon: GraduationCap, key: "nav.learn", testid: "sidebar-nav-learn",
-        canonicalId: "claros-learn",
-        module: "ILLUMINATE", label: "Claros Learn · LMS" },
-      { to: "/content-studio", icon: FileStack, key: "nav.content_studio", testid: "sidebar-nav-content-studio", module: "ILLUMINATE" },
-      { to: "/assessments", icon: ClipboardCheck, key: "nav.assessments", testid: "sidebar-nav-assessments", module: "ILLUMINATE" },
-      { to: "/ai-instructor", icon: GraduationCap, key: "nav.ai_instructor", testid: "sidebar-nav-ai-instructor", module: "VEDA" },
-      { to: "/ai-advisor", icon: Compass, key: "nav.ai_advisor", testid: "sidebar-nav-ai-advisor", module: "VEDA" },
-      { to: "/psychometrics", icon: Brain, key: "nav.psychometrics", testid: "sidebar-nav-psychometrics" },
-    ],
-  },
-  {
-    label: "Student Services",
-    testid: "sidebar-group-student-services",
-    items: [
-      { to: "/core/dashboard", icon: LayoutDashboard, key: "nav.core_dashboard",
-        testid: "sidebar-nav-core-dashboard", module: "NEXUS",
-        label: "Claros Core · Dashboard" },
-      { to: "/core/students", icon: Users, key: "nav.core_students",
-        testid: "sidebar-nav-core-students", module: "NEXUS",
-        roles: ["super_admin", "institution_admin", "registrar", "programme_manager", "faculty", "instructor", "hod", "dean"],
-        label: "Claros Core · Students" },
-      { to: "/core/attendance", icon: ClipboardCheck, key: "nav.core_attendance",
-        testid: "sidebar-nav-core-attendance", module: "NEXUS",
-        roles: ["super_admin", "institution_admin", "faculty", "instructor", "hod", "programme_manager", "registrar"],
-        label: "Claros Core · Attendance" },
-      { to: "/core/attendance/report", icon: BarChart3, key: "nav.core_attendance_report",
-        testid: "sidebar-nav-core-attendance-report", module: "NEXUS",
-        label: "Claros Core · Attendance Report" },
-      { to: "/core/timetable", icon: CalendarClock, key: "nav.core_timetable",
-        testid: "sidebar-nav-core-timetable", module: "NEXUS",
-        label: "Claros Core · Timetable" },
-      { to: "/core/fees", icon: Wallet, key: "nav.core_fees",
-        testid: "sidebar-nav-core-fees", module: "NEXUS",
-        label: "Claros Core · Fees" },
-      { to: "/core/notices", icon: BellRing, key: "nav.core_notices",
-        testid: "sidebar-nav-core-notices", module: "NEXUS",
-        label: "Claros Core · Notices" },
-      { to: "/nexus", icon: Database, key: "nav.nexus", testid: "sidebar-nav-nexus",
-        module: "NEXUS",
-        roles: ["super_admin", "institution_admin", "registrar", "programme_manager", "hostel_warden", "faculty", "hod"],
-        label: "Claros Core · Legacy NEXUS" },
-      { to: "/nexus-console", icon: Sparkles, key: "nav.nexus_console",
-        testid: "sidebar-nav-nexus-console",
-        roles: ["super_admin", "institution_admin", "registrar", "programme_manager", "hostel_warden"],
-        label: "Claros Core · Advanced Console" },
-      { to: "/student-assistant", icon: MessageSquareText, key: "nav.student_assistant", testid: "sidebar-nav-student-assistant", module: "PATHFINDER" },
-      { to: "/ai", icon: Sparkles, key: "nav.claros_ai", testid: "sidebar-nav-claros-ai",
-        module: "VEDA", label: "Claros AI · Chat" },
-      { to: "/ai/knowledge", icon: BookOpen, key: "nav.claros_knowledge", testid: "sidebar-nav-claros-knowledge",
-        module: "VEDA",
+      { to: "/ai", icon: Sparkles, testid: "sidebar-nav-claros-ai", module: "VEDA",
+        label: "Chat" },
+      { to: "/ai/knowledge", icon: BookOpen, testid: "sidebar-nav-claros-knowledge", module: "VEDA",
         roles: ["super_admin", "institution_admin", "faculty", "instructor", "registrar", "programme_manager", "compliance_officer", "ai_governance_admin"],
-        label: "Claros AI · Knowledge Base" },
-      { to: "/veda-console", icon: Sparkles, key: "nav.veda_console",
-        testid: "sidebar-nav-veda-console",
+        label: "Knowledge Base" },
+      { to: "/ai-instructor", icon: GraduationCap, testid: "sidebar-nav-ai-instructor", module: "VEDA",
+        label: "Instructor" },
+      { to: "/ai-advisor", icon: Compass, testid: "sidebar-nav-ai-advisor", module: "VEDA",
+        label: "Advisor" },
+      { to: "/student-assistant", icon: MessageSquareText, testid: "sidebar-nav-student-assistant", module: "PATHFINDER",
+        label: "Student Assistant" },
+      { to: "/veda-console", icon: Sparkles, testid: "sidebar-nav-veda-console",
         roles: ["super_admin", "institution_admin", "registrar", "career_services", "compliance_officer", "ai_governance_admin", "faculty", "instructor", "programme_manager"],
-        label: "VEDA Console" },
+        label: "Advanced Console" },
     ],
   },
   {
-    label: "Faculty & Research",
-    testid: "sidebar-group-faculty-research",
+    canonicalId: "claros-enroll",
+    testid: "sidebar-group-claros-enroll",
     items: [
-      { to: "/research", icon: Search, key: "nav.research", testid: "sidebar-nav-research",
-        canonicalId: "claros-research",
-        module: "PRISM", label: "Claros Research" },
-      { to: "/people", icon: GraduationCap, key: "nav.people", testid: "sidebar-nav-people",
-        canonicalId: "claros-people",
-        module: "FACULTY", label: "Claros People · Faculty Dev" },
-    ],
-  },
-  {
-    label: "Career & Alumni",
-    testid: "sidebar-group-career-alumni",
-    items: [
-      { to: "/launch", icon: Rocket, key: "nav.launch_dashboard",
-        testid: "sidebar-nav-launch-dashboard", module: "ALUMNI360",
-        label: "Claros Launch · Cockpit" },
-      { to: "/launch/drives", icon: Briefcase, key: "nav.launch_drives",
-        testid: "sidebar-nav-launch-drives", module: "ALUMNI360",
-        label: "Claros Launch · Drives" },
-      { to: "/launch/skills", icon: ListChecks, key: "nav.launch_skills",
-        testid: "sidebar-nav-launch-skills", module: "ALUMNI360",
-        roles: ["student"], label: "Claros Launch · Skills" },
-      { to: "/launch/interview", icon: MessageSquareText, key: "nav.launch_interview",
-        testid: "sidebar-nav-launch-interview", module: "ALUMNI360",
-        roles: ["student"], label: "Claros Launch · Mock Interview" },
-      { to: "/launch/admin", icon: BarChart3, key: "nav.launch_admin",
-        testid: "sidebar-nav-launch-admin", module: "ALUMNI360",
+      { to: "/enroll", icon: UserPlus, testid: "sidebar-nav-enroll-pipeline", module: "ARISE",
+        roles: ["super_admin", "institution_admin", "registrar", "career_services", "programme_manager", "faculty", "instructor"],
+        label: "Pipeline" },
+      { to: "/enroll/analytics", icon: BarChart3, testid: "sidebar-nav-enroll-analytics", module: "ARISE",
         roles: ["super_admin", "institution_admin", "registrar", "career_services", "programme_manager"],
-        label: "Claros Launch · Admin Analytics" },
-      { to: "/placements", icon: Briefcase, key: "nav.placements", testid: "sidebar-nav-placements",
-        module: "PATHFINDER", label: "Claros Launch · Legacy Placements" },
-      { to: "/alumni", icon: HeartHandshake, key: "nav.alumni", testid: "sidebar-nav-alumni",
-        module: "ALUMNI360", label: "Claros Launch · Alumni Network" },
-      { to: "/alumni-network", icon: Users, key: "nav.alumni_network", testid: "sidebar-nav-alumni-network",
-        canonicalId: "claros-alumni",
-        module: "ALUMNI360", label: "Claros Alumni · Network" },
+        label: "Analytics" },
+      { to: "/admissions", icon: ClipboardList, testid: "sidebar-nav-admissions", module: "ARISE",
+        label: "Legacy Admissions" },
+      { to: "/arise-console", icon: Sparkles, testid: "sidebar-nav-arise-console",
+        roles: ["super_admin", "institution_admin", "registrar", "career_services", "programme_manager"],
+        label: "Advanced Console" },
     ],
   },
   {
-    label: "Safety & Sustainability",
-    testid: "sidebar-group-safety-sustainability",
+    canonicalId: "claros-core",
+    testid: "sidebar-group-claros-core",
     items: [
-      { to: "/safe", icon: ShieldCheck, key: "nav.safe", testid: "sidebar-nav-safe",
-        canonicalId: "claros-safe",
-        module: "GUARDIAN", label: "Claros Safe · Visitors & Incidents" },
-      { to: "/green", icon: Leaf, key: "nav.green", testid: "sidebar-nav-green",
-        canonicalId: "claros-green",
-        module: "GREENIQ", label: "Claros Green · Sustainability" },
+      { to: "/core/dashboard", icon: LayoutDashboard, testid: "sidebar-nav-core-dashboard", module: "NEXUS",
+        label: "Dashboard" },
+      { to: "/core/students", icon: Users, testid: "sidebar-nav-core-students", module: "NEXUS",
+        roles: ["super_admin", "institution_admin", "registrar", "programme_manager", "faculty", "instructor", "hod", "dean"],
+        label: "Students" },
+      { to: "/core/attendance", icon: ClipboardCheck, testid: "sidebar-nav-core-attendance", module: "NEXUS",
+        roles: ["super_admin", "institution_admin", "faculty", "instructor", "hod", "programme_manager", "registrar"],
+        label: "Attendance" },
+      { to: "/core/attendance/report", icon: BarChart3, testid: "sidebar-nav-core-attendance-report", module: "NEXUS",
+        label: "Attendance Report" },
+      { to: "/core/timetable", icon: CalendarClock, testid: "sidebar-nav-core-timetable", module: "NEXUS",
+        label: "Timetable" },
+      { to: "/core/fees", icon: Wallet, testid: "sidebar-nav-core-fees", module: "NEXUS",
+        label: "Fees" },
+      { to: "/core/notices", icon: BellRing, testid: "sidebar-nav-core-notices", module: "NEXUS",
+        label: "Notices" },
+      { to: "/nexus", icon: Database, testid: "sidebar-nav-nexus", module: "NEXUS",
+        roles: ["super_admin", "institution_admin", "registrar", "programme_manager", "hostel_warden", "faculty", "hod"],
+        label: "Legacy NEXUS" },
+      { to: "/nexus-console", icon: Sparkles, testid: "sidebar-nav-nexus-console",
+        roles: ["super_admin", "institution_admin", "registrar", "programme_manager", "hostel_warden"],
+        label: "Advanced Console" },
     ],
   },
   {
-    label: "Strategy & Compliance",
-    testid: "sidebar-group-strategy-compliance",
+    canonicalId: "claros-learn",
+    testid: "sidebar-group-claros-learn",
     items: [
-      { to: "/insights", icon: Command, key: "nav.insights",
-        testid: "sidebar-nav-insights", module: "COMMAND",
-        canonicalId: "claros-insights",
-        roles: ["super_admin", "institution_admin"],
-        label: "Claros Insights · Executive Center" },
-      { to: "/analytics", icon: BarChart3, key: "nav.analytics", testid: "sidebar-nav-analytics", module: "COMMAND" },
-      { to: "/command", icon: Command, key: "nav.command", testid: "sidebar-nav-command",
-        module: "COMMAND", label: "Command · COMMAND" },
-      { to: "/comply", icon: ShieldCheck, key: "nav.comply_dashboard",
-        testid: "sidebar-nav-comply-dashboard", module: "COMPASS",
-        label: "Claros Comply · NAAC Dashboard" },
-      { to: "/comply/obe", icon: GraduationCap, key: "nav.comply_obe",
-        testid: "sidebar-nav-comply-obe", module: "COMPASS",
+      { to: "/learn", icon: GraduationCap, testid: "sidebar-nav-learn", module: "ILLUMINATE",
+        label: "LMS" },
+      { to: "/content-studio", icon: FileStack, testid: "sidebar-nav-content-studio", module: "ILLUMINATE",
+        label: "Content Studio" },
+      { to: "/assessments", icon: ClipboardCheck, testid: "sidebar-nav-assessments", module: "ILLUMINATE",
+        label: "Assessments" },
+      { to: "/psychometrics", icon: Brain, testid: "sidebar-nav-psychometrics",
+        label: "Psychometrics" },
+    ],
+  },
+  {
+    canonicalId: "claros-launch",
+    testid: "sidebar-group-claros-launch",
+    items: [
+      { to: "/launch", icon: Rocket, testid: "sidebar-nav-launch-dashboard", module: "ALUMNI360",
+        label: "Cockpit" },
+      { to: "/launch/drives", icon: Briefcase, testid: "sidebar-nav-launch-drives", module: "ALUMNI360",
+        label: "Drives" },
+      { to: "/launch/skills", icon: ListChecks, testid: "sidebar-nav-launch-skills", module: "ALUMNI360",
+        roles: ["student"], label: "Skills" },
+      { to: "/launch/interview", icon: MessageSquareText, testid: "sidebar-nav-launch-interview", module: "ALUMNI360",
+        roles: ["student"], label: "Mock Interview" },
+      { to: "/launch/admin", icon: BarChart3, testid: "sidebar-nav-launch-admin", module: "ALUMNI360",
+        roles: ["super_admin", "institution_admin", "registrar", "career_services", "programme_manager"],
+        label: "Admin Analytics" },
+      { to: "/placements", icon: Briefcase, testid: "sidebar-nav-placements", module: "PATHFINDER",
+        label: "Legacy Placements" },
+    ],
+  },
+  {
+    canonicalId: "claros-research",
+    testid: "sidebar-group-claros-research",
+    items: [
+      { to: "/research", icon: Search, testid: "sidebar-nav-research", module: "PRISM",
+        label: "Research" },
+    ],
+  },
+  {
+    canonicalId: "claros-people",
+    testid: "sidebar-group-claros-people",
+    items: [
+      { to: "/people", icon: GraduationCap, testid: "sidebar-nav-people", module: "FACULTY",
+        label: "Faculty Development" },
+    ],
+  },
+  {
+    canonicalId: "claros-alumni",
+    testid: "sidebar-group-claros-alumni",
+    items: [
+      { to: "/alumni-network", icon: Users, testid: "sidebar-nav-alumni-network", module: "ALUMNI360",
+        label: "Network" },
+      { to: "/alumni", icon: HeartHandshake, testid: "sidebar-nav-alumni", module: "ALUMNI360",
+        label: "Legacy Alumni" },
+    ],
+  },
+  {
+    canonicalId: "claros-safe",
+    testid: "sidebar-group-claros-safe",
+    items: [
+      { to: "/safe", icon: ShieldCheck, testid: "sidebar-nav-safe", module: "GUARDIAN",
+        label: "Visitors & Incidents" },
+    ],
+  },
+  {
+    canonicalId: "claros-green",
+    testid: "sidebar-group-claros-green",
+    items: [
+      { to: "/green", icon: Leaf, testid: "sidebar-nav-green", module: "GREENIQ",
+        label: "Sustainability" },
+    ],
+  },
+  {
+    canonicalId: "claros-comply",
+    testid: "sidebar-group-claros-comply",
+    items: [
+      { to: "/comply", icon: ShieldCheck, testid: "sidebar-nav-comply-dashboard", module: "COMPASS",
+        label: "NAAC Dashboard" },
+      { to: "/comply/obe", icon: GraduationCap, testid: "sidebar-nav-comply-obe", module: "COMPASS",
         roles: ["super_admin", "institution_admin", "compliance_officer", "ai_governance_admin", "faculty", "instructor", "hod", "programme_manager"],
-        label: "Claros Comply · OBE Framework" },
-      { to: "/compass-aqar", icon: Award, key: "nav.compass_aqar", testid: "sidebar-nav-compass-aqar",
-        module: "COMPASS", label: "Claros Comply · Legacy AQAR",
-        roles: ["super_admin", "institution_admin", "compliance_officer", "ai_governance_admin"] },
-      { to: "/compliance", icon: BadgeCheck, key: "nav.compliance", testid: "sidebar-nav-compliance",
-        module: "COMPASS", label: "Claros Comply · Legacy Compliance" },
-      { to: "/governance", icon: Scale, key: "nav.governance", testid: "sidebar-nav-governance",
+        label: "OBE Framework" },
+      { to: "/compass-aqar", icon: Award, testid: "sidebar-nav-compass-aqar", module: "COMPASS",
+        roles: ["super_admin", "institution_admin", "compliance_officer", "ai_governance_admin"],
+        label: "Legacy AQAR" },
+      { to: "/compliance", icon: BadgeCheck, testid: "sidebar-nav-compliance", module: "COMPASS",
+        label: "Legacy Compliance" },
+      { to: "/governance", icon: Scale, testid: "sidebar-nav-governance",
         roles: ["super_admin", "institution_admin", "ai_governance_admin", "compliance_officer"],
         label: "AI Governance" },
-      { to: "/workflows", icon: Workflow, key: "nav.workflows", testid: "sidebar-nav-workflows" },
+      { to: "/workflows", icon: Workflow, key: "nav.workflows", testid: "sidebar-nav-workflows",
+        label: "Workflows" },
     ],
   },
+
+  // -------------------------------------------------------------------------
+  // Dev / audit + utility footers
+  // -------------------------------------------------------------------------
   {
     label: "Phase Closeout",
     testid: "sidebar-group-phase-closeout",
     items: [
-      { to: "/phase1-complete", icon: Sparkles, key: "nav.phase1_complete",
-        testid: "sidebar-nav-phase1-complete",
+      { to: "/phase1-complete", icon: Sparkles, testid: "sidebar-nav-phase1-complete",
         roles: ["super_admin", "institution_admin", "registrar", "career_services", "compliance_officer", "ai_governance_admin", "faculty", "instructor"],
         label: "Phase 1 Closeout" },
-      { to: "/phase2-complete", icon: Sparkles, key: "nav.phase2_complete",
-        testid: "sidebar-nav-phase2-complete",
+      { to: "/phase2-complete", icon: Sparkles, testid: "sidebar-nav-phase2-complete",
         roles: ["super_admin", "institution_admin", "registrar", "career_services", "compliance_officer", "ai_governance_admin", "faculty", "instructor", "programme_manager", "training_manager"],
         label: "Phase 2 Closeout" },
-      { to: "/phase3-complete", icon: Sparkles, key: "nav.phase3_complete",
-        testid: "sidebar-nav-phase3-complete",
+      { to: "/phase3-complete", icon: Sparkles, testid: "sidebar-nav-phase3-complete",
         roles: ["super_admin", "institution_admin", "registrar", "compliance_officer", "ai_governance_admin", "programme_manager"],
         label: "Phase 3 Closeout" },
-      { to: "/closeout-console", icon: Sparkles, key: "nav.closeout_console",
-        testid: "sidebar-nav-closeout-console",
+      { to: "/closeout-console", icon: Sparkles, testid: "sidebar-nav-closeout-console",
         roles: ["super_admin", "institution_admin", "registrar", "career_services", "compliance_officer", "ai_governance_admin", "programme_manager"],
         label: "Bulk Closeout" },
     ],
@@ -281,13 +309,12 @@ const NAV_GROUPS = [
     label: "Help & System",
     testid: "sidebar-group-system",
     items: [
-      { to: "/admin-guide", icon: BookOpenCheck, key: "nav.admin_guide",
-        testid: "sidebar-nav-admin-guide",
+      { to: "/admin-guide", icon: BookOpenCheck, testid: "sidebar-nav-admin-guide",
         roles: ["super_admin", "institution_admin"], label: "Admin Guide" },
-      { to: "/product-brief", icon: FileText, key: "nav.product_brief",
-        testid: "sidebar-nav-product-brief",
+      { to: "/product-brief", icon: FileText, testid: "sidebar-nav-product-brief",
         roles: ["super_admin", "institution_admin"], label: "Product Brief" },
-      { to: "/settings", icon: SettingsIcon, key: "nav.settings", testid: "sidebar-nav-settings" },
+      { to: "/settings", icon: SettingsIcon, key: "nav.settings", testid: "sidebar-nav-settings",
+        label: "Settings" },
     ],
   },
 ];
@@ -361,10 +388,12 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
         </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-4">
         {visibleGroups.map((group) => (
           <div key={group.testid} data-testid={group.testid}>
-            <div className="label-eyebrow px-3 pb-2">{group.label}</div>
+            <div className="label-eyebrow px-3 pb-2">
+              <GroupLabel group={group} />
+            </div>
             <ul className="space-y-0.5">
               {group.items.map((item) => (
                 <li key={item.to}>
@@ -387,7 +416,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
                           className="h-4 w-4 shrink-0"
                           strokeWidth={isActive ? 2.25 : 1.75}
                         />
-                        <SidebarItemLabel item={item} fallbackLabel={item.label || t(item.key)} />
+                        <SidebarItemLabel item={item} fallbackLabel={item.label || (item.key ? t(item.key) : "")} />
                         {item._moduleStatus === "coming_soon" && (
                           <span
                             className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 border border-amber-200"

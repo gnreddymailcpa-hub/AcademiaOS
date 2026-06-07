@@ -1622,3 +1622,76 @@ reports via Claude.
     is set by the tenant switcher.
   - Recharts ResponsiveContainer wrapped in fixed-size div to silence
     -1 width/height warnings.
+
+---
+
+## Phase 37 — Claros Learn (LMS) — Feb 2026
+
+**Scope**: Full learning-management module sitting on top of Claros Core
+(courses + students). Adds course content delivery, assignments with file
+upload + Claude-powered AI grading, AI-generated quizzes (5/10/15 MCQs),
+quiz attempts with timer, and per-student/per-course progress tracking.
+
+### Backend
+- `routes_learn.py` mounted at `/api/v1/learn/*`.
+- New collections: `course_enrollments`, `course_content`,
+  `student_submissions`, `quizzes`, `quiz_questions`, `quiz_attempts`,
+  `learning_progress`.
+- File storage: `/app/backend/uploads/learn/` — `POST /files/upload`
+  returns a token-shaped `file_url`, `GET /files/{token}` serves with
+  auth check (super_admin can cross-tenant).
+- Endpoints (selected):
+  - `GET /courses/me` — student: enrolled courses w/ progress;
+    faculty: courses they teach (round-robin assigned); admin: all.
+  - `GET /courses/{id}/content` — content list (students see
+    `is_visible=true` only).
+  - `POST/PUT/DELETE /content` — faculty/admin CRUD with ownership
+    check (HOD/Dean bypass).
+  - `POST /submissions`, `GET /submissions/me`, `GET /submissions`
+    (faculty view), `POST /submissions/{id}/ai-grade` (Claude),
+    `POST /submissions/{id}/grade` (manual marks).
+  - `POST /quizzes/generate` — Claude builds N MCQs from lecture
+    notes; deterministic fallback shipping a 5-question pack if LLM
+    fails. Validates `num_questions ∈ {5,10,15}` and
+    `difficulty ∈ {EASY,MEDIUM,HARD}`.
+  - `GET /courses/{id}/quizzes`, `GET /quizzes/{id}` (correct answers
+    hidden from students until they attempt), `POST
+    /quizzes/{id}/attempt` (one attempt per student),
+    `GET /quizzes/{id}/results/{attempt_id}`.
+  - `GET /progress/me` — recomputes on-the-fly + persists in
+    `learning_progress`.
+- RBAC: `FACULTY_ROLES = {faculty, instructor, hod, dean}`.
+  HOD/Dean get tenant-wide access; ordinary faculty restricted to
+  courses where `faculty_user_id == self`.
+
+### Seed
+- Round-robin assigns every course's `faculty_user_id` across all
+  faculty users in the tenant (13 reassignments on first run for VCE).
+- Each VCE student enrolled in 3 courses (120 enrollments total).
+- 2 sample `course_content` rows per course (1 LECTURE_NOTES,
+  1 ASSIGNMENT, due in 7 days, max_marks=10).
+- 3 sample quizzes (one per first 3 VCE courses) with 3 MCQs each,
+  deterministic correct answers.
+
+### Frontend
+- 4 new pages under `/learn/*`:
+  - `ClarosLearnHome.jsx` — dual student/faculty grid.
+  - `ClarosLearnCourse.jsx` — 4 tabs (Content / Assignments / Quizzes
+    / Progress) with submission status badges.
+  - `ClarosLearnContent.jsx` — Markdown lecture viewer +
+    Assignment submission form (text + file upload) + one-question-at-a-time
+    Quiz player with countdown timer and result grading screen.
+  - `ClarosLearnFaculty.jsx` — Content/assignment/quiz manager;
+    Generate-AI-Quiz dialog; submissions panel with AI-Grade + manual
+    marks input.
+- Route `/learn`, `/learn/courses/:id`, `/learn/courses/:id/content/:cid`,
+  `/learn/faculty/:id` all wrapped in `ModuleGate(ILLUMINATE)`.
+- Sidebar: new "Claros Learn · LMS" entry under "Academics" group.
+
+### Validation
+- Backend pytest: **13/13 pass** (`tests/test_claros_learn.py`).
+- Testing agent v3 iteration 36: 100% on both backend and frontend
+  selector coverage. AI quiz generation returned 5 real questions
+  from Claude in ~25s; AI grading returned a coherent 4/10 score with
+  detailed strengths/improvements arrays. No critical or minor UI bugs.
+

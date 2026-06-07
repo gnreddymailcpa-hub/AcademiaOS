@@ -1252,3 +1252,69 @@ backend reads as a platform-oriented codebase rather than an iteration log.
   multiple platforms within a release wave (Phase-1 platforms, Phase-2
   platforms, Phase-3 platforms) and cannot be split further without
   breaking the frontend contract.
+
+
+### Phase 31 — Feb 2026 (Claros AI module · VEDA → Claros rebrand + new chat UI + KB manager)
+
+**Scope chosen by user**:
+- Rebrand VEDA → Claros AI **reusing existing backend collections**
+  (`content_sources`, `content_chunks`, `ai_sessions`) — zero schema migration.
+- Add new frontend pages `/ai` (chat) + `/ai/knowledge` (KB manager).
+- Use **Emergent LLM Key** (consistent with rest of app).
+- **Non-streamed** responses for v1 (SSE deferred).
+- **Full product rebrand AcademiaOS → Claros** across all user-facing surfaces.
+
+**New backend endpoints** (in `routes_ai.py`):
+- `GET /api/ai/sessions/list/{institution_id}` — list user's assistant chat
+  sessions (latest first, ≤50), title derived from first user message.
+- `GET /api/ai/sessions/detail/{session_id}` — full session + messages array;
+  ownership-checked (cross-user → 403; super_admin override).
+- `DELETE /api/ai/sessions/{session_id}` — delete session (ownership-checked).
+- `POST /api/ai/sessions/new/{institution_id}` — close any currently-open
+  assistant sessions so the next `/assistant/message` call creates a fresh one.
+- `DELETE /api/ai/content/sources/{source_id}` — cascade-delete source +
+  its `content_chunks` + on-disk file + audit-log row. Role gate:
+  super_admin / institution_admin / faculty / instructor / registrar /
+  programme_manager / compliance_officer / ai_governance_admin.
+- `POST /api/ai/content/upload` — added `source_type` form field with
+  enum {SYLLABUS, POLICY, FAQ, RESEARCH, PLACEMENT, REGULATION, GENERAL}.
+- Assistant system prompt rebranded `VEDA` → `Claros AI`.
+
+**New frontend pages**:
+- `/app/frontend/src/pages/ClarosAI.jsx` — 280px sessions sidebar (with
+  New Chat, hover-to-delete) + chat area (empty state with 4 starters,
+  user/assistant bubbles, citation badges, Ctrl+Enter to send, live char
+  counter). State-isolation per institution via `key={current.id}`.
+- `/app/frontend/src/pages/ClarosKnowledge.jsx` — drag-and-drop dropzone +
+  title + 7-option source_type Select + Upload button. Right panel shows
+  indexed document table (title / type badge / size / date / Indexed status
+  / delete button). Upload auto-chains to `/api/veda/{iid}/kb/ingest-run`.
+
+**Product rebrand** (user-facing only — internal localStorage keys
+`academiaos_*` and seed super-admin email `admin@academiaos.ai` retained
+to avoid breaking sessions + seed integrity):
+- `frontend/public/index.html` — `<title>` + meta description
+- `src/lib/i18n.js` — `app.name`, `login.title`
+- `src/components/layout/Sidebar.jsx` — brand "Claros", "Powered by Claros"
+- `src/components/layout/Shell.jsx` — mobile-drawer brand
+- `src/pages/Login.jsx` — header + "Sign in to Claros"
+- `src/pages/Settings.jsx`, `ExecBriefing.jsx`, `AIInstructor.jsx`,
+  `Onboarding.jsx`, `AuthCallback.jsx`, `AdminGuide.jsx`, `ProductBrief.jsx`,
+  `App.css` — all rebranded.
+
+**Testing** (`/app/test_reports/iteration_30.json`):
+- Backend: **11/11 PASS** (`tests/test_phase31_claros_ai.py`) including
+  cross-user 403, student-role 403, super_admin override, regression on
+  existing instructor + content endpoints.
+- Frontend: all data-testids present, Ctrl+Enter works, char-counter live,
+  New Chat resets, sessions persist with truncated titles, KB page renders
+  with 7 source types + 3 seeded indexed docs, brand sweep clean across
+  all major routes.
+- Cosmetic fixes after first test pass: nested-button hydration warning
+  → resolved (sessions now use `<div role="button">`); sessions panel
+  width tightened 392px → exactly 280px.
+
+**Sidebar additions** (under Student Services cluster):
+- `Claros AI · Chat` (route `/ai`, ModuleGate VEDA)
+- `Claros AI · Knowledge Base` (route `/ai/knowledge`, ModuleGate VEDA +
+  role-gated upload UI for admin/faculty/registrar/programme_manager).

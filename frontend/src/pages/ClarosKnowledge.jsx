@@ -100,9 +100,11 @@ export default function ClarosKnowledge() {
     }
   }, [current]);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     load();
   }, [load]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const onPickFile = (f) => {
     if (!f) return;
@@ -332,7 +334,7 @@ export default function ClarosKnowledge() {
             ) : docs.length === 0 ? (
               <div className="p-10 text-center text-sm text-muted-foreground">
                 No documents yet. Upload your first one to start grounding
-                Claros AI in your institution's content.
+                Claros AI in your institution&apos;s content.
               </div>
             ) : (
               <Table data-testid="claros-knowledge-table">

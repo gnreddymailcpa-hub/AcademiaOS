@@ -37,6 +37,11 @@ function formatTs(iso) {
 
 export default function ClarosAI() {
   const { current } = useInstitution();
+  if (!current) return null;
+  return <ClarosAIChat key={current.id} institution={current} />;
+}
+
+function ClarosAIChat({ institution: current }) {
   const { lang } = useLang();
   const [sessions, setSessions] = useState([]);
   const [activeId, setActiveId] = useState(null);
@@ -57,11 +62,10 @@ export default function ClarosAI() {
     }
   }, [current]);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     loadSessions();
-    setActiveId(null);
-    setMessages([]);
-  }, [current?.id, loadSessions]);
+  }, [loadSessions]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -69,6 +73,7 @@ export default function ClarosAI() {
       behavior: "smooth",
     });
   }, [messages]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const openSession = async (sid) => {
     if (sid === activeId) return;
@@ -161,8 +166,6 @@ export default function ClarosAI() {
     }
   };
 
-  if (!current) return null;
-
   const moduleName = "Claros AI";
   const emptyState = messages.length === 0 && !loadingDetail;
 
@@ -185,10 +188,10 @@ export default function ClarosAI() {
       />
 
       <div className="p-4 lg:p-6">
-        <div className="grid grid-cols-12 gap-4 h-[calc(100vh-220px)] min-h-[560px]">
+        <div className="flex flex-col md:flex-row gap-4 h-[calc(100vh-220px)] min-h-[560px]">
           {/* ---------- LEFT — Sessions ---------- */}
           <aside
-            className="col-span-12 md:col-span-3 lg:col-span-3 border border-border rounded-lg bg-card flex flex-col"
+            className="border border-border rounded-lg bg-card flex flex-col md:w-[280px] md:shrink-0"
             style={{ minWidth: 0 }}
             data-testid="claros-sessions-panel"
           >
@@ -210,11 +213,19 @@ export default function ClarosAI() {
                   </div>
                 ) : (
                   sessions.map((s) => (
-                    <button
+                    <div
                       key={s.id}
+                      role="button"
+                      tabIndex={0}
                       onClick={() => openSession(s.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          openSession(s.id);
+                        }
+                      }}
                       data-testid={`claros-session-${s.id}`}
-                      className={`group w-full text-left rounded-md px-3 py-2 text-sm transition flex items-start gap-2 ${
+                      className={`group w-full text-left rounded-md px-3 py-2 text-sm transition flex items-start gap-2 cursor-pointer ${
                         activeId === s.id
                           ? "bg-primary/10 text-foreground"
                           : "hover:bg-muted/60 text-muted-foreground"
@@ -237,7 +248,7 @@ export default function ClarosAI() {
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
-                    </button>
+                    </div>
                   ))
                 )}
               </div>
@@ -246,7 +257,7 @@ export default function ClarosAI() {
 
           {/* ---------- RIGHT — Chat ---------- */}
           <section
-            className="col-span-12 md:col-span-9 lg:col-span-9 border border-border rounded-lg bg-card flex flex-col overflow-hidden"
+            className="flex-1 border border-border rounded-lg bg-card flex flex-col overflow-hidden min-w-0"
             data-testid="claros-chat-panel"
           >
             {/* header */}
@@ -285,7 +296,7 @@ export default function ClarosAI() {
                   </h3>
                   <p className="text-sm text-muted-foreground mb-6">
                     Course catalog, fee structure, certificates, attendance policy,
-                    placement statistics — Claros AI answers from your institution's
+                    placement statistics — Claros AI answers from your institution&apos;s
                     own knowledge base, with citations.
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">

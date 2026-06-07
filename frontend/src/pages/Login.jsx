@@ -55,7 +55,7 @@ export default function Login() {
               A
             </div>
             <div>
-              <div className="font-semibold tracking-tight text-lg">AcademiaOS</div>
+              <div className="font-semibold tracking-tight text-lg">Claros</div>
               <div className="text-[11px] uppercase tracking-[0.22em] text-white/70">
                 Unified Academic Intelligence
               </div>
@@ -98,7 +98,7 @@ export default function Login() {
             <ShieldCheck className="h-3.5 w-3.5" />
             Enterprise SSO ready · JWT for demo
           </div>
-          <h2 className="text-2xl font-semibold tracking-tight">Sign in to AcademiaOS</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">Sign in to Claros</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Gartner-grade Academic AI Operating System
           </p>

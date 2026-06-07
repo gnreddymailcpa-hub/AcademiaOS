@@ -35,7 +35,7 @@ export default function AuthCallback() {
         // strip fragment + go to dashboard
         window.history.replaceState({}, "", "/");
         navigate("/", { replace: true });
-        toast.success(`Welcome, ${data.user?.name || "AcademiaOS"}`);
+        toast.success(`Welcome, ${data.user?.name || "Claros"}`);
       } catch (e) {
         const msg =
           e?.response?.data?.detail || "Google sign-in failed. Please try again.";

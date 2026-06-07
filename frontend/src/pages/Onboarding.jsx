@@ -135,7 +135,7 @@ function StepOne({ current, onNext }) {
         <div className="flex-1">
           <h2 className="text-xl font-semibold tracking-tight">Welcome, {current.short_name}</h2>
           <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
-            AcademiaOS.ai ships 12 platforms grouped across 3 phases. This wizard
+            Claros ships 12 platforms grouped across 3 phases. This wizard
             lets you pick exactly which ones to launch on day 1. You can change
             this anytime in <span className="font-mono">Platform Modules</span>.
           </p>

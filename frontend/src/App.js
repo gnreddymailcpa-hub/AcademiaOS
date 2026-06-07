@@ -52,6 +52,8 @@ import VedaConsole from "./pages/VedaConsole";
 import AriseConsole from "./pages/AriseConsole";
 import NexusConsole from "./pages/NexusConsole";
 import RemainingConsole from "./pages/RemainingConsole";
+import ClarosAI from "./pages/ClarosAI";
+import ClarosKnowledge from "./pages/ClarosKnowledge";
 import AuthCallback from "./pages/AuthCallback";
 import ModuleGate from "./components/layout/ModuleGate";
 
@@ -76,6 +78,8 @@ function ShellRoutes() {
         <Route path="/ai-instructor" element={<ModuleGate module="VEDA"><AIInstructor /></ModuleGate>} />
         <Route path="/ai-advisor" element={<ModuleGate module="VEDA"><AIAdvisor /></ModuleGate>} />
         <Route path="/student-assistant" element={<ModuleGate module="PATHFINDER"><StudentAssistant /></ModuleGate>} />
+        <Route path="/ai" element={<ModuleGate module="VEDA"><ClarosAI /></ModuleGate>} />
+        <Route path="/ai/knowledge" element={<ModuleGate module="VEDA"><ClarosKnowledge /></ModuleGate>} />
         <Route path="/assessments" element={<ModuleGate module="ILLUMINATE"><Assessments /></ModuleGate>} />
         <Route path="/psychometrics" element={<Psychometrics />} />
         <Route path="/analytics" element={<ModuleGate module="COMMAND"><Analytics /></ModuleGate>} />

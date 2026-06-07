@@ -262,7 +262,7 @@ export default function AIInstructor() {
             </div>
             <div className="min-w-0">
               <div className="text-sm font-semibold text-instructor-fg tracking-tight">
-                AcademiaOS Intelligence Core
+                Claros Intelligence Core
               </div>
               <div className="text-[11px] text-instructor-muted truncate">
                 {currentCourse

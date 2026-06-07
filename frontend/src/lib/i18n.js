@@ -1,6 +1,6 @@
 export const dict = {
   en: {
-    "app.name": "AcademiaOS",
+    "app.name": "Claros",
     "app.tagline": "Unified Academic Intelligence Platform",
     "nav.dashboard": "Dashboard",
     "nav.institution_setup": "Institution Setup",
@@ -20,7 +20,7 @@ export const dict = {
     "topbar.search": "Search programmes, courses, learners…",
     "topbar.ai_status": "AI · Compliant",
     "topbar.logout": "Log out",
-    "login.title": "Sign in to AcademiaOS",
+    "login.title": "Sign in to Claros",
     "login.subtitle": "Gartner-grade Academic AI Operating System",
     "login.email": "Work email",
     "login.password": "Password",

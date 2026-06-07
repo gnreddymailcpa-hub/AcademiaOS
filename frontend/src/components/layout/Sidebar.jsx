@@ -103,6 +103,12 @@ const NAV_GROUPS = [
         roles: ["super_admin", "institution_admin", "registrar", "programme_manager", "hostel_warden"],
         label: "NEXUS Console" },
       { to: "/student-assistant", icon: MessageSquareText, key: "nav.student_assistant", testid: "sidebar-nav-student-assistant", module: "PATHFINDER" },
+      { to: "/ai", icon: Sparkles, key: "nav.claros_ai", testid: "sidebar-nav-claros-ai",
+        module: "VEDA", label: "Claros AI · Chat" },
+      { to: "/ai/knowledge", icon: BookOpen, key: "nav.claros_knowledge", testid: "sidebar-nav-claros-knowledge",
+        module: "VEDA",
+        roles: ["super_admin", "institution_admin", "faculty", "instructor", "registrar", "programme_manager", "compliance_officer", "ai_governance_admin"],
+        label: "Claros AI · Knowledge Base" },
       { to: "/veda-console", icon: Sparkles, key: "nav.veda_console",
         testid: "sidebar-nav-veda-console",
         roles: ["super_admin", "institution_admin", "registrar", "career_services", "compliance_officer", "ai_governance_admin", "faculty", "instructor", "programme_manager"],
@@ -238,15 +244,15 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
             }}
             data-testid="sidebar-brand-mark"
           >
-            {current?.short_name?.[0] || "A"}
+            {current?.short_name?.[0] || "C"}
           </div>
         )}
         <div className="leading-tight flex-1 min-w-0">
           <div className="text-sm font-semibold tracking-tight text-foreground truncate">
-            {current?.short_name || "AcademiaOS"}
+            {current?.short_name || "Claros"}
           </div>
           <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            Powered by AcademiaOS
+            Powered by Claros
           </div>
         </div>
         <button

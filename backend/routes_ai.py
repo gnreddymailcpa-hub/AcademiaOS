@@ -149,6 +149,7 @@ def build_router(get_db, get_current_user):
         title: str = Form(...),
         course_id: str = Form(""),
         kind: str = Form("lecture_notes"),
+        source_type: str = Form("GENERAL"),
         file: Optional[UploadFile] = File(None),
         text: str = Form(""),
         user: dict = Depends(get_current_user),
@@ -202,6 +203,7 @@ def build_router(get_db, get_current_user):
             "course_id": course_id or None,
             "title": title,
             "kind": kind,
+            "source_type": (source_type or "GENERAL").upper(),
             "filename": filename,
             "original_filename": (file.filename if file else None),
             "mime": mime,
@@ -242,6 +244,46 @@ def build_router(get_db, get_current_user):
             media_type=src.get("mime") or "application/octet-stream",
             filename=src.get("original_filename") or src["filename"],
         )
+
+    @router.delete("/content/sources/{source_id}")
+    async def delete_source(source_id: str, user: dict = Depends(get_current_user)):
+        """Hard-delete a knowledge source + its RAG chunks. Admin / faculty / registrar / programme_manager only."""
+        db = get_db()
+        src = await db.content_sources.find_one({"id": source_id}, {"_id": 0})
+        if not src:
+            raise HTTPException(404, "Source not found")
+        await _scope(user, src["institution_id"])
+        if user["role"] not in (
+            "super_admin",
+            "institution_admin",
+            "faculty",
+            "instructor",
+            "registrar",
+            "programme_manager",
+            "compliance_officer",
+            "ai_governance_admin",
+        ):
+            raise HTTPException(403, "Insufficient role to delete knowledge sources")
+        # remove indexed chunks first
+        await db.content_chunks.delete_many({"source_id": source_id})
+        await db.content_sources.delete_one({"id": source_id})
+        # remove the stored file (best-effort)
+        if src.get("filename"):
+            path = os.path.join(UPLOAD_DIR, src["filename"])
+            try:
+                if os.path.isfile(path):
+                    os.remove(path)
+            except OSError:
+                pass
+        await db.audit_logs.insert_one({
+            "id": str(uuid.uuid4()),
+            "institution_id": src["institution_id"],
+            "action": "content.delete",
+            "target": source_id,
+            "actor": user["email"],
+            "ts": now_iso(),
+        })
+        return {"ok": True}
 
     @router.post("/content/{source_id}/approve")
     async def approve_source(source_id: str, user: dict = Depends(get_current_user)):
@@ -783,7 +825,7 @@ def build_router(get_db, get_current_user):
         ) if passages else ""
 
         sys = (
-            f"You are VEDA, the AcademiaOS assistant for {inst.get('name','this institution')}. "
+            f"You are Claros AI, the institutional AI assistant for {inst.get('name','this institution')}. "
             f"Respond in {lang_label}. {code_switch}\n\n"
             f"PERSONA: {persona_block}\n\n"
             "GROUNDING RULES:\n"
@@ -822,6 +864,75 @@ def build_router(get_db, get_current_user):
     async def reset_session(session_id: str, user: dict = Depends(get_current_user)):
         db = get_db()
         await db.ai_sessions.update_one({"id": session_id}, {"$set": {"open": False}})
+        return {"ok": True}
+
+    # ---------------------------------------------------------------------
+    # Claros AI — session manager (list / detail / delete / new)
+    # ---------------------------------------------------------------------
+    @router.get("/sessions/list/{institution_id}")
+    async def list_user_sessions(institution_id: str, user: dict = Depends(get_current_user)):
+        """List the current user's assistant chat sessions (latest first)."""
+        await _scope(user, institution_id)
+        db = get_db()
+        items = await db.ai_sessions.find(
+            {
+                "institution_id": institution_id,
+                "user_id": user["id"],
+                "kind": "assistant",
+            },
+            {"_id": 0},
+        ).sort("created_at", -1).limit(50).to_list(50)
+        # Derive title from first user message; surface lightweight summary
+        out = []
+        for s in items:
+            msgs = s.get("messages") or []
+            first_user = next((m for m in msgs if m.get("role") == "user"), None)
+            title = (first_user["text"][:60] + "…") if first_user and len(first_user["text"]) > 60 else (first_user or {}).get("text") or "New conversation"
+            out.append({
+                "id": s["id"],
+                "title": title,
+                "open": s.get("open", False),
+                "created_at": s.get("created_at"),
+                "message_count": len(msgs),
+            })
+        return out
+
+    @router.get("/sessions/detail/{session_id}")
+    async def get_session_detail(session_id: str, user: dict = Depends(get_current_user)):
+        db = get_db()
+        sess = await db.ai_sessions.find_one({"id": session_id}, {"_id": 0})
+        if not sess:
+            raise HTTPException(404, "Session not found")
+        if user["role"] != "super_admin" and sess.get("user_id") != user["id"]:
+            raise HTTPException(403, "Cross-user denied")
+        return sess
+
+    @router.delete("/sessions/{session_id}")
+    async def delete_session(session_id: str, user: dict = Depends(get_current_user)):
+        db = get_db()
+        sess = await db.ai_sessions.find_one({"id": session_id}, {"_id": 0})
+        if not sess:
+            raise HTTPException(404, "Session not found")
+        if user["role"] != "super_admin" and sess.get("user_id") != user["id"]:
+            raise HTTPException(403, "Cross-user denied")
+        await db.ai_sessions.delete_one({"id": session_id})
+        return {"ok": True}
+
+    @router.post("/sessions/new/{institution_id}")
+    async def start_new_session(institution_id: str, user: dict = Depends(get_current_user)):
+        """Close any currently-open assistant sessions for the user; the next
+        /assistant/message call will auto-create a fresh one."""
+        await _scope(user, institution_id)
+        db = get_db()
+        await db.ai_sessions.update_many(
+            {
+                "institution_id": institution_id,
+                "user_id": user["id"],
+                "kind": "assistant",
+                "open": True,
+            },
+            {"$set": {"open": False}},
+        )
         return {"ok": True}
 
     # ---------------------------------------------------------------------

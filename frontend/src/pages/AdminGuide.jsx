@@ -30,7 +30,7 @@ import {
  * Admin Guide — Standard Operating Procedure (SOP) for new Institution Admins.
  *
  * Audience: a freshly-onboarded Institution Admin who has just received their
- * approved credentials from AcademiaOS and needs to set up their tenant
+ * approved credentials from Claros and needs to set up their tenant
  * end-to-end without help.
  */
 
@@ -42,7 +42,7 @@ const STEPS = [
     icon: KeyRound,
     eta: "3 min",
     bullets: [
-      "Use the credentials emailed to you by AcademiaOS onboarding.",
+      "Use the credentials emailed to you by Claros onboarding.",
       "On first sign-in you'll land on the role-tailored Institution Admin dashboard.",
       "Confirm your name & avatar in the top-right user menu. If anything is off, raise a support ticket via Student Assistant (yes, admins use it too).",
     ],
@@ -169,7 +169,7 @@ const STEPS = [
     bullets: [
       "Roll out to your full student population. Communicate the launch and link learners to the Student Assistant for support.",
       "Operating cadence: review notifications daily, the audit log weekly, the bias-audit + workforce-readiness reports monthly.",
-      "Need help? Open a ticket from Student Assistant or escalate to AcademiaOS support via your dedicated Slack channel.",
+      "Need help? Open a ticket from Student Assistant or escalate to Claros support via your dedicated Slack channel.",
     ],
     cta: { to: "/dashboard", label: "Back to dashboard" },
   },
@@ -192,7 +192,7 @@ export default function AdminGuide() {
             <div className="label-eyebrow">Why this guide exists</div>
             <h2 className="mt-2 text-xl font-semibold">Spin up a fully-audited, compliance-grade academic AI tenant in one focused afternoon.</h2>
             <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-              You've just received your Institution Admin credentials from AcademiaOS onboarding.
+              You've just received your Institution Admin credentials from Claros onboarding.
               Follow these ten steps in order — each one is a small, audit-logged change to your
               tenant. By the end you'll have your academic structure, users, AI module policy,
               workflows and compliance posture all configured and verified with a pilot cohort.

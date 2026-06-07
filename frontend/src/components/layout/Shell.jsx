@@ -33,7 +33,7 @@ export default function Shell({ children }) {
           >
             <Menu className="h-4 w-4" />
           </button>
-          <span className="text-sm font-semibold tracking-tight">AcademiaOS</span>
+          <span className="text-sm font-semibold tracking-tight">Claros</span>
         </div>
         <TopBar />
         <main className="flex-1 overflow-y-auto" data-testid="main-content">

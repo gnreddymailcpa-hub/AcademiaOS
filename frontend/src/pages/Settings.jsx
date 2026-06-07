@@ -203,7 +203,7 @@ function IntegrationsPanel() {
             <Input
               value={email.from_name || ""}
               onChange={(e) => setEmail({ ...email, from_name: e.target.value })}
-              placeholder="AcademiaOS"
+              placeholder="Claros"
               data-testid="integration-email-from-name"
             />
           </div>

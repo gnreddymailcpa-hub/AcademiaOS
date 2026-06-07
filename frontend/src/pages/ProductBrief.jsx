@@ -123,15 +123,15 @@ const RISKS = [
 
 export default function ProductBrief() {
   useEffect(() => {
-    document.title = "AcademiaOS · Product Brief";
-    return () => { document.title = "AcademiaOS"; };
+    document.title = "Claros · Product Brief";
+    return () => { document.title = "Claros"; };
   }, []);
 
   return (
     <div data-testid="product-brief-page" className="product-brief">
       <PageHeader
         eyebrow="Executive Brief · Founder Letter"
-        title="AcademiaOS.ai — The AI Operating System for Academia"
+        title="Claros — The AI Operating System for Academia"
         description="A Gartner-style product strategy document. For board, analysts and prospective investors."
         actions={
           <>
@@ -165,7 +165,7 @@ export default function ProductBrief() {
             good enough to teach. (2) Regulators decided AI in education needs
             citations, audit trails, and humans-in-the-loop. (3) Every Tier-1 academic
             institution we spoke to admitted their existing LMS was the bottleneck,
-            not the canvas. <span className="font-medium text-foreground">AcademiaOS is what those institutions
+            not the canvas. <span className="font-medium text-foreground">Claros is what those institutions
             would have built themselves had they known how.</span>
           </p>
 
@@ -245,7 +245,7 @@ export default function ProductBrief() {
             One multi-tenant platform. Eight AI modules. Fifteen personas. Compliance baked in.
           </h3>
           <p className="mt-3 text-sm text-muted-foreground max-w-3xl">
-            AcademiaOS ships as a single integrated workspace per tenant. Each AI
+            Claros ships as a single integrated workspace per tenant. Each AI
             module can be toggled on/off, gated by human-in-the-loop, and audit-logged
             end-to-end. Every persona sees a dashboard tailored to their job.
           </p>
@@ -275,7 +275,7 @@ export default function ProductBrief() {
               <thead>
                 <tr className="text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border">
                   <th className="text-start px-4 py-3 font-medium w-[42%]">Capability</th>
-                  <th className="text-center px-3 py-3 font-medium">AcademiaOS</th>
+                  <th className="text-center px-3 py-3 font-medium">Claros</th>
                   <th className="text-center px-3 py-3 font-medium">Anthology</th>
                   <th className="text-center px-3 py-3 font-medium">Instructure (Canvas)</th>
                   <th className="text-center px-3 py-3 font-medium">D2L Brightspace</th>
@@ -329,7 +329,7 @@ export default function ProductBrief() {
               {/* Niche */}
               <Plot x="18%" y="74%" label="Edstutia" color="bg-slate-300" />
               {/* Visionaries — our trajectory */}
-              <Plot x="62%" y="68%" label="AcademiaOS · today" color="bg-primary" big trail="from-primary/0 to-primary/40" />
+              <Plot x="62%" y="68%" label="Claros · today" color="bg-primary" big trail="from-primary/0 to-primary/40" />
               <Plot x="78%" y="34%" label="" color="bg-primary/0" />
               <TrailLine />
               <Plot x="80%" y="30%" label="Trajectory '27" color="bg-emerald-600" star />
@@ -463,7 +463,7 @@ export default function ProductBrief() {
             <div className="md:col-span-3">
               <div className="label-eyebrow">§ 9 · The ask</div>
               <h3 className="mt-2 text-2xl md:text-3xl font-semibold tracking-tight">
-                Series A · US $8M to make AcademiaOS the default AI layer for academia across GCC + South Asia.
+                Series A · US $8M to make Claros the default AI layer for academia across GCC + South Asia.
               </h3>
               <p className="mt-4 text-sm text-foreground/85 leading-relaxed">
                 Funds 18 engineering hires, 6 enterprise reps in target geographies,
@@ -487,7 +487,7 @@ export default function ProductBrief() {
             <div className="md:col-span-2 rounded-lg border border-border bg-card p-5">
               <Quote className="h-5 w-5 text-primary/70" />
               <p className="mt-2 text-sm italic text-foreground/85 leading-relaxed">
-                "AcademiaOS is the only platform we've evaluated where governance,
+                "Claros is the only platform we've evaluated where governance,
                 multilingualism and AI personalisation weren't three separate add-ons
                 fighting for the same dashboard. It just works the way a regulator
                 expects, on day one."
@@ -517,7 +517,7 @@ export default function ProductBrief() {
 
         {/* footer */}
         <section className="border-t border-border pt-6 text-[11px] text-muted-foreground flex flex-wrap items-center gap-4">
-          <span>AcademiaOS.ai · Confidential · Do not distribute without permission</span>
+          <span>Claros · Confidential · Do not distribute without permission</span>
           <span className="ms-auto">v1.0 · Feb 2026 · 9 sections · ~14-page printable brief</span>
         </section>
       </div>

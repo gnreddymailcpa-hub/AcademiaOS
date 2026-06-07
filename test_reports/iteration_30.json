@@ -1,0 +1,83 @@
+{
+  "summary": "Phase 31 — Claros AI (VEDA rebrand) end-to-end testing. Backend 11/11 tests PASS (new session manager endpoints + content source delete + role gating 403s + assistant integration + regression). Frontend /ai chat UI and /ai/knowledge KB manager fully functional: all data-testid hooks present, 4 suggested starters, AI reply contains attendance/75%, Ctrl+Enter shortcut works, char counter live, New Chat resets, sessions persist + appear on top with truncated title. KB page renders eyebrow, dropzone, 7 source-type options (Syllabus/Policy/FAQ/Research/Placement/Regulation/General), 3 seeded indexed docs in table. Brand sweep clean across /dashboard, /settings, /admin-guide, /onboarding, /ai-instructor, /exec-briefing, /student-assistant, /veda-console (zero 'AcademiaOS' in body, 'Claros' everywhere). One blocker discovered & SELF-FIXED: served document <title> remained 'AcademiaOS · Unified Academic Intelligence' because the CRA dev-server had cached the previous public/index.html in memory — `sudo supervisorctl restart frontend` flushed it and the title now correctly reads 'Claros · Unified Academic Intelligence'.",
+  "backend_results": {
+    "total": 11,
+    "passed": 11,
+    "failed": 0,
+    "file": "/app/backend/tests/test_phase31_claros_ai.py",
+    "junit_xml": "/app/test_reports/pytest/pytest_phase31.xml",
+    "details": {
+      "TestAssistantIntegration::test_assistant_message_grounded": "PASS — reply contains attendance text, all required keys (reply/model/session_id/persona/language/grounding/citations) present, grounding ∈ {rag,faq,llm,none}",
+      "TestSessionManager::test_list_sessions": "PASS — returns list with {id,title,open,created_at,message_count}",
+      "TestSessionManager::test_session_detail_owner_ok": "PASS — owner sees own session with full messages array",
+      "TestSessionManager::test_session_detail_cross_user_403": "PASS — student gets 403 for principal's session id",
+      "TestSessionManager::test_session_detail_super_admin_ok": "PASS — super_admin override allowed",
+      "TestSessionManager::test_start_new_session_closes_open": "PASS — POST /sessions/new/{iid} returns {ok:true}, GET /list shows zero open sessions afterwards",
+      "TestSessionManager::test_delete_session_and_persisted": "PASS — DELETE returns {ok:true}, subsequent GET /detail returns 404",
+      "TestContentSourceDelete::test_student_delete_source_403": "PASS — student role denied",
+      "TestContentSourceDelete::test_upload_then_admin_delete_removes_chunks": "PASS — institution_admin can upload+delete, removed from /content/sources list",
+      "TestRegressionExistingEndpoints::test_instructor_message_still_works": "PASS — /api/ai/instructor/message still 200",
+      "TestRegressionExistingEndpoints::test_content_sources_list_still_works": "PASS — list endpoint still 200"
+    }
+  },
+  "frontend_results": {
+    "ai_chat_page": {
+      "all_testids_present": "PASS — claros-sessions-panel, claros-messages, claros-composer-textarea, claros-send-btn, claros-new-chat-btn, claros-char-count each have count=1",
+      "empty_state_heading": "PASS — 'Ask Claros AI anything' present",
+      "suggested_starters": "PASS — all 4 starter cards present",
+      "sessions_panel_width": "OBS — measured 392px wide (review-request said ~280px). Visually fine but exceeds the spec width.",
+      "click_suggested_to_send": "PASS — user bubble appears + assistant reply received with text 'The attendance policy at Vaagdevi College of Engineering requires students to maintain a minimum attendance of 75% per term…'",
+      "ctrl_enter_shortcut": "PASS — user bubble count increased from 1 → 3 after typing+Ctrl+Enter; second assistant reply received",
+      "char_counter_live": "PASS — counter shows '15 chars' after typing 'Hello CtrlEnter'",
+      "new_chat_resets": "PASS — bubbles drop to 0, empty-state heading reappears",
+      "session_persistence": "PASS — sidebar shows 'What is the attendance policy?' and 'Hello CtrlEnter' as session titles with date + msg count",
+      "knowledge_base_link_in_header": "PASS — 'Knowledge Base' link visible in /ai page header"
+    },
+    "ai_knowledge_page": {
+      "eyebrow_text": "PASS — 'CLAROS AI · KNOWLEDGE BASE' visible",
+      "all_testids_present": "PASS — claros-upload-dropzone, claros-upload-title, claros-upload-source-type, claros-upload-submit, claros-knowledge-table all count=1",
+      "source_type_dropdown_options": "PASS — shadcn Select reveals exactly 7 options: Syllabus / Policy / FAQ / Research / Placement / Regulation / General",
+      "indexed_documents_table": "PASS — 3 seeded VCE docs visible (Vaagdevi Vision/Mission/IQAC Quality Policy, Vaagdevi Placement Handbook 2025-26, Machine Learning Foundations · JNTUH R25 Syllabus) with title/type-badge/size/date/Indexed status/trash button per row"
+    },
+    "brand_rebrand": {
+      "login_page": "PASS — header 'Claros', heading 'Sign in to Claros'",
+      "sidebar_brand": "PASS — 'Claros' brand, 'POWERED BY CLAROS' footer",
+      "sidebar_new_entries": "PASS — 'Claros AI · Chat' and 'Claros AI · Knowledge Base' present under Student Services",
+      "doc_title_initial": "FAIL→FIXED — Initial preview-URL returned <title>AcademiaOS · Unified Academic Intelligence</title> despite /app/frontend/public/index.html already containing the Claros title. Root cause: CRA dev-server was serving a stale cached index.html. After `sudo supervisorctl restart frontend`, the preview URL now correctly returns <title>Claros · Unified Academic Intelligence</title>.",
+      "user_facing_pages_no_academiaos_in_body": "PASS — /dashboard /settings /admin-guide /onboarding /ai-instructor /exec-briefing /student-assistant /veda-console all show academiaos=False, claros=True"
+    }
+  },
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "ClarosAI.jsx (hydration)", "issue": "React console warning: 'In HTML, <button> cannot be a descendant of <button>. This will cause a hydration error.' — origin appears inside a claros-ai-* node inside ClarosAI (likely a session-row button containing a nested delete-button). Functional path is unaffected but should be cleaned to remove the nested-button anti-pattern.", "selector": "[data-testid^=\"claros-session-\"] inside [data-testid=\"claros-sessions-panel\"]", "priority": "LOW"},
+      {"component": "Sessions panel width", "issue": "Measured 392px wide; review request specifies ~280px. Cosmetic — increase explicit max-w if 280px is desired.", "selector": "[data-testid=\"claros-sessions-panel\"]", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/test_phase31_claros_ai.py", "/app/test_reports/pytest/pytest_phase31.xml"],
+  "action_items": [
+    "(optional, fixed by restart) Confirm the production preview is rebuilt — the title-rebrand was fixed by restarting the frontend supervisor; if a docker-image-based deploy is used, ensure the rebuilt image includes the new public/index.html.",
+    "Fix nested-button hydration warning in ClarosAI.jsx session row (likely the delete-trash <button> nested inside the session-row <button>). Convert outer to a <div role=button> + onClick, or render trash as a sibling.",
+    "(optional) Tighten the left sessions-panel max width from 392px → ~280px to match the spec."
+  ],
+  "critical_code_review_comments": [
+    "routes_ai.py session-manager endpoints (list/detail/delete/new) follow consistent ownership-check pattern: cross-user 403 unless super_admin. Verified via test_session_detail_cross_user_403 + test_session_detail_super_admin_ok.",
+    "delete_source correctly cascades: deletes content_chunks first, then content_sources, then best-effort os.remove of the on-disk file, and writes an audit_log row. Role gate covers super_admin/institution_admin/faculty/instructor/registrar/programme_manager/compliance_officer/ai_governance_admin — broader than the review-request spec but still excludes students.",
+    "list_user_sessions limits to 50 latest and derives title from the first user message (≤60 chars then ellipsis). Good UX, no _id leakage (find projection {'_id':0}).",
+    "Assistant system prompt rebrand to 'Claros AI' is fully transparent — no functional regression observed in instructor/assistant flows.",
+    "Front-end: ClarosAI.jsx Ctrl+Enter handler works, char-counter is reactive, New Chat correctly resets local state without an extra network call. ClarosKnowledge.jsx uploads to /ai/content/upload then chains to /veda/{iid}/kb/ingest-run (chunk+index).",
+    "DOC-TITLE STALENESS: /app/frontend/public/index.html had the right title, but the served HTML was outdated. CRA dev server caches index.html in-memory on startup. This is fragile — any edit to public/index.html silently keeps the old title until a frontend restart. Recommend a brief note in PRD/deploy doc, OR a small tweak to mark CRA's WDS to watch public/index.html (it does not by default)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_phase31_claros_ai.py (NEW — 11 tests, all PASS)"
+  ],
+  "success_rate": {"backend": "100% (11/11)", "frontend": "98% — all functional + brand checks PASS; 1 hydration warning (cosmetic) + 1 width-spec deviation"},
+  "test_credentials": "principal@vaagdevi.edu.in / Demo@2026 · manikanta.cse@vaagdevi.edu.in / Demo@2026 · admin@academiaos.ai / Admin@2026 (per /app/memory/test_credentials.md)",
+  "seed_data_creation": "None persistent — the upload-then-delete test cleans up its own TEST_Phase31_delete_me source. A few extra 'Hello CtrlEnter' / 'Phase31probe-XYZ' / 'What is the attendance policy?' assistant sessions remain in ai_sessions for the principal user (transient — not harmful, can be deleted via the UI trash icon).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Phase-31 Claros AI rebrand + 2 new pages + 5 new endpoints fully verified. Login → /ai → click suggested 'What is the attendance policy?' → AI replies with 75% policy text from VCE seed RAG. /ai/knowledge → 3 seeded VCE docs in the table, source-type dropdown shows 7 enum values. To replay backend smoke run: `python -m pytest /app/backend/tests/test_phase31_claros_ai.py -v`. Note for future runs: if document <title> still says 'AcademiaOS', do `sudo supervisorctl restart frontend` — CRA dev-server caches public/index.html. Two minor frontend nits flagged for main agent: (a) nested-button hydration warning inside ClarosAI session rows, (b) sessions-panel width 392px vs spec's 280px.",
+  "rca_of_the_issue": "Brand title staleness RCA: react-scripts (CRA) reads public/index.html once at dev-server start and serves it from memory; subsequent edits to public/index.html do NOT auto-reload that page template (only src/ changes trigger HMR). The rebrand main-agent edit was made to public/index.html but no supervisor restart followed, so the preview URL continued returning the old title. Resolution: `sudo supervisorctl restart frontend`; preview now returns correct <title>. Recommended mitigation: instruct the main agent to restart frontend supervisor whenever public/index.html is edited, OR move the dynamic title into a Helmet/React-Helmet component driven by i18n."
+}

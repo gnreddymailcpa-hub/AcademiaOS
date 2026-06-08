@@ -12,6 +12,11 @@ import { toast } from "sonner";
 /**
  * "Preview as Tenant" switcher — visible to super_admin only. Renders
  * nothing for any other role.
+ *
+ * Note: the cross-context sync (preview → InstitutionContext.current →
+ * topbar TENANT dropdown / sidebar logo / theme) lives in
+ * `TenantConfigContext` so every entry/exit path (this dropdown, the
+ * sticky banner, programmatic) stays consistent automatically.
  */
 export default function TenantPreviewSwitcher() {
   const { isSuperAdmin, isPreviewing, previewTenantId, setPreviewTenantId,
@@ -68,7 +73,7 @@ export default function TenantPreviewSwitcher() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-72" align="end" data-testid="tenant-preview-menu">
-        <DropdownMenuLabel className="text-xs">Switch UI to demo a tenant's branding</DropdownMenuLabel>
+        <DropdownMenuLabel className="text-xs">Switch UI to demo a tenant&apos;s branding</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {loading && (
           <div className="px-2 py-2 text-xs text-muted-foreground inline-flex items-center gap-2">
@@ -126,7 +131,7 @@ export function TenantPreviewBanner() {
     >
       <div className="inline-flex items-center gap-2">
         <Eye className="h-3.5 w-3.5" />
-        <span>Previewing as <strong>{config?.tenant_name || config?.platform_display_name}</strong>. All read-only; mutations still target your account's tenant.</span>
+        <span>Previewing as <strong>{config?.tenant_name || config?.platform_display_name}</strong>. All read-only; mutations still target your account&apos;s tenant.</span>
       </div>
       <button
         onClick={exit}

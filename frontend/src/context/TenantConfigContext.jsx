@@ -1,6 +1,7 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api";
 import { useAuth } from "./AuthContext";
+import { useInstitution } from "./InstitutionContext";
 
 const TenantConfigContext = createContext({
   config: null, loading: true, refresh: () => {}, isOverridden: () => false,
@@ -61,6 +62,46 @@ export function TenantConfigProvider({ children }) {
   }, [user, effectivePreview, setPreviewTenantId]);
 
   useEffect(() => { refresh(); }, [refresh]);
+
+  // ---- Cross-context sync: keep InstitutionContext.current in lockstep
+  // with the active preview tenant. When a super_admin enters preview, the
+  // topbar TENANT dropdown, sidebar logo + theme all need to follow the
+  // previewed tenant — not stay on whatever the super_admin was browsing
+  // when they hit "Preview as…". On exit, restore the institution they
+  // had selected pre-preview.
+  const institutionCtx = useInstitution();
+  const prePreviewInstitutionIdRef = useRef(null);
+  const lastSyncedPreviewRef = useRef(null);
+  useEffect(() => {
+    if (!institutionCtx) return;
+    const { current, switchInstitution, institutions } = institutionCtx;
+    const last = lastSyncedPreviewRef.current;
+    // Wait for institutions to load before attempting any switch.
+    if (!institutions || institutions.length === 0) return;
+    // Entering preview (or hopping between previews): swap institution.
+    if (effectivePreview && effectivePreview !== last) {
+      if (!last) {
+        // First entry — stash where we came from so exit can restore.
+        prePreviewInstitutionIdRef.current = current?.id || null;
+      }
+      if (current?.id !== effectivePreview) {
+        const exists = institutions.some((i) => i.id === effectivePreview);
+        if (exists) switchInstitution(effectivePreview);
+      }
+      lastSyncedPreviewRef.current = effectivePreview;
+      return;
+    }
+    // Exiting preview: restore the pre-preview institution.
+    if (!effectivePreview && last) {
+      const restoreTo = prePreviewInstitutionIdRef.current;
+      if (restoreTo && restoreTo !== current?.id) {
+        const exists = institutions.some((i) => i.id === restoreTo);
+        if (exists) switchInstitution(restoreTo);
+      }
+      prePreviewInstitutionIdRef.current = null;
+      lastSyncedPreviewRef.current = null;
+    }
+  }, [effectivePreview, institutionCtx]);
 
   // Cross-tab live propagation via BroadcastChannel + localStorage fallback.
   // Any tab/page that mutates tenant config calls

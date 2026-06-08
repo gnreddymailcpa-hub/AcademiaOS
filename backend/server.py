@@ -873,12 +873,22 @@ async def seed_database():
             await db.cohorts.update_one({"id": co["id"]}, {"$set": co}, upsert=True)
     logger.info("Seeded academic structure for %d institutions", len(SEED_ACADEMIC))
 
-    # AI Use Cases
+    # AI Use Cases — canonical_module/code/name/description are always
+    # re-asserted from seed so taxonomy stays in sync. Other fields
+    # (provider, model, status, HITL, citations) seed only on insert so
+    # admin overrides are preserved across restarts.
+    _SET_FIELDS = {"canonical_module", "code", "name_en", "name_ar",
+                   "description", "capabilities"}
     for inst_id, ucs in SEED_USE_CASES.items():
         for uc in ucs:
+            on_insert = {"institution_id": inst_id,
+                         **{k: v for k, v in uc.items() if k not in _SET_FIELDS}}
             await db.ai_use_cases.update_one(
                 {"institution_id": inst_id, "key": uc["key"]},
-                {"$setOnInsert": {**uc, "institution_id": inst_id}},
+                {
+                    "$setOnInsert": on_insert,
+                    "$set": {k: uc[k] for k in _SET_FIELDS},
+                },
                 upsert=True,
             )
     logger.info("Seeded AI use cases for %d institutions", len(SEED_USE_CASES))

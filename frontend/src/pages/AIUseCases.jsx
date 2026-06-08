@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "../components/layout/Shell";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
@@ -21,21 +21,59 @@ import {
 } from "../components/ui/dialog";
 import { useInstitution } from "../context/InstitutionContext";
 import { useLang } from "../context/LanguageContext";
+import { useModuleName } from "../context/TenantConfigContext";
 import { api } from "../lib/api";
 import { toast } from "sonner";
-import { Sparkles, ShieldCheck, Settings2, ArrowUpRight, Zap } from "lucide-react";
+import { Sparkles, ShieldCheck, Settings2, Zap } from "lucide-react";
 
+/**
+ * Provider / model catalog. Kept in sync with what the backend
+ * `ai_service.resolve_model` accepts. Newer models first.
+ *
+ * Note: only models that are *actually available* via the Emergent LLM
+ * key or institutional credentials should be listed here — picking a
+ * non-existent model from the dropdown would fail at first invocation.
+ */
 const PROVIDERS = [
-  { value: "anthropic", label: "Anthropic", models: ["claude-sonnet-4-6", "claude-opus-4-7", "claude-haiku-4-5-20251001"] },
-  { value: "openai", label: "OpenAI", models: ["gpt-4o", "gpt-4o-mini", "gpt-5.4"] },
-  { value: "gemini", label: "Google", models: ["gemini-3-flash-preview", "gemini-3.1-pro-preview", "gemini-2.5-pro"] },
+  {
+    value: "anthropic", label: "Anthropic",
+    models: ["claude-sonnet-4.5", "claude-haiku-4.5", "claude-opus-4.5"],
+  },
+  {
+    value: "openai", label: "OpenAI",
+    models: ["gpt-5.2", "gpt-5-mini", "gpt-4o", "gpt-4o-mini"],
+  },
+  {
+    value: "gemini", label: "Google",
+    models: ["gemini-3-pro", "gemini-3-flash", "gemini-2.5-pro", "gemini-nano-banana"],
+  },
 ];
 
 const STATUS_STYLES = {
-  active: "border-emerald-300 bg-emerald-50 text-emerald-700",
-  coming_soon: "border-amber-300 bg-amber-50 text-amber-700",
-  disabled: "border-slate-300 bg-slate-50 text-slate-600",
+  active: "border-emerald-400/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  coming_soon: "border-amber-400/40 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+  disabled: "border-border bg-muted text-muted-foreground",
 };
+
+// Canonical Claros module IDs we display section headers for. Order
+// matches the sidebar grouping in /app/frontend/src/components/layout/Sidebar.jsx
+const MODULE_ORDER = [
+  "claros-insights", "claros-ai", "claros-enroll", "claros-core",
+  "claros-learn", "claros-launch", "claros-research", "claros-people",
+  "claros-alumni", "claros-safe", "claros-green", "claros-comply",
+];
+
+function ModuleHeader({ canonicalId, count }) {
+  const resolved = useModuleName(canonicalId);
+  return (
+    <div className="flex items-baseline justify-between mt-8 mb-3 first:mt-0" data-testid={`uc-group-${canonicalId}`}>
+      <h2 className="text-lg font-semibold tracking-tight">{resolved}</h2>
+      <span className="text-xs text-muted-foreground tabular-nums">
+        {count} use case{count === 1 ? "" : "s"}
+      </span>
+    </div>
+  );
+}
 
 export default function AIUseCases() {
   const { current } = useInstitution();
@@ -43,17 +81,17 @@ export default function AIUseCases() {
   const [items, setItems] = useState([]);
   const [edit, setEdit] = useState(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!current) return;
     const r = await api.get(`/ai/use-cases/${current.id}`);
     setItems(r.data);
-  };
+  }, [current]);
 
   useEffect(() => {
     load();
-  }, [current?.id]);
+  }, [load]);
 
-  const save = async () => {
+  const save = useCallback(async () => {
     if (!edit) return;
     try {
       await api.patch(`/ai/use-cases/${current.id}/${edit.key}`, {
@@ -69,7 +107,21 @@ export default function AIUseCases() {
     } catch (e) {
       toast.error("Could not save");
     }
-  };
+  }, [edit, current, load]);
+
+  // Group items by canonical Claros module. Items without a mapping fall
+  // into an "Other" bucket so legacy rows still appear during migration.
+  const groups = useMemo(() => {
+    const byModule = {};
+    for (const uc of items) {
+      const key = uc.canonical_module || "_other";
+      (byModule[key] = byModule[key] || []).push(uc);
+    }
+    return [
+      ...MODULE_ORDER.filter((m) => byModule[m]).map((m) => [m, byModule[m]]),
+      ...(byModule._other ? [["_other", byModule._other]] : []),
+    ];
+  }, [items]);
 
   if (!current) return null;
 
@@ -78,7 +130,7 @@ export default function AIUseCases() {
       <PageHeader
         eyebrow="AI Layer · Catalog"
         title="AI Use Cases"
-        description="Eight intelligence modules configurable per tenant. Provider, model and governance policy live in the database — never in code."
+        description="AI capabilities grouped by Claros module. Provider, model and governance policy live in the database — never in code."
         actions={
           <Badge variant="outline" className="gap-1.5">
             <ShieldCheck className="h-3 w-3" />
@@ -88,16 +140,21 @@ export default function AIUseCases() {
       />
 
       <div className="p-6 lg:p-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {items.map((uc) => (
-            <UseCaseCard
-              key={uc.key}
-              uc={uc}
-              lang={lang}
-              onEdit={() => setEdit({ ...uc })}
-            />
-          ))}
-        </div>
+        {groups.map(([mod, ucs]) => (
+          <React.Fragment key={mod}>
+            <ModuleHeader canonicalId={mod === "_other" ? "" : mod} count={ucs.length} />
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {ucs.map((uc) => (
+                <UseCaseCard
+                  key={uc.key}
+                  uc={uc}
+                  lang={lang}
+                  onEdit={() => setEdit({ ...uc })}
+                />
+              ))}
+            </div>
+          </React.Fragment>
+        ))}
       </div>
 
       <Dialog open={!!edit} onOpenChange={(o) => !o && setEdit(null)}>
@@ -191,7 +248,12 @@ export default function AIUseCases() {
 }
 
 function UseCaseCard({ uc, lang, onEdit }) {
-  const arabic = lang === "ar";
+  // Only show Arabic name as a secondary label when the active interface
+  // language is Arabic. Other locales (en/hi/te for VCE/ISB) just see the
+  // English name — no irrelevant secondary line clutter.
+  const isArabicUI = lang === "ar";
+  const primary = isArabicUI ? uc.name_ar : uc.name_en;
+  const secondary = isArabicUI ? uc.name_en : null;
   return (
     <div
       data-testid={`use-case-${uc.key}`}
@@ -206,18 +268,17 @@ function UseCaseCard({ uc, lang, onEdit }) {
             {uc.glyph}
           </div>
           <div className="min-w-0">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-              MODULE {uc.code}
+            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-mono">
+              {uc.code}
             </div>
-            <div className="text-sm font-semibold leading-tight truncate">
-              {arabic ? uc.name_ar : uc.name_en}
+            <div className="text-sm font-semibold leading-tight truncate" title={primary}>
+              {primary}
             </div>
-            <div
-              className="text-[11px] text-muted-foreground truncate"
-              style={arabic ? {} : { fontFamily: "var(--font-arabic)" }}
-            >
-              {arabic ? uc.name_en : uc.name_ar}
-            </div>
+            {secondary && (
+              <div className="text-[11px] text-muted-foreground truncate" title={secondary}>
+                {secondary}
+              </div>
+            )}
           </div>
         </div>
         <Badge variant="outline" className={`text-[10px] ${STATUS_STYLES[uc.status] || ""}`}>

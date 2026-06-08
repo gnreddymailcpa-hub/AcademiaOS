@@ -2258,3 +2258,64 @@ Insights KPI to track resolution rate (target 85%+).
   `veda_run_pipeline`; legacy single-pass code removed
 - `~ /app/backend/routes_insights.py` — `GET /veda/resolution-rate`
 - New collection `veda_message_traces`
+
+
+## Phase 42.2 — AI Use Cases P0 Correctness Pass — Feb 2026
+
+**Scope**: Fixed three coherence bugs on `/ai-use-cases` flagged in the
+priority audit: outdated taxonomy, stale provider/model dropdown, and
+forced bilingual labels on non-Arabic tenants.
+
+### Fixes
+1. **Canonical taxonomy** — added `canonical_module` field (claros-ai /
+   claros-learn / claros-launch / claros-people / claros-comply) to each
+   of the 8 seeded use cases. UI now groups cards under tenant-rebranded
+   Claros module headers (VCE sees **VEDA · ILLUMINATE · PATHFINDER ·
+   FACULTY · COMPASS**; default tenants see canonical "Claros AI / Learn
+   / Launch / People / Comply"). Replaces the legacy "MODULE 4.1 / 4.2
+   / 4.3" 8-module ribbon that contradicted the 12-module canonical
+   architecture.
+2. **Current provider/model list** — replaced stale dropdown values
+   (`claude-sonnet-4-6`, `gpt-5.4`, `gemini-3-flash-preview`) with the
+   actually-available models:
+   - Anthropic: `claude-sonnet-4.5 · claude-haiku-4.5 · claude-opus-4.5`
+   - OpenAI: `gpt-5.2 · gpt-5-mini · gpt-4o · gpt-4o-mini`
+   - Google: `gemini-3-pro · gemini-3-flash · gemini-2.5-pro · gemini-nano-banana`
+   Default models for ISB / EAIC / UoB seed bumped to `gpt-5.2` and
+   `claude-sonnet-4.5`.
+3. **Locale-aware names** — the Arabic `name_ar` secondary label only
+   renders when the UI language is `ar`. VCE/ISB (Indian campuses) and
+   other non-Arabic locales see only the English name — no
+   ⟨الإنجليزي⟩ clutter beneath every card.
+
+### Backend
+- `seed_ai.py` — `_uc()` helper gains `canonical_module` parameter; all
+  8 entries tagged; current-version models in the SEED_USE_CASES
+  fan-out.
+- `server.py` — seed loop now applies `$set` for taxonomy fields
+  (canonical_module, code, name_en, name_ar, description, capabilities)
+  on every startup so a redeploy automatically reconciles the catalog
+  on every existing tenant, while still `$setOnInsert`-ing user-tunable
+  fields (provider, model, status, HITL, citations).
+
+### Frontend
+- `AIUseCases.jsx` — rewritten to group items by canonical Claros
+  module, render rebranded section headers via `useModuleName(canonicalId)`,
+  drop the legacy "MODULE 4.x" ribbon (now just shows `code` as a small
+  mono tag), and conditionally render the secondary name based on UI
+  locale.
+
+### Validation
+- DB inspection: all 8 seeded use cases on VCE now have
+  `canonical_module` correctly populated (4 → claros-learn, 1 → claros-ai,
+  1 → claros-launch, 1 → claros-people, 1 → claros-comply).
+- Frontend smoke as VCE Principal: 12/12 dom assertions pass —
+  `uc-group-claros-ai`, `uc-group-claros-learn`, `uc-group-claros-launch`,
+  `uc-group-claros-people`, `uc-group-claros-comply` all present; VEDA
+  + ILLUMINATE rebrands visible; no Arabic clutter; no compile errors;
+  8 cards present.
+
+### Files touched
+- `~ /app/backend/seed_ai.py`
+- `~ /app/backend/server.py`
+- `~ /app/frontend/src/pages/AIUseCases.jsx`

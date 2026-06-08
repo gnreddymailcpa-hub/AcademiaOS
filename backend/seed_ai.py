@@ -1,16 +1,21 @@
 """
-Seed data for AI Use Cases (8 modules) + sample knowledge documents +
+Seed data for AI Use Cases + sample knowledge documents +
 skill framework + advisor target roles per institution.
+
+Each AI use case is now tagged with `canonical_module` (the canonical
+Claros module ID — claros-ai / claros-learn / claros-launch …) so the
+UI can group cards by Claros module and inherit tenant rebrands.
 """
 
 from seed_data import ISB_ID, EAIC_ID, UOB_ID, VCE_ID
 
 
-# 8 modules — match the Hawiaty / AcademiaOS RFP structure
-def _uc(key, code, name_en, name_ar, glyph, metric, latency, description, capabilities, default_provider, default_model):
+def _uc(key, code, name_en, name_ar, glyph, metric, latency, description, capabilities,
+        default_provider, default_model, canonical_module):
     return {
         "key": key,
         "code": code,
+        "canonical_module": canonical_module,
         "name_en": name_en,
         "name_ar": name_ar,
         "glyph": glyph,
@@ -36,7 +41,7 @@ def use_cases_for(provider: str, model: str):
              "Bloom's taxonomy mapping",
              "Lesson plans · MCQs · flashcards · case guides",
              "SME review queue + versioned publish"],
-            provider, model),
+            provider, model, canonical_module="claros-learn"),
         _uc("ai_instructor", "4.1", "Virtual AI Instructor", "المعلم الذكي",
             "◈", "Response latency", "< 3s",
             "Adaptive conversational agents delivering structured course content in English and Arabic — adjusting pace, depth and tone in real time, grounded in approved sources.",
@@ -44,7 +49,7 @@ def use_cases_for(provider: str, model: str):
              "Bilingual EN / AR responses",
              "Confidence-based escalation to faculty",
              "Full session transcript for audit"],
-            provider, model),
+            provider, model, canonical_module="claros-learn"),
         _uc("ai_advisor", "4.2", "AI Educational Advisor", "المرشد الأكاديمي",
             "◉", "Learner profile view", "360°",
             "Personalised career and learning guidance agents analysing full learner profiles and generating actionable NQF-aligned recommendations.",
@@ -52,15 +57,15 @@ def use_cases_for(provider: str, model: str):
              "Personalised learning path",
              "Career pathway mapping",
              "Approval-gated visibility"],
-            provider, model),
+            provider, model, canonical_module="claros-launch"),
         _uc("student_assistant", "4.3", "AI Student Assistant", "المساعد الطلابي",
             "◐", "Intent accuracy", "99%+",
-            "Fully conversational self-service agents handling enrolment, scheduling, assessment, certification with hybrid NLU and rule-based fallback.",
-            ["Enrolment, timetable, deadlines, certificates",
-             "Configurable service categories",
+            "Fully conversational self-service agents handling enrolment, scheduling, assessment, certification with hybrid NLU and rule-based fallback. Powered by VEDA's multi-pass agentic reasoning chain.",
+            ["3-pass reasoning chain (intent → retrieve → verify)",
+             "Auto-escalation to human ticket on unresolved",
              "Multi-channel: web · mobile · WhatsApp-ready",
              "SLA dashboard with escalation routing"],
-            provider, model),
+            provider, model, canonical_module="claros-ai"),
         _uc("assessments", "4.7", "Advanced Assessment Engine", "محرك التقييم المتقدم",
             "◬", "Analytics layer", "Real-Time",
             "AI-powered evaluation: psychometric profiling, Ebbinghaus adaptive algorithms, leadership diagnostics and full analytics platform.",
@@ -68,7 +73,7 @@ def use_cases_for(provider: str, model: str):
              "Adaptive difficulty sequencing",
              "Rubric-assisted scoring",
              "Competency reports"],
-            provider, model),
+            provider, model, canonical_module="claros-learn"),
         _uc("psychometrics", "4.5", "Psychometric & Behaviour Intelligence", "تحليل السلوك",
             "◇", "Signal capture", "Live",
             "Tracks learner behaviour signals — response time, hint usage, inactivity — and recommends interventions with fairness audit.",
@@ -76,28 +81,28 @@ def use_cases_for(provider: str, model: str):
              "Intervention rule engine",
              "Bias and fairness audit dashboard",
              "Model drift monitoring"],
-            provider, model),
+            provider, model, canonical_module="claros-learn"),
         _uc("workforce", "4.6", "Predictive Workforce Planning", "تخطيط القوى العاملة",
             "◳", "Forecast horizon", "12-mo",
             "Forward-looking intelligence on staffing requirements, competency readiness and skill-gap trajectories.",
             ["Workforce readiness index",
              "Skill-gap trajectories",
              "Aligned to national qualifications frameworks"],
-            provider, model),
+            provider, model, canonical_module="claros-people"),
         _uc("workflows", "4.8", "AI Automation Agents", "وكلاء الأتمتة",
             "◎", "Orchestration", "Agentic",
             "Agentic AI orchestrating multi-step administrative workflows across SMS, LMS, Assessment Engine and connected federal systems under full governance.",
             ["Workflow builder + agent configuration",
              "Human-in-the-loop approval queue",
              "Rollback console + full audit trail"],
-            provider, model),
+            provider, model, canonical_module="claros-comply"),
     ]
 
 
 SEED_USE_CASES = {
-    ISB_ID: use_cases_for("openai", "gpt-4o"),
-    EAIC_ID: use_cases_for("anthropic", "claude-sonnet-4-6"),
-    UOB_ID: use_cases_for("anthropic", "claude-sonnet-4-6"),
+    ISB_ID: use_cases_for("openai", "gpt-5.2"),
+    EAIC_ID: use_cases_for("anthropic", "claude-sonnet-4.5"),
+    UOB_ID: use_cases_for("anthropic", "claude-sonnet-4.5"),
     VCE_ID: use_cases_for("openai", "gpt-4o-mini"),
 }
 

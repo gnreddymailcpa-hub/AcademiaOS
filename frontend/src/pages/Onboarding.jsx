@@ -12,6 +12,7 @@ import { useInstitution } from "../context/InstitutionContext";
 import { useAuth } from "../context/AuthContext";
 import { useTenantConfig } from "../context/TenantConfigContext";
 import { api, formatApiError } from "../lib/api";
+import { notifyModulesChanged } from "../lib/useTenantModules";
 
 /**
  * Onboarding Wizard — guided 3-step flow for a new tenant: review profile →
@@ -68,7 +69,7 @@ export default function Onboarding() {
     if (!current?.id) return;
     Promise.all([
       api.get("/modules/catalog"),
-      api.get(`/modules/${current.id}`),
+      api.get(`/modules/${current.id}`, { params: { _: Date.now() } }),
     ]).then(([c, t]) => {
       setCatalog(c.data || []);
       setTenantModules(t.data || []);
@@ -102,6 +103,16 @@ export default function Onboarding() {
         await api.patch(`/modules/${current.id}/${ch.code}`, { status: ch.want_status });
       }
       toast.success(`Activated ${Object.values(selection).filter(Boolean).length} platforms`);
+
+      // Refetch our own snapshot so Step 2 reflects the new server state if
+      // the user navigates Back. Also broadcast so the Sidebar +
+      // ModuleGate consumers refetch without a page reload.
+      try {
+        const fresh = await api.get(`/modules/${current.id}`, { params: { _: Date.now() } });
+        setTenantModules(fresh.data || []);
+      } catch { /* non-fatal */ }
+      notifyModulesChanged();
+
       setStep(3);
     } catch (e) {
       toast.error(formatApiError(e?.response?.data?.detail) || "Could not apply selection");

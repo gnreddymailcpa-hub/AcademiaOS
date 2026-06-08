@@ -94,16 +94,16 @@ const STEPS = [
   {
     n: 5,
     key: "step-ai-modules",
-    title: "Decide which AI modules to enable",
+    title: "Activate Claros modules via the Onboarding Wizard",
     icon: Sparkles,
     eta: "5 min",
     bullets: [
-      "Visit AI Use Cases. The 8 modules — Virtual Instructor, Advisor, Student Assistant, Content Studio, Psychometrics, Predictive Workforce, Assessments, Agentic Workflows — are listed with their risk classification.",
-      "Toggle each module ON/OFF for your tenant. Modules left OFF are hidden from learners and staff entirely.",
-      "For each enabled module, decide if Human-in-the-Loop (HITL) is required and whether responses must carry citations. Defaults are sensible for your compliance framework.",
-      "Save — the platform automatically logs an ai.use_case.update event and refreshes prompt policy on the next call.",
+      "Open the Onboarding Wizard. Step 1 reviews your tenant profile; Step 2 lets you pick which of the 12 canonical Claros modules to enable on day 1 (Insights · AI · Enroll · Core · Learn · Launch · Research · People · Alumni · Safe · Green · Comply); Step 3 lists every activated module with a one-click jump-in link.",
+      "Toggles persist immediately to the database — the sidebar and module gates live-update across every open tab the moment you hit Launch.",
+      "You can change activations anytime: re-run the wizard, or for fine-grained control use Branding & Module Names (per-module display name, short name, enable/disable, and tenant branding all in one place).",
+      "For each AI use case (under AI Use Cases) decide if Human-in-the-Loop is required and whether responses must carry citations. Defaults are sensible for your compliance framework.",
     ],
-    cta: { to: "/ai-use-cases", label: "Open AI Use Cases" },
+    cta: { to: "/onboarding", label: "Open Onboarding Wizard" },
   },
   {
     n: 6,
@@ -265,6 +265,51 @@ export default function AdminGuide() {
           </Accordion>
         </section>
 
+        {/* Onboarding-to-Live end-to-end flow */}
+        <section className="rounded-lg border border-primary/40 bg-primary/5 p-6"
+                 data-testid="admin-guide-onboarding-flow">
+          <div className="flex items-center gap-2">
+            <Rocket className="h-5 w-5 text-primary" />
+            <h3 className="text-base font-semibold">End-to-end Onboarding to Live</h3>
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+            The fastest path from a fresh tenant to a live, learner-ready Claros environment.
+            Every step is reversible and audit-logged.
+          </p>
+          <ol className="mt-4 space-y-2.5 text-xs text-foreground/90 list-decimal list-inside">
+            <li><strong>Sign in</strong> as Institution Admin with the credentials Claros emailed you. (Step 1 above.)</li>
+            <li><strong>Configure institution profile</strong> at <code className="font-mono bg-muted px-1 rounded">/institution-setup</code> — name, type, country, languages, compliance framework, theme colors, logo. (Step 2.)</li>
+            <li><strong>Build academic structure</strong> at <code className="font-mono bg-muted px-1 rounded">/academic-structure</code>: Campuses → Departments → Programmes → Courses → Cohorts (in that order). (Step 3.)</li>
+            <li><strong>Invite users &amp; assign roles</strong> at <code className="font-mono bg-muted px-1 rounded">/users-roles</code> — bulk-paste CSV supported. (Step 4.)</li>
+            <li>
+              <strong>Run the Onboarding Wizard</strong> at <code className="font-mono bg-muted px-1 rounded">/onboarding</code>:
+              <ul className="mt-1 ml-4 space-y-1 list-disc list-inside text-muted-foreground">
+                <li><em>Step 1</em> reviews your 12-module catalog (Phase 1 / 2 / 3 grouping).</li>
+                <li><em>Step 2</em> — toggle each module ON / OFF. Dependencies are auto-checked; use the per-phase <em>All / None</em> shortcuts for speed.</li>
+                <li><em>Step 3</em> — Launch. The sidebar &amp; module gates update live in every open tab the moment you save.</li>
+              </ul>
+            </li>
+            <li><strong>Rebrand each module</strong> (optional) at <code className="font-mono bg-muted px-1 rounded">/admin/tenant-config</code> — give every Claros module a tenant-specific display name (e.g. VCE renames Claros AI → VEDA). Platform name, primary colour, footer tagline configurable too.</li>
+            <li><strong>Configure AI governance</strong> at <code className="font-mono bg-muted px-1 rounded">/ai-use-cases</code> — per use case set provider, model, HITL, citations. (Step 5.)</li>
+            <li><strong>Load knowledge sources</strong> at <code className="font-mono bg-muted px-1 rounded">/content-studio</code> (PDF / DOCX / PPTX up to 25 MB; map each to a Programme). (Step 6.)</li>
+            <li><strong>Ratify prompt policy &amp; audit</strong> at <code className="font-mono bg-muted px-1 rounded">/governance</code>. (Step 7.)</li>
+            <li><strong>Wire approval workflows</strong> at <code className="font-mono bg-muted px-1 rounded">/workflows</code>. (Step 8.)</li>
+            <li><strong>Pilot &amp; validate</strong> with 10–20 learners and watch <code className="font-mono bg-muted px-1 rounded">/analytics</code> + the bell fill with real data. (Step 9.)</li>
+            <li><strong>Go live</strong> — roll out to your full population. Daily / weekly / monthly cadence documented in Step 10.</li>
+          </ol>
+          <div className="mt-4 flex flex-wrap gap-2 text-[11px]">
+            <Link to="/onboarding" className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-border bg-card hover:bg-muted">
+              <Rocket className="h-3 w-3" /> Open Onboarding Wizard
+            </Link>
+            <Link to="/admin/tenant-config" className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-border bg-card hover:bg-muted">
+              Branding &amp; Module Names
+            </Link>
+            <Link to="/ai-use-cases" className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-border bg-card hover:bg-muted">
+              AI Use Cases
+            </Link>
+          </div>
+        </section>
+
         {/* Quick reference */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4" data-testid="admin-guide-quickref">
           <div className="rounded-lg border border-border bg-card p-5">
@@ -277,10 +322,10 @@ export default function AdminGuide() {
           </div>
           <div className="rounded-lg border border-border bg-card p-5">
             <Sparkles className="h-5 w-5 text-primary" />
-            <div className="mt-3 font-semibold text-sm">8 AI modules</div>
+            <div className="mt-3 font-semibold text-sm">12 Claros modules</div>
             <div className="mt-1 text-xs text-muted-foreground">
-              Toggle each one ON/OFF per tenant. Every active module emits cited, audit-logged
-              answers; HITL gates and citation requirements are policy-controlled.
+              Insights · AI · Enroll · Core · Learn · Launch · Research · People · Alumni · Safe · Green · Comply.
+              Toggle per tenant, rename to your house brand, all changes live-propagate.
             </div>
           </div>
           <div className="rounded-lg border border-border bg-card p-5">

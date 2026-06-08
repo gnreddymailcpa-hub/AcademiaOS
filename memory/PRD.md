@@ -2319,3 +2319,95 @@ forced bilingual labels on non-Arabic tenants.
 - `~ /app/backend/seed_ai.py`
 - `~ /app/backend/server.py`
 - `~ /app/frontend/src/pages/AIUseCases.jsx`
+
+## Phase 42.3 — Onboarding live-sync + docs refresh — Feb 2026
+
+**Bug fixed**: when an Institution Admin toggled modules in the Onboarding
+Wizard Step 2 and clicked Launch, the PATCH `/api/modules/{iid}/{code}`
+returned 200 but the **sidebar didn't reflect the change** (stale
+`useTenantModules` state) and **reopening the wizard showed the OLD toggle
+state** (stale `tenantModules` after save). User reported on both preview
+and production.
+
+### Root cause
+- `useTenantModules` only refetched on `current?.id` change — nothing told
+  it that a mutation had happened in another component.
+- Onboarding's `launch()` PATCH-ed each changed module but never refetched
+  its own `tenantModules` snapshot, so going Back from Step 3 → Step 2 still
+  showed pre-save toggles.
+
+### Fix
+- `useTenantModules` now listens for a `claros:modules-changed` window event
+  AND a `BroadcastChannel("claros-modules")` message. Either triggers a
+  refresh — so a save in any tab live-propagates to every other open tab.
+- Added cache-busting (`?_=Date.now()`) on the GET so stale CDN/browser
+  caches never mask a save.
+- Exposed a `notifyModulesChanged()` helper from the same module.
+- Onboarding's `launch()` now (a) refetches its own `tenantModules` after
+  the loop of PATCHes succeeds, then (b) calls `notifyModulesChanged()`
+  before transitioning to Step 3.
+- Onboarding's initial load also passes the cache-bust param.
+
+### Validation (end-to-end as VCE Principal)
+- Toggle GREENIQ off in Step 2 → Launch → navigate to `/` → **Claros Green
+  group is hidden from the sidebar** (live-update, no manual reload) ✓
+- Reopen `/onboarding` → Step 2 → GREENIQ toggle has `data-state="unchecked"`
+  matching the saved state ✓
+- Restore (toggle back on) and Launch → sidebar group reappears ✓
+- 3/3 assertions PASS.
+
+### Docs refresh
+- `/admin-guide` Step 5 rewritten: "Decide which AI modules to enable" → "Activate
+  Claros modules via the Onboarding Wizard". Talks about 12 canonical modules,
+  the wizard's 3-step flow, live-sync behaviour, and the rebrand workflow.
+- New **"End-to-end Onboarding to Live"** sidebar-style callout on
+  `/admin-guide` (after the 10-step accordion) — explicit 11-stop flow with
+  code-formatted route paths, jump-in buttons to Onboarding / Branding /
+  AI Use Cases.
+- `/admin-guide` quick-reference card "8 AI modules" → "12 Claros modules"
+  with the canonical list.
+- `/product-brief` § 6.5 "Onboarding to live" inserted before the roadmap
+  — 11-step bullet flow with the ~4-hour-time-to-live SLA.
+- `/product-brief` pricing cards updated: "3 of 8 AI modules" → "3 of 12
+  Claros modules"; "All 8 AI modules" → "All 12 Claros modules · GA".
+- **New static playbook**: `/app/docs/onboarding-playbook.md` — canonical
+  end-to-end SOP with 12 numbered sections (Pre-flight → Sign-in →
+  Institution profile → Academic structure → Users & roles → Onboarding
+  Wizard → Branding → AI use cases → Knowledge → Governance → Workflows →
+  Pilot → Go live), troubleshooting table, and the legacy↔canonical ID
+  reference matrix.
+
+### Files touched
+- `~ /app/frontend/src/lib/useTenantModules.js` — broadcast listener + cache-bust + `notifyModulesChanged()` export
+- `~ /app/frontend/src/pages/Onboarding.jsx` — refetch + broadcast on save
+- `~ /app/frontend/src/pages/AdminGuide.jsx` — Step 5 rewrite, new flow section, quickref card
+- `~ /app/frontend/src/pages/ProductBrief.jsx` — § 6.5 onboarding section, pricing fix
+- `+ /app/docs/onboarding-playbook.md`
+
+## Phase 42.4 — Tenant Preview ↔ InstitutionContext sync — Feb 2026
+
+**Bug fixed**: when super_admin entered "Preview as Tenant" mode, the violet
+banner + branded sidebar+chrome updated, but the **TENANT dropdown in the
+topbar kept showing the previously-selected tenant**, creating a confusing
+"are we on VCE or UoB?" mismatch.
+
+### Fix
+- Added a cross-context sync effect inside `TenantConfigContext`: it watches
+  `effectivePreview` + the `InstitutionContext.institutions` list, and:
+  - On preview entry: stashes the current institution id, then calls
+    `switchInstitution(previewTenantId)` so the dropdown follows.
+  - On preview exit: restores the pre-preview institution.
+- All entry/exit paths (dropdown choose, banner exit, programmatic) now
+  stay in lockstep with no per-call wiring needed.
+
+### Validation
+- Super admin → "Preview as UoB" → TENANT dropdown reads **UoB**, sidebar
+  brand shows "University of Bradford" + bradford-theme purple, sidebar
+  groups show CLAROS canonical labels (UoB hasn't rebranded), banner + toast
+  confirm. ✓
+- Exit preview → dropdown / sidebar / theme all restore. ✓
+
+### Files touched
+- `~ /app/frontend/src/context/TenantConfigContext.jsx` — useRef + useEffect sync block
+- `~ /app/frontend/src/components/layout/TenantPreviewSwitcher.jsx` — apostrophe escapes + clarifying comment that the cross-context sync now lives in TenantConfigContext
+

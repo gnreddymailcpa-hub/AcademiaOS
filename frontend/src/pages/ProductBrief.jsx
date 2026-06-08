@@ -361,7 +361,7 @@ export default function ProductBrief() {
                 price: "Free · 30 days",
                 seats: "Up to 100 learners · 1 tenant",
                 color: "border-border",
-                features: ["3 of 8 AI modules", "Email support", "Public sandbox compliance framework"],
+                features: ["3 of 12 Claros modules", "Email support", "Public sandbox compliance framework"],
                 cta: "Start a pilot",
               },
               {
@@ -370,7 +370,7 @@ export default function ProductBrief() {
                 seats: "Universities · Business schools · Academies",
                 color: "border-primary ring-1 ring-primary/30",
                 tag: "Most chosen",
-                features: ["All 8 AI modules · GA", "All 15 role dashboards", "Dedicated success + SLA", "Per-tenant data residency"],
+                features: ["All 12 Claros modules · GA", "All 15 role dashboards", "Dedicated success + SLA", "Per-tenant data residency"],
                 cta: "Contact sales",
               },
               {
@@ -404,6 +404,35 @@ export default function ProductBrief() {
                 </Button>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* 6.5 · Onboarding to Live */}
+        <section data-testid="brief-onboarding">
+          <div className="label-eyebrow mb-3">§ 6.5 · Onboarding to live</div>
+          <h3 className="text-xl font-semibold tracking-tight">
+            From contracted tenant to first learner in one focused afternoon.
+          </h3>
+          <p className="mt-2 text-sm text-muted-foreground max-w-2xl">
+            Every Institution Admin follows the same 11-stop flow. No professional services
+            required for the standard rollout — only the deepest custom integrations need a
+            Claros consultant.
+          </p>
+          <ol className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm text-foreground/90 list-decimal list-inside">
+            <li><span className="font-medium">Sign in</span> with Claros-issued Institution Admin credentials.</li>
+            <li><span className="font-medium">Institution profile</span> — name, type, country, languages, compliance framework, theme &amp; logo.</li>
+            <li><span className="font-medium">Academic structure</span> — Campuses → Departments → Programmes → Courses → Cohorts.</li>
+            <li><span className="font-medium">Invite users &amp; assign roles</span> — bulk-paste CSV, 15 platform roles.</li>
+            <li><span className="font-medium">Onboarding Wizard</span> — pick which of the 12 Claros modules go live on day 1; sidebar and module gates update instantly.</li>
+            <li><span className="font-medium">Branding &amp; module names</span> — rename any module to your house brand (e.g. VCE: Claros AI → VEDA).</li>
+            <li><span className="font-medium">AI use cases</span> — pick provider / model per use case, set HITL &amp; citations policy.</li>
+            <li><span className="font-medium">Load knowledge</span> — upload course materials to Content Studio, map to programmes.</li>
+            <li><span className="font-medium">Ratify policy &amp; audit</span> — sign off bias audits, residency, HITL gates.</li>
+            <li><span className="font-medium">Pilot cohort</span> — 10–20 learners, watch the bell &amp; analytics fill up.</li>
+            <li><span className="font-medium">Go live</span> — full rollout. Daily / weekly / monthly cadence published.</li>
+          </ol>
+          <div className="mt-5 text-xs text-muted-foreground">
+            Avg time to live for an existing tenant of ≤ 5 000 learners: <span className="font-semibold text-foreground">≈ 4 hours of admin work + 1 pilot week</span>.
           </div>
         </section>
 
